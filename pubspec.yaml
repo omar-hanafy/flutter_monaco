@@ -18,8 +18,8 @@ platforms:
   ios:
   macos:
   windows:
+  web:     # Now supported with direct DOM approach!
   # linux:   # Not yet supported (no webview support yet)
-  # web:     # Not supported (asset bundling limitation)
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

@@ -1,31 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart' as wf;
 import 'package:webview_windows/webview_windows.dart' as ww;
 
-/// Unified interface for both webview_flutter and webview_windows
-abstract class PlatformWebViewController {
-  /// Execute JavaScript code without expecting a return value
-  Future<Object?> runJavaScript(String script);
+import 'platform_detector.dart' if (dart.library.html) 'platform_detector_stub.dart';
+import 'platform_webview_interface.dart';
+import 'web_webview_controller.dart' if (dart.library.io) 'web_webview_controller_stub.dart';
 
-  /// Execute JavaScript and return the result
-  Future<Object?> runJavaScriptReturningResult(String script);
-
-  /// Add a JavaScript channel for communication between JS and Flutter
-  Future<Object?> addJavaScriptChannel(
-    String name,
-    void Function(String) onMessage,
-  );
-
-  /// Remove a JavaScript channel
-  Future<Object?> removeJavaScriptChannel(String name);
-
-  /// Clean up resources
-  void dispose();
-}
+// Export the interface so consumers can use it
+export 'platform_webview_interface.dart';
 
 /// Flutter WebView implementation (for non-Windows platforms)
 class FlutterWebViewController implements PlatformWebViewController {
@@ -269,7 +255,9 @@ class WindowsWebViewController implements PlatformWebViewController {
 /// Factory for creating platform-specific controllers
 class PlatformWebViewFactory {
   static PlatformWebViewController createController() {
-    if (Platform.isWindows) {
+    if (kIsWeb) {
+      return WebWebViewController();
+    } else if (PlatformDetector.isWindows) {
       return WindowsWebViewController();
     } else {
       return FlutterWebViewController();

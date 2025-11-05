@@ -2,7 +2,7 @@
 
 [![pub package](https://img.shields.io/pub/v/flutter_monaco.svg?label=pub)](https://pub.dev/packages/flutter_monaco)
 [![License: MIT](https://img.shields.io/badge/License-MIT-success.svg)](LICENSE)
-[![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20macOS%20%7C%20Windows-blue)](#platform-support)
+[![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20macOS%20%7C%20Windows%20%7C%20Web-blue)](#platform-support)
 
 A Flutter plugin for integrating the Monaco Editor (VS Code's editor) into Flutter applications via WebView.
 
@@ -16,7 +16,7 @@ A Flutter plugin for integrating the Monaco Editor (VS Code's editor) into Flutt
 - 🌐 **100+ Language Support** - Syntax highlighting for all major languages
 - 🎭 **Multiple Themes** - Dark, Light, and High Contrast themes
 - 💾 **Versioned Asset Caching** - Efficient one-time asset installation
-- 🖥️ **Cross-Platform** - Works on Android, iOS, macOS, and Windows
+- 🖥️ **Cross-Platform** - Works on Android, iOS, macOS, Windows, and Web
 - ⚡ **Multiple Editors** - Support for unlimited independent editor instances
 - 📊 **Live Statistics** - Real-time line/character counts and selection info
 - 🎯 **Type-safe API** - Comprehensive typed bindings for Monaco's JavaScript API
@@ -24,7 +24,7 @@ A Flutter plugin for integrating the Monaco Editor (VS Code's editor) into Flutt
 - 🎭 **Decorations & Markers** - Add highlights, errors, warnings to your code
 - 📡 **Event Streams** - Listen to content changes, selection, focus events
 
-> **⚠️ Platform Support:** Currently supports **Android**, **iOS**, **macOS**, and **Windows**. Web and Linux are **not supported** at this time.
+> **✅ Platform Support:** Currently supports **Android**, **iOS**, **macOS**, **Windows**, and **Web**. Linux is **not supported** at this time (no webview support yet).
 
 ## Screenshots
 
