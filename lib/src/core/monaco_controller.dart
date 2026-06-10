@@ -557,6 +557,9 @@ class MonacoController {
   Future<void> focus() async {
     if (!_interactionEnabled) return;
     await _ensureReady();
+    // On Windows, WebView2 must hold real Win32 keyboard focus before the
+    // in-page focus below has any effect. No-op on other platforms.
+    await _webViewController.requestNativeFocus();
     // Use robust in-page helper (waits for visibility, layouts, focuses textarea)
     await _webViewController.runJavaScript(
       'window.flutterMonaco && window.flutterMonaco.forceFocus && window.flutterMonaco.forceFocus()',
@@ -572,6 +575,10 @@ class MonacoController {
   }) async {
     if (!_interactionEnabled) return;
     await _ensureReady();
+
+    // On Windows, hand real Win32 keyboard focus to WebView2 first; the JS
+    // focus attempts below cannot take effect without it.
+    await _webViewController.requestNativeFocus();
 
     // On mobile, multiple async focus() calls interrupt the IME lifecycle.
     final isMobileNative = !kIsWeb &&

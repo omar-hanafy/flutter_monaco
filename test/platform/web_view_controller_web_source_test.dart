@@ -51,4 +51,12 @@ void main() {
     expect(source, contains('_readyCompleter.completeError'));
     expect(source, contains('Unknown Monaco load error'));
   });
+
+  test('web iframe declares scroll containment at the frame boundary', () {
+    final source = webControllerSource();
+
+    expect(source, contains("..style.display = 'block'"));
+    expect(source, contains("..style.touchAction = 'none'"));
+    expect(source, contains("..style.overscrollBehavior = 'none'"));
+  });
 }

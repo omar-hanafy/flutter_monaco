@@ -3,6 +3,13 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2026-06-10
+
+### Fixed
+- Mobile Safari on Flutter Web: touch scrolling inside the editor no longer pans the host page (#11). The generated editor document and the host iframe statically declare `touch-action: none` and `overscroll-behavior: none`, so touches Monaco does not claim (line-number margin, scrollbar track, gestures before Monaco loads) can no longer chain out of the frame. Monaco's own touch scrolling is JS-driven and unaffected; desktop web and native platforms are unchanged.
+- Mobile web soft keyboard (#11): while the keyboard constrains the browser's visual viewport, the editor now pins itself to the visible intersection of its frame and keeps the caret revealed, so the first and last lines stay reachable; the stylesheet layout is restored when the keyboard closes.
+- iOS/macOS worker bootstrap: the WKWebView worker shim emitted raw newlines inside JavaScript string literals, a syntax error that invalidated the whole shim script and silently sent Monaco's language workers to a main-thread fallback on every native Apple load since 1.0.0. The escapes now reach JavaScript intact, and the generated-HTML cache version was bumped so existing installs regenerate.
+
 ## [1.7.0] - 2026-05-19
 
 ### Added

@@ -1,6 +1,6 @@
 name: flutter_monaco
 description: Integrate Monaco Editor (VS Code's editor) in Flutter apps. Features 100+ languages, syntax highlighting, themes, and full API.
-version: 1.7.0
+version: 1.7.1
 homepage: https://github.com/omar-hanafy/flutter_monaco
 repository: https://github.com/omar-hanafy/flutter_monaco
 issue_tracker: https://github.com/omar-hanafy/flutter_monaco/issues
@@ -34,7 +34,11 @@ dependencies:
   path_provider: ^2.1.5
   web: ^1.1.1
   webview_flutter: ^4.13.1
-  webview_windows: ^0.4.0
+  webview_windows:
+    git:
+      url: https://github.com/omar-hanafy/packages.git
+      ref: webview-windows-2026-focus-fix
+      path: packages/webview_windows
 
 dev_dependencies:
   build_runner: ^2.10.5

@@ -67,7 +67,7 @@ class MonacoAssets {
   ///
   /// Bump this whenever [generateIndexHtml] output or the JS bridge changes
   /// in a way Dart depends on.
-  static const int htmlGenerationVersion = 2;
+  static const int htmlGenerationVersion = 3;
 
   static Completer<void>? _initCompleter;
 
@@ -533,11 +533,15 @@ class MonacoAssets {
     self.MonacoEnvironment = {
       baseUrl: baseUrl,
       getWorkerUrl: function (moduleId, label) {
-        // Include the label for better worker resolution and debugging
+        // Include the label for better worker resolution and debugging.
+        // This template is a cooked Dart string: the newline escapes must be
+        // written as \\n so JavaScript receives "\\n" and not a raw newline,
+        // which is a SyntaxError inside a JS string literal and would kill
+        // this whole script block (workers then fall back to the main thread).
         const src =
-          "self.MonacoEnvironment = { baseUrl: '" + baseUrl + "' };\n" +
-          "self.monacoLabel = '" + label + "';\n" +
-          "importScripts('" + absVs + "/base/worker/workerMain.js');\n";
+          "self.MonacoEnvironment = { baseUrl: '" + baseUrl + "' };\\n" +
+          "self.monacoLabel = '" + label + "';\\n" +
+          "importScripts('" + absVs + "/base/worker/workerMain.js');\\n";
         return URL.createObjectURL(new Blob([src], { type: 'application/javascript' }));
       }
     };
@@ -576,6 +580,19 @@ class MonacoAssets {
       html, body, #editor-container {
         width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
       }
+      ${isWeb ? '''
+      /* Scroll containment for the iframe embed (issue #11). Monaco only
+         preventDefault()s touches that start on its text surface or
+         scrollbar sliders; touches that start on the margin, a scrollbar
+         track, or before Monaco loads fall through to the browser's native
+         pan. Nothing in this document can scroll, so mobile Safari chains
+         that pan to the host Flutter page. Declaring the policy here removes
+         the native pan for every touch in this document; Monaco's own touch
+         scrolling is JS-driven and unaffected by touch-action. */
+      html, body, #editor-container {
+        touch-action: none;
+        overscroll-behavior: none;
+      }''' : ''}
     </style>
     ${customCss != null ? '<style id="flutter-monaco-custom">\n$customCss\n</style>' : ''}
     $platformScript
@@ -1454,7 +1471,118 @@ class MonacoAssets {
                     }
                   } catch (_) {}
                 }
+                ${isWeb ? '''
 
+                // Mobile web keyboard fit (issue #11): the soft keyboard
+                // shrinks only the host page's *visual* viewport. This iframe
+                // keeps its layout size, so Monaco keeps rendering lines under
+                // the keyboard while Safari pans the host page to chase the
+                // hidden caret textarea - the editor's top band leaves the
+                // screen and cannot be scrolled back while the keyboard is up.
+                // While the parent's visual viewport is constrained, pin
+                // #editor-container to the visible intersection of this frame
+                // (automaticLayout relayouts Monaco via its ResizeObserver);
+                // restore the stylesheet layout once it is unconstrained.
+                if (isMobileInputPlatform() && !window.__flutterMonacoViewportFitBound) {
+                  try {
+                    const fitWindow = window;
+                    const fitContainer = document.getElementById('editor-container');
+                    const fitFrame = fitWindow.frameElement;
+                    const fitParent = fitWindow.parent;
+                    if (fitContainer && fitFrame && fitParent && fitParent !== fitWindow) {
+                      fitWindow.__flutterMonacoViewportFitBound = true;
+                      const fitViewport = fitParent.visualViewport || null;
+                      let fitRaf = 0;
+                      let fitApplied = false;
+                      let fitLast = '';
+                      const clearViewportFit = () => {
+                        fitLast = '';
+                        if (!fitApplied) return;
+                        fitApplied = false;
+                        fitContainer.style.position = '';
+                        fitContainer.style.top = '';
+                        fitContainer.style.left = '';
+                        fitContainer.style.width = '';
+                        fitContainer.style.height = '';
+                      };
+                      const scheduleViewportFit = () => {
+                        if (fitRaf) return;
+                        try {
+                          fitRaf = fitWindow.requestAnimationFrame(applyViewportFit);
+                        } catch (_) {
+                          fitRaf = 0;
+                        }
+                      };
+                      const applyViewportFit = () => {
+                        fitRaf = 0;
+                        let rect = null;
+                        try { rect = fitFrame.getBoundingClientRect(); } catch (_) {}
+                        if (!rect || rect.width <= 0 || rect.height <= 0) {
+                          clearViewportFit();
+                          return;
+                        }
+                        const viewLeft = fitViewport ? fitViewport.offsetLeft : 0;
+                        const viewTop = fitViewport ? fitViewport.offsetTop : 0;
+                        const viewWidth =
+                          (fitViewport && fitViewport.width) || fitParent.innerWidth || rect.width;
+                        const viewHeight =
+                          (fitViewport && fitViewport.height) || fitParent.innerHeight || rect.height;
+                        const left = Math.max(rect.left, viewLeft);
+                        const top = Math.max(rect.top, viewTop);
+                        const width = Math.min(rect.right, viewLeft + viewWidth) - left;
+                        const height = Math.min(rect.bottom, viewTop + viewHeight) - top;
+                        if (width >= rect.width - 1 && height >= rect.height - 1) {
+                          clearViewportFit();
+                          return;
+                        }
+                        // Keep tracking while constrained: Flutter can move the
+                        // frame (scrolling, route animations) without firing
+                        // any parent viewport event.
+                        scheduleViewportFit();
+                        // Sub-48px intersections are mid-transition slivers;
+                        // keep the previous geometry instead of collapsing.
+                        if (width < 48 || height < 48) return;
+                        const next =
+                          Math.round(left - rect.left) + ':' + Math.round(top - rect.top) +
+                          ':' + Math.round(width) + ':' + Math.round(height);
+                        if (next === fitLast) return;
+                        fitLast = next;
+                        fitApplied = true;
+                        fitContainer.style.position = 'absolute';
+                        fitContainer.style.left = Math.round(left - rect.left) + 'px';
+                        fitContainer.style.top = Math.round(top - rect.top) + 'px';
+                        fitContainer.style.width = Math.round(width) + 'px';
+                        fitContainer.style.height = Math.round(height) + 'px';
+                        try {
+                          const ed = E();
+                          if (ed && ed.hasTextFocus && ed.hasTextFocus()) {
+                            const pos = ed.getPosition && ed.getPosition();
+                            if (pos && ed.revealPosition) ed.revealPosition(pos);
+                          }
+                        } catch (_) {}
+                      };
+                      const detachViewportFit = () => {
+                        try {
+                          if (fitViewport) {
+                            fitViewport.removeEventListener('resize', scheduleViewportFit);
+                            fitViewport.removeEventListener('scroll', scheduleViewportFit);
+                          }
+                          fitParent.removeEventListener('resize', scheduleViewportFit);
+                        } catch (_) {}
+                      };
+                      if (fitViewport) {
+                        fitViewport.addEventListener('resize', scheduleViewportFit, { passive: true });
+                        fitViewport.addEventListener('scroll', scheduleViewportFit, { passive: true });
+                      }
+                      fitParent.addEventListener('resize', scheduleViewportFit, { passive: true });
+                      // The parent-side listeners outlive this document unless
+                      // removed; without this, every editor (re)load leaks one.
+                      fitWindow.addEventListener('pagehide', detachViewportFit, { once: true });
+                      scheduleViewportFit();
+                    }
+                  } catch (_) {}
+                }
+''' : ''}
                 // Completion bridge: JS stays dumb, Flutter drives the data
                 (function () {
                   const completion = {

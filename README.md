@@ -906,6 +906,19 @@ This pattern works on all platforms and is the recommended approach. The `Monaco
 - Calling `create()` in `initState` (before `build`) can cause a timeout
 - Native platforms do not have this constraint because WebView initialization is different
 
+### Mobile browsers (iOS Safari, Android Chrome)
+
+No configuration is needed; the package handles both of these automatically:
+
+- **Scroll containment.** The editor document declares `touch-action: none` and
+  `overscroll-behavior: none`, so touch scrolling inside the editor moves
+  Monaco's content and never pans the surrounding Flutter page - including
+  touches that start on the line-number margin or a scrollbar.
+- **Soft keyboard fit.** While the on-screen keyboard constrains the browser's
+  visual viewport, the editor pins itself to the visible part of its frame and
+  keeps the caret revealed, so the first and last lines stay reachable. The
+  normal layout is restored when the keyboard closes.
+
 ## Example App
 
 ### Live Web Demo

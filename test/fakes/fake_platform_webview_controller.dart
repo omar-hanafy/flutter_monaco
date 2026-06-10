@@ -127,6 +127,11 @@ class FakePlatformWebViewController implements PlatformWebViewController {
   }
 
   @override
+  Future<void> requestNativeFocus() async {
+    executed.add('REQUEST_NATIVE_FOCUS');
+  }
+
+  @override
   Future<void> runJavaScript(String script) async {
     if (disposed) {
       throw StateError('Cannot run JS on disposed controller');

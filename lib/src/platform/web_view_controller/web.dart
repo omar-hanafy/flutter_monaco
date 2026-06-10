@@ -78,6 +78,14 @@ class WebViewController implements PlatformWebViewController {
       ..style.width = '100%'
       ..style.height = '100%'
       ..style.border = 'none'
+      // Iframes are inline by default; the baseline gap can overflow the
+      // host page by a few pixels, giving mobile Safari something to pan.
+      ..style.display = 'block'
+      // Touch pans and overscroll that start over the editor must never
+      // chain into the host page (issue #11). The embedded document declares
+      // the same policy; this covers the frame boundary itself.
+      ..style.touchAction = 'none'
+      ..style.overscrollBehavior = 'none'
       ..allow = 'clipboard-read; clipboard-write';
 
     MonacoWebInteractionCoordinator.instance.registerEditor(
@@ -239,6 +247,11 @@ class WebViewController implements PlatformWebViewController {
         );
       } catch (_) {}
     }
+  }
+
+  @override
+  Future<void> requestNativeFocus() async {
+    // No-op on web; iframe focus is handled by the in-page focus helpers.
   }
 
   @override
