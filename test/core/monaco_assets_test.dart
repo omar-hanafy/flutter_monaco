@@ -179,5 +179,67 @@ void main() {
       expect(html, contains('focusEditorTextAreaNow();'));
       expect(html, contains('ta.focus({ preventScroll: true });'));
     });
+
+    test('web html statically contains touch pans inside the editor document',
+        () {
+      final html = MonacoAssets.generateIndexHtml(
+        'https://example.com/assets/monaco/min/vs',
+        isWeb: true,
+        messageToken: 'token',
+      );
+
+      expect(html, contains('touch-action: none;'));
+      expect(html, contains('overscroll-behavior: none;'));
+    });
+
+    test('web html includes the visual viewport keyboard fit module', () {
+      final html = MonacoAssets.generateIndexHtml(
+        'https://example.com/assets/monaco/min/vs',
+        isWeb: true,
+        messageToken: 'token',
+      );
+
+      expect(html, contains('__flutterMonacoViewportFitBound'));
+      expect(html, contains('const applyViewportFit = () =>'));
+      expect(html, contains('const scheduleViewportFit = () =>'));
+      expect(html, contains('const clearViewportFit = () =>'));
+      expect(html, contains('fitFrame.getBoundingClientRect()'));
+      expect(html, contains('fitParent.visualViewport'));
+      expect(html, contains("fitViewport.addEventListener('resize'"));
+      expect(html, contains("fitViewport.addEventListener('scroll'"));
+      expect(html, contains('ed.revealPosition(pos)'));
+      expect(
+        html,
+        contains("fitWindow.addEventListener('pagehide', detachViewportFit"),
+      );
+    });
+
+    test('apple worker shim emits escaped newlines inside JS string literals',
+        () {
+      final html = MonacoAssets.generateIndexHtml('min/vs', isIosOrMacOS: true);
+
+      // The escape must reach JavaScript as the two characters backslash-n.
+      expect(html, contains(r'''};\n" +'''));
+      expect(html, contains(r"""';\n" +"""));
+      // A raw newline inside the JS string literal is a SyntaxError that
+      // silently disables MonacoEnvironment (workers fall back to the main
+      // thread), which is exactly what shipped between 1.0.0 and 1.7.0.
+      expect(html, isNot(contains('\' };\n" +')));
+      expect(html, isNot(contains('\';\n" +')));
+    });
+
+    test('native html does not opt into web scroll containment', () {
+      for (final html in [
+        MonacoAssets.generateIndexHtml('min/vs'),
+        MonacoAssets.generateIndexHtml('min/vs', isIosOrMacOS: true),
+        MonacoAssets.generateIndexHtml(r'file:///C:/monaco/min/vs',
+            isWindows: true),
+      ]) {
+        expect(html, isNot(contains('touch-action: none')));
+        expect(html, isNot(contains('overscroll-behavior')));
+        expect(html, isNot(contains('applyViewportFit')));
+        expect(html, isNot(contains('__flutterMonacoViewportFitBound')));
+      }
+    });
   });
 }

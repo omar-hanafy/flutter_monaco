@@ -138,4 +138,12 @@ abstract class PlatformWebViewController {
   /// On native platforms, this may be a no-op or implemented via
   /// platform-specific pointer transparency APIs.
   Future<void> setInteractionEnabled(bool enabled);
+
+  /// Requests native keyboard focus for the WebView host.
+  ///
+  /// On Windows, WebView2 must hold real Win32 keyboard focus before any
+  /// in-page (JavaScript) focus call has an effect, so this moves native
+  /// focus to the WebView2 control. On all other platforms this is a no-op;
+  /// their WebViews participate in the regular platform focus system.
+  Future<void> requestNativeFocus();
 }

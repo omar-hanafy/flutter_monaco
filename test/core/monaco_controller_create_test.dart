@@ -71,6 +71,9 @@ class _ThrowingWebViewController implements PlatformWebViewController {
   }
 
   @override
+  Future<void> requestNativeFocus() async {}
+
+  @override
   Widget get widget => const SizedBox.shrink();
 
   @override

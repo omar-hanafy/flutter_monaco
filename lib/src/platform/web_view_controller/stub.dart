@@ -68,6 +68,11 @@ class WebViewController implements PlatformWebViewController {
   }
 
   @override
+  Future<void> requestNativeFocus() {
+    throw UnsupportedError('WebView not supported on this platform');
+  }
+
+  @override
   void dispose() {
     throw UnsupportedError('WebView not supported on this platform');
   }

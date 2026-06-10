@@ -48,6 +48,12 @@ abstract class WebViewController implements PlatformWebViewController {
 
   const WebViewController._();
 
+  @override
+  Future<void> requestNativeFocus() async {
+    // No-op by default. webview_flutter platforms participate in the regular
+    // platform focus system; only Windows needs an explicit handoff.
+  }
+
   /// Generates and caches the Monaco editor HTML file for native platforms.
   ///
   /// This method:
@@ -396,6 +402,14 @@ class WindowsWebViewController extends WebViewController {
   @override
   Future<void> setInteractionEnabled(bool enabled) async {
     // No-op on Windows as WebView2 respects Flutter's overlay stacking.
+  }
+
+  @override
+  Future<void> requestNativeFocus() async {
+    if (!_isInitialized || _disposed) return;
+    // Moves real Win32 keyboard focus to the WebView2 control so that
+    // subsequent in-page focus calls (and typing) actually work.
+    await _controller.focus();
   }
 
   @override

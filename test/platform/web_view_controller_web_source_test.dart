@@ -66,4 +66,12 @@ void main() {
     // The route-bearing Uri.base must never drive asset resolution (#14).
     expect(source, isNot(contains('Uri.base')));
   });
+
+  test('web iframe declares scroll containment at the frame boundary', () {
+    final source = webControllerSource();
+
+    expect(source, contains("..style.display = 'block'"));
+    expect(source, contains("..style.touchAction = 'none'"));
+    expect(source, contains("..style.overscrollBehavior = 'none'"));
+  });
 }
