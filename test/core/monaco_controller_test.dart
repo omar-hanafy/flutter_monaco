@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_monaco/src/core/monaco_bridge.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -1162,6 +1163,53 @@ void main() {
         } finally {
           debugDefaultTargetPlatformOverride = null;
         }
+      });
+
+      testWidgets(
+          'focus and ensureEditorFocus do not steal the keyboard from a '
+          'focused Flutter text input', (tester) async {
+        final bundle = await _createBundle();
+        final focusNode = FocusNode();
+        addTearDown(focusNode.dispose);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: TextField(focusNode: focusNode, autofocus: true),
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(focusNode.hasPrimaryFocus, isTrue);
+
+        // While the TextField owns the keyboard, both helpers must no-op:
+        // on Windows requestNativeFocus would move real Win32 focus to the
+        // WebView and typing would land in the editor instead of the field.
+        await tester.runAsync(() => bundle.controller.focus());
+        await tester.runAsync(
+          () => bundle.controller.ensureEditorFocus(
+            attempts: 2,
+            interval: Duration.zero,
+          ),
+        );
+        expect(
+          bundle.webview.executed.where((s) => s.contains('forceFocus')),
+          isEmpty,
+        );
+        expect(
+          bundle.webview.executed,
+          isNot(contains('REQUEST_NATIVE_FOCUS')),
+        );
+
+        // Once the text input releases the keyboard, focusing works again.
+        focusNode.unfocus();
+        await tester.pump();
+        await tester.runAsync(() => bundle.controller.focus());
+        expect(bundle.webview.executed, contains('REQUEST_NATIVE_FOCUS'));
+        expect(
+          bundle.webview.executed.join('\n'),
+          contains('forceFocus'),
+        );
       });
 
       test('layout calls layout', () async {
