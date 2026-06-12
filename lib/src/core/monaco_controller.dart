@@ -549,14 +549,42 @@ class MonacoController {
     await _invokeMonacoCommand('executeAction', [actionId, args]);
   }
 
+  /// Whether a Flutter text input (TextField, CupertinoTextField,
+  /// SelectableText, ...) currently owns Flutter's primary focus.
+  ///
+  /// Focus nudges must never steal the keyboard from one: on Windows,
+  /// [PlatformWebViewController.requestNativeFocus] moves real Win32
+  /// keyboard focus to the WebView, which would make typing land in the
+  /// editor instead of, say, a dialog's TextField.
+  static bool _flutterTextInputHasFocus() {
+    final BuildContext? context;
+    try {
+      context = FocusManager.instance.primaryFocus?.context;
+    } catch (_) {
+      // MonacoController also runs headless (no widget binding, e.g. plain
+      // Dart tests); without a binding there is no Flutter focus to steal.
+      return false;
+    }
+    if (context == null) return false;
+    // Every Flutter text input attaches its focus node inside an
+    // EditableText, so it is found as an ancestor state.
+    return context.findAncestorStateOfType<EditableTextState>() != null;
+  }
+
   /// Requests focus for the editor widget.
   ///
   /// Uses a robust method that waits for visibility and layout before attempting focus.
   /// On Android and iOS, the OS soft keyboard may only appear after a user tap
   /// inside the editor.
+  ///
+  /// This is cooperative: it does nothing while a Flutter text input owns
+  /// the primary focus, so background refocus calls cannot steal the
+  /// keyboard from a focused TextField (e.g. in a dialog). For an
+  /// intentional handoff, unfocus the field first.
   Future<void> focus() async {
     if (!_interactionEnabled) return;
     await _ensureReady();
+    if (_flutterTextInputHasFocus()) return;
     // On Windows, WebView2 must hold real Win32 keyboard focus before the
     // in-page focus below has any effect. No-op on other platforms.
     await _webViewController.requestNativeFocus();
@@ -569,6 +597,11 @@ class MonacoController {
   /// Attempts to focus the editor multiple times to handle race conditions during layout transitions.
   ///
   /// [attempts] defaults to 3, with [interval] of 24ms.
+  ///
+  /// Like [focus], this is cooperative: attempts made while a Flutter text
+  /// input owns the primary focus are skipped, so refocus nudges (after
+  /// content updates, route pops, app resume) cannot steal the keyboard
+  /// from a focused TextField.
   Future<void> ensureEditorFocus({
     int attempts = 3,
     Duration interval = const Duration(milliseconds: 24),
@@ -576,9 +609,7 @@ class MonacoController {
     if (!_interactionEnabled) return;
     await _ensureReady();
 
-    // On Windows, hand real Win32 keyboard focus to WebView2 first; the JS
-    // focus attempts below cannot take effect without it.
-    await _webViewController.requestNativeFocus();
+    var nativeFocusRequested = false;
 
     // On mobile, multiple async focus() calls interrupt the IME lifecycle.
     final isMobileNative = !kIsWeb &&
@@ -587,11 +618,21 @@ class MonacoController {
     final effectiveAttempts = isMobileNative ? 1 : attempts;
 
     for (var i = 0; i < effectiveAttempts; i++) {
-      try {
-        await _webViewController.runJavaScript(
-          'window.flutterMonaco && window.flutterMonaco.forceFocus && window.flutterMonaco.forceFocus()',
-        );
-      } catch (_) {}
+      // Re-evaluated per attempt: a text input losing focus mid-loop (e.g.
+      // a closing dialog) lets the remaining attempts proceed.
+      if (!_flutterTextInputHasFocus()) {
+        if (!nativeFocusRequested) {
+          // On Windows, hand real Win32 keyboard focus to WebView2 first;
+          // the JS focus below cannot take effect without it.
+          await _webViewController.requestNativeFocus();
+          nativeFocusRequested = true;
+        }
+        try {
+          await _webViewController.runJavaScript(
+            'window.flutterMonaco && window.flutterMonaco.forceFocus && window.flutterMonaco.forceFocus()',
+          );
+        } catch (_) {}
+      }
       if (i + 1 < effectiveAttempts) {
         await Future<void>.delayed(interval);
       }
