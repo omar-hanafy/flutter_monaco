@@ -14,21 +14,21 @@ enum PlaygroundTheme {
   midnight;
 
   String get label => switch (this) {
-        PlaygroundTheme.dark => 'Dark',
-        PlaygroundTheme.light => 'Light',
-        PlaygroundTheme.hcDark => 'High Contrast Dark',
-        PlaygroundTheme.hcLight => 'High Contrast Light',
-        PlaygroundTheme.midnight => 'Midnight (custom)',
-      };
+    PlaygroundTheme.dark => 'Dark',
+    PlaygroundTheme.light => 'Light',
+    PlaygroundTheme.hcDark => 'High Contrast Dark',
+    PlaygroundTheme.hcLight => 'High Contrast Light',
+    PlaygroundTheme.midnight => 'Midnight (custom)',
+  };
 
   /// The Monaco theme id to apply via [MonacoController.setThemeById].
   String get monacoId => switch (this) {
-        PlaygroundTheme.dark => MonacoTheme.vsDark.id,
-        PlaygroundTheme.light => MonacoTheme.vs.id,
-        PlaygroundTheme.hcDark => MonacoTheme.hcBlack.id,
-        PlaygroundTheme.hcLight => MonacoTheme.hcLight.id,
-        PlaygroundTheme.midnight => kMidnightThemeId,
-      };
+    PlaygroundTheme.dark => MonacoTheme.vsDark.id,
+    PlaygroundTheme.light => MonacoTheme.vs.id,
+    PlaygroundTheme.hcDark => MonacoTheme.hcBlack.id,
+    PlaygroundTheme.hcLight => MonacoTheme.hcLight.id,
+    PlaygroundTheme.midnight => kMidnightThemeId,
+  };
 
   bool get isDark =>
       this == PlaygroundTheme.dark ||
@@ -93,17 +93,17 @@ class ShowcaseController extends ChangeNotifier {
   String get initialValue => sampleFor(MonacoLanguage.dart);
 
   EditorOptions _buildOptions() => EditorOptions(
-        language: _language,
-        theme: _playgroundTheme.isDark ? MonacoTheme.vsDark : MonacoTheme.vs,
-        fontSize: _fontSize,
-        wordWrap: _wordWrap,
-        minimap: _minimap,
-        lineNumbers: _lineNumbers,
-        readOnly: _readOnly,
-        automaticLayout: true,
-        scrollBeyondLastLine: false,
-        padding: const {'top': 16, 'bottom': 16},
-      );
+    language: _language,
+    theme: _playgroundTheme.isDark ? MonacoTheme.vsDark : MonacoTheme.vs,
+    fontSize: _fontSize,
+    wordWrap: _wordWrap,
+    minimap: _minimap,
+    lineNumbers: _lineNumbers,
+    readOnly: _readOnly,
+    automaticLayout: true,
+    scrollBeyondLastLine: false,
+    padding: const {'top': 16, 'bottom': 16},
+  );
 
   /// Called from [MonacoEditor.onReady]: registers the custom theme and
   /// completion snippets, then syncs the current theme.
@@ -129,8 +129,9 @@ class ShowcaseController extends ChangeNotifier {
   /// Flips the page brightness and keeps the editor theme in sync (the nav
   /// toggle controls both, per the design).
   void toggleBrightness() {
-    _brightness =
-        _brightness == Brightness.dark ? Brightness.light : Brightness.dark;
+    _brightness = _brightness == Brightness.dark
+        ? Brightness.light
+        : Brightness.dark;
     _playgroundTheme = _brightness == Brightness.dark
         ? PlaygroundTheme.dark
         : PlaygroundTheme.light;
@@ -231,7 +232,8 @@ class ShowcaseController extends ChangeNotifier {
   Future<void> runIntelliSenseDemo() async {
     await setLanguage(MonacoLanguage.dart);
     _setHint(
-        'Type "pr" then press Ctrl/Cmd + Space to see custom completions.');
+      'Type "pr" then press Ctrl/Cmd + Space to see custom completions.',
+    );
   }
 
   Future<void> runJsonValidationDemo() async {
@@ -243,8 +245,10 @@ class ShowcaseController extends ChangeNotifier {
     await editor.setLanguage(MonacoLanguage.json);
     await editor.setValue(kInvalidJsonSample);
     await editor.setJsonDiagnostics(kJsonDiagnostics);
-    _setHint('Invalid fields are underlined - hover a squiggle for the schema '
-        'error.');
+    _setHint(
+      'Invalid fields are underlined - hover a squiggle for the schema '
+      'error.',
+    );
   }
 
   Future<void> runMarkersDemo() async {
@@ -257,8 +261,10 @@ class ShowcaseController extends ChangeNotifier {
     await editor.setValue(kMarkersDemoCode);
     await editor.setErrorMarkers(kDemoErrorMarkers);
     await editor.setWarningMarkers(kDemoWarningMarkers);
-    _setHint('Error + warning squiggles with overview-ruler ticks - hover to '
-        'read each message.');
+    _setHint(
+      'Error + warning squiggles with overview-ruler ticks - hover to '
+      'read each message.',
+    );
   }
 
   Future<void> runDecorationsDemo() async {

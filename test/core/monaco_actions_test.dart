@@ -53,9 +53,13 @@ void main() {
       expect(MonacoAction.undo, 'undo');
       expect(MonacoAction.redo, 'redo');
       expect(
-          MonacoAction.clipboardCutAction, 'editor.action.clipboardCutAction');
-      expect(MonacoAction.clipboardCopyAction,
-          'editor.action.clipboardCopyAction');
+        MonacoAction.clipboardCutAction,
+        'editor.action.clipboardCutAction',
+      );
+      expect(
+        MonacoAction.clipboardCopyAction,
+        'editor.action.clipboardCopyAction',
+      );
       expect(
         MonacoAction.clipboardPasteAction,
         'editor.action.clipboardPasteAction',

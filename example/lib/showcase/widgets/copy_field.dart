@@ -8,11 +8,7 @@ import '../theme/showcase_tokens.dart';
 ///
 /// Used for the hero install line (`flutter pub add flutter_monaco`).
 class CopyField extends StatelessWidget {
-  const CopyField({
-    super.key,
-    required this.text,
-    this.prefix = r'$',
-  });
+  const CopyField({super.key, required this.text, this.prefix = r'$'});
 
   /// The text copied to the clipboard and displayed after [prefix].
   final String text;
@@ -38,8 +34,10 @@ class CopyField extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('$prefix ',
-              style: ShowcaseText.monoSm.copyWith(color: c.textFaint)),
+          Text(
+            '$prefix ',
+            style: ShowcaseText.monoSm.copyWith(color: c.textFaint),
+          ),
           Flexible(
             child: Text(
               text,
@@ -68,8 +66,11 @@ class CopyField extends StatelessWidget {
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(Insets.sm),
-                  child: Icon(Icons.copy_rounded,
-                      size: 16, color: c.textSecondary),
+                  child: Icon(
+                    Icons.copy_rounded,
+                    size: 16,
+                    color: c.textSecondary,
+                  ),
                 ),
               ),
             ),

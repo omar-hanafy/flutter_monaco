@@ -8,7 +8,7 @@ import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_monaco/src/platform/platform_webview.dart';
 import 'package:path/path.dart' as p;
 import 'package:webview_flutter/webview_flutter.dart' as wf;
-import 'package:webview_windows/webview_windows.dart' as ww;
+import 'package:webview_flutter_windows/webview_flutter_windows.dart' as ww;
 
 /// Base class for native platform WebView implementations.
 ///
@@ -18,7 +18,7 @@ import 'package:webview_windows/webview_windows.dart' as ww;
 ///
 /// ### Platform Selection
 ///
-/// - **Windows:** Returns [WindowsWebViewController] using `webview_windows`
+/// - **Windows:** Returns [WindowsWebViewController] using `webview_flutter_windows`
 ///   (Microsoft Edge WebView2 runtime).
 /// - **Android/iOS/macOS:** Returns [FlutterWebViewController] using
 ///   `webview_flutter` with platform-specific WebView implementations.
@@ -272,7 +272,7 @@ class FlutterWebViewController extends WebViewController {
 
 /// WebView implementation for Windows using Microsoft Edge WebView2.
 ///
-/// This controller wraps the `webview_windows` package to provide Monaco editor
+/// This controller wraps the `webview_flutter_windows` package to provide Monaco editor
 /// hosting on Windows. It requires the WebView2 runtime, which is pre-installed
 /// on Windows 11 and available as a separate download for Windows 10.
 ///
@@ -300,7 +300,7 @@ class FlutterWebViewController extends WebViewController {
 /// - [ww.WebviewController] for the underlying Windows WebView controller.
 /// - [parseWindowsScriptResult] for result normalization.
 class WindowsWebViewController extends WebViewController {
-  /// Creates a new controller backed by `webview_windows` (WebView2).
+  /// Creates a new controller backed by `webview_flutter_windows` (WebView2).
   WindowsWebViewController() : super._() {
     _controller = ww.WebviewController();
   }
@@ -314,7 +314,7 @@ class WindowsWebViewController extends WebViewController {
   bool _isInitialized = false;
   bool _disposed = false;
 
-  /// Provides direct access to the underlying `webview_windows` controller.
+  /// Provides direct access to the underlying `webview_flutter_windows` controller.
   ///
   /// Use this for advanced operations not exposed by [PlatformWebViewController],
   /// such as custom popup policies or DevTools access.
@@ -442,7 +442,8 @@ class WindowsWebViewController extends WebViewController {
     void Function(String) onMessage,
   ) async {
     debugPrint(
-        '[WindowsWebViewController] Registering handler for channel: $name');
+      '[WindowsWebViewController] Registering handler for channel: $name',
+    );
 
     // Store the handler - HTML already defines window.flutterChannel
     _channels[name] = onMessage;

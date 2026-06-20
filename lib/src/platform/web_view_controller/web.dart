@@ -23,8 +23,9 @@ import 'package:web/web.dart' as web;
 /// URL strategy, so the path stays correct and still resolves inside the
 /// blob-URL iframe that hosts Monaco (see issue #14).
 String _monacoVsAssetUrl() {
-  final assetUrl =
-      ui_web.assetManager.getAssetUrl('${MonacoAssets.assetBaseDir}/min/vs');
+  final assetUrl = ui_web.assetManager.getAssetUrl(
+    '${MonacoAssets.assetBaseDir}/min/vs',
+  );
   return resolveWebAssetUrl(web.document.baseURI, assetUrl);
 }
 
@@ -105,10 +106,7 @@ class WebViewController implements PlatformWebViewController {
       ..style.overscrollBehavior = 'none'
       ..allow = 'clipboard-read; clipboard-write';
 
-    MonacoWebInteractionCoordinator.instance.registerEditor(
-      _viewId!,
-      _iframe!,
-    );
+    MonacoWebInteractionCoordinator.instance.registerEditor(_viewId!, _iframe!);
     _applyInteractionEnabled();
 
     // Register the view factory.
@@ -159,7 +157,8 @@ class WebViewController implements PlatformWebViewController {
     }
 
     // Only log non-stats messages to reduce noise (stats fire on every keystroke/selection)
-    final isStatsMessage = message.contains('"event":"stats"') ||
+    final isStatsMessage =
+        message.contains('"event":"stats"') ||
         message.contains('"event": "stats"');
     if (!isStatsMessage) {
       debugPrint('[WebViewController] Received iframe message: $message');
@@ -292,8 +291,10 @@ class WebViewController implements PlatformWebViewController {
     if (_disposed) return null;
 
     try {
-      final result =
-          _iframe?.contentWindow?.callMethod('eval'.toJS, script.toJS);
+      final result = _iframe?.contentWindow?.callMethod(
+        'eval'.toJS,
+        script.toJS,
+      );
       return result?.dartify();
     } catch (e) {
       debugPrint('[WebViewController] JS result error: $e');
@@ -340,10 +341,9 @@ class WebViewController implements PlatformWebViewController {
         allowCdnFonts: allowCdnFonts,
       );
 
-      final blobUrl = web.URL.createObjectURL(web.Blob(
-        [html.toJS].toJS,
-        web.BlobPropertyBag(type: 'text/html'),
-      ));
+      final blobUrl = web.URL.createObjectURL(
+        web.Blob([html.toJS].toJS, web.BlobPropertyBag(type: 'text/html')),
+      );
 
       try {
         _iframe!.src = blobUrl;

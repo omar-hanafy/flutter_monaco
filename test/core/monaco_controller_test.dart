@@ -27,10 +27,7 @@ Future<_TestBundle> _createBundle({bool ready = true}) async {
   return _TestBundle(controller, webview, bridge);
 }
 
-String _evaluationEnvelope({
-  Object? value,
-  bool isUndefined = false,
-}) {
+String _evaluationEnvelope({Object? value, bool isUndefined = false}) {
   return jsonEncode({
     '__flutterMonacoEval': true,
     'isUndefined': isUndefined,
@@ -104,8 +101,9 @@ void main() {
         bundle.controller.completeReadyForTesting();
         await future;
         expect(
-          bundle.webview.executed
-              .any((script) => script.contains('findMatches')),
+          bundle.webview.executed.any(
+            (script) => script.contains('findMatches'),
+          ),
           true,
         );
       });
@@ -128,42 +126,48 @@ void main() {
         expect(joined.contains('forceFocus'), true);
       });
 
-      test('executeAction routes toolbar commands to monaco action ids',
-          () async {
-        final bundle = await _createBundle();
+      test(
+        'executeAction routes toolbar commands to monaco action ids',
+        () async {
+          final bundle = await _createBundle();
 
-        const ids = [
-          MonacoAction.foldAll,
-          MonacoAction.unfoldAll,
-          MonacoAction.commentLine,
-          MonacoAction.indentLines,
-          MonacoAction.outdentLines,
-        ];
-        for (final id in ids) {
-          await bundle.controller.executeAction(id);
-        }
+          const ids = [
+            MonacoAction.foldAll,
+            MonacoAction.unfoldAll,
+            MonacoAction.commentLine,
+            MonacoAction.indentLines,
+            MonacoAction.outdentLines,
+          ];
+          for (final id in ids) {
+            await bundle.controller.executeAction(id);
+          }
 
-        final joined = bundle.webview.executed.join('\n');
-        for (final id in ids) {
-          expect(joined.contains(id), true, reason: 'missing $id');
-        }
-      });
+          final joined = bundle.webview.executed.join('\n');
+          for (final id in ids) {
+            expect(joined.contains(id), true, reason: 'missing $id');
+          }
+        },
+      );
 
-      test('command failure envelope throws MonacoJavaScriptException',
-          () async {
-        final bundle = await _createBundle();
-        bundle.webview
-            .injectCommandFailure('executeAction', message: 'broken action');
+      test(
+        'command failure envelope throws MonacoJavaScriptException',
+        () async {
+          final bundle = await _createBundle();
+          bundle.webview.injectCommandFailure(
+            'executeAction',
+            message: 'broken action',
+          );
 
-        await expectLater(
-          () => bundle.controller.executeAction('whatever'),
-          throwsA(
-            isA<MonacoJavaScriptException>()
-                .having((e) => e.operation, 'operation', 'executeAction')
-                .having((e) => e.message, 'message', 'broken action'),
-          ),
-        );
-      });
+          await expectLater(
+            () => bundle.controller.executeAction('whatever'),
+            throwsA(
+              isA<MonacoJavaScriptException>()
+                  .having((e) => e.operation, 'operation', 'executeAction')
+                  .having((e) => e.message, 'message', 'broken action'),
+            ),
+          );
+        },
+      );
     });
 
     group('theme registration', () {
@@ -172,16 +176,15 @@ void main() {
         const theme = MonacoThemeDefinition(
           id: 'app-dark',
           base: MonacoTheme.vsDark,
-          rules: [
-            MonacoThemeRule(token: 'comment', foreground: '6A9955'),
-          ],
+          rules: [MonacoThemeRule(token: 'comment', foreground: '6A9955')],
           colors: {'editor.background': '#101010'},
         );
 
         await bundle.controller.defineTheme(theme);
 
-        final invocation =
-            bundle.webview.scriptsContaining('"defineTheme"').single;
+        final invocation = bundle.webview
+            .scriptsContaining('"defineTheme"')
+            .single;
         expect(invocation, contains('"app-dark"'));
         expect(invocation, contains('"vs-dark"'));
         expect(invocation, contains('"6A9955"'));
@@ -197,8 +200,9 @@ void main() {
           'colors': {'editor.background': '#FFFFFF'},
         });
 
-        final invocation =
-            bundle.webview.scriptsContaining('"defineTheme"').single;
+        final invocation = bundle.webview
+            .scriptsContaining('"defineTheme"')
+            .single;
         expect(invocation, contains('"raw-id"'));
         expect(invocation, contains('"editor.background"'));
         expect(invocation, contains('"#FFFFFF"'));
@@ -235,48 +239,54 @@ void main() {
         expect(await bundle.controller.getThemeId(), isNull);
       });
 
-      test('getThemeId returns null when bridge reports empty string',
-          () async {
-        final bundle = await _createBundle();
-        bundle.webview.injectCommandSuccess('getTheme', value: '');
-        expect(await bundle.controller.getThemeId(), isNull);
-      });
+      test(
+        'getThemeId returns null when bridge reports empty string',
+        () async {
+          final bundle = await _createBundle();
+          bundle.webview.injectCommandSuccess('getTheme', value: '');
+          expect(await bundle.controller.getThemeId(), isNull);
+        },
+      );
 
-      test('MonacoThemeDefinition JSON round-trip preserves rules and colors',
-          () {
-        const original = MonacoThemeDefinition(
-          id: 'roundtrip',
-          base: MonacoTheme.hcBlack,
-          inherit: false,
-          rules: [
-            MonacoThemeRule(
-              token: 'keyword',
-              foreground: '569CD6',
-              fontStyle: 'italic',
-            ),
-            MonacoThemeRule(token: 'string', foreground: 'CE9178'),
-          ],
-          colors: {
-            'editor.background': '#1E1E1E',
-            'editor.foreground': '#D4D4D4',
-          },
-        );
+      test(
+        'MonacoThemeDefinition JSON round-trip preserves rules and colors',
+        () {
+          const original = MonacoThemeDefinition(
+            id: 'roundtrip',
+            base: MonacoTheme.hcBlack,
+            inherit: false,
+            rules: [
+              MonacoThemeRule(
+                token: 'keyword',
+                foreground: '569CD6',
+                fontStyle: 'italic',
+              ),
+              MonacoThemeRule(token: 'string', foreground: 'CE9178'),
+            ],
+            colors: {
+              'editor.background': '#1E1E1E',
+              'editor.foreground': '#D4D4D4',
+            },
+          );
 
-        final json = original.toJson();
-        final restored = MonacoThemeDefinition.fromJson(json);
+          final json = original.toJson();
+          final restored = MonacoThemeDefinition.fromJson(json);
 
-        expect(restored, equals(original));
-      });
+          expect(restored, equals(original));
+        },
+      );
 
-      test('MonacoThemeRule.fromJson accepts empty token as default selector',
-          () {
-        final rule = MonacoThemeRule.fromJson(const {
-          'token': '',
-          'foreground': 'D4D4D4',
-        });
-        expect(rule.token, isEmpty);
-        expect(rule.foreground, 'D4D4D4');
-      });
+      test(
+        'MonacoThemeRule.fromJson accepts empty token as default selector',
+        () {
+          final rule = MonacoThemeRule.fromJson(const {
+            'token': '',
+            'foreground': 'D4D4D4',
+          });
+          expect(rule.token, isEmpty);
+          expect(rule.foreground, 'D4D4D4');
+        },
+      );
 
       test('MonacoThemeDefinition.fromMonacoThemeData attaches the id', () {
         final restored = MonacoThemeDefinition.fromMonacoThemeData(
@@ -298,8 +308,10 @@ void main() {
       });
 
       test('EditorOptions.effectiveThemeId prefers themeId override', () {
-        const builtIn =
-            EditorOptions(theme: MonacoTheme.vs, themeId: 'custom-dark');
+        const builtIn = EditorOptions(
+          theme: MonacoTheme.vs,
+          themeId: 'custom-dark',
+        );
         expect(builtIn.effectiveThemeId, 'custom-dark');
 
         const fallback = EditorOptions(theme: MonacoTheme.hcLight);
@@ -318,17 +330,19 @@ void main() {
         expect(builtIn.theme, MonacoTheme.vs);
       });
 
-      test('EditorOptions.fromJson preserves built-in fallback with themeId',
-          () {
-        final options = EditorOptions.fromJson(const {
-          'theme': 'hc-light',
-          'themeId': 'app-dark',
-        });
+      test(
+        'EditorOptions.fromJson preserves built-in fallback with themeId',
+        () {
+          final options = EditorOptions.fromJson(const {
+            'theme': 'hc-light',
+            'themeId': 'app-dark',
+          });
 
-        expect(options.theme, MonacoTheme.hcLight);
-        expect(options.themeId, 'app-dark');
-        expect(options.effectiveThemeId, 'app-dark');
-      });
+          expect(options.theme, MonacoTheme.hcLight);
+          expect(options.themeId, 'app-dark');
+          expect(options.effectiveThemeId, 'app-dark');
+        },
+      );
     });
 
     group('interaction', () {
@@ -337,19 +351,21 @@ void main() {
         expect(bundle.controller.isInteractionEnabled, true);
       });
 
-      test('setInteractionEnabled updates state and webview immediately',
-          () async {
-        final bundle = await _createBundle(ready: false);
+      test(
+        'setInteractionEnabled updates state and webview immediately',
+        () async {
+          final bundle = await _createBundle(ready: false);
 
-        await bundle.controller.setInteractionEnabled(false);
+          await bundle.controller.setInteractionEnabled(false);
 
-        expect(bundle.controller.isInteractionEnabled, false);
-        expect(bundle.webview.interactionEnabled, false);
-        expect(
-          bundle.webview.executed.any((s) => s == 'SET_INTERACTION:false'),
-          true,
-        );
-      });
+          expect(bundle.controller.isInteractionEnabled, false);
+          expect(bundle.webview.interactionEnabled, false);
+          expect(
+            bundle.webview.executed.any((s) => s == 'SET_INTERACTION:false'),
+            true,
+          );
+        },
+      );
     });
 
     group('content queuing', () {
@@ -399,8 +415,9 @@ void main() {
       test('returns defaultValue on error', () async {
         final bundle = await _createBundle();
         bundle.webview.injectCommandFailure('getValue', message: 'boom');
-        final value =
-            await bundle.controller.getValue(defaultValue: 'fallback');
+        final value = await bundle.controller.getValue(
+          defaultValue: 'fallback',
+        );
         expect(value, 'fallback');
       });
 
@@ -546,8 +563,10 @@ void main() {
       test('getLineContent validates bounds - below', () async {
         final bundle = await _createBundle();
         bundle.webview.injectCommandSuccess('getLineCount', value: 3);
-        final value =
-            await bundle.controller.getLineContent(0, defaultValue: 'x');
+        final value = await bundle.controller.getLineContent(
+          0,
+          defaultValue: 'x',
+        );
         expect(value, 'x');
         expect(
           bundle.webview.executed.any((s) => s.contains('"getLineContent"')),
@@ -558,8 +577,10 @@ void main() {
       test('getLineContent validates bounds - above', () async {
         final bundle = await _createBundle();
         bundle.webview.injectCommandSuccess('getLineCount', value: 3);
-        final value =
-            await bundle.controller.getLineContent(10, defaultValue: 'y');
+        final value = await bundle.controller.getLineContent(
+          10,
+          defaultValue: 'y',
+        );
         expect(value, 'y');
       });
 
@@ -632,12 +653,7 @@ void main() {
       test('deleteRange creates delete operation', () async {
         final bundle = await _createBundle();
         await bundle.controller.deleteRange(
-          const Range(
-            startLine: 1,
-            startColumn: 1,
-            endLine: 1,
-            endColumn: 5,
-          ),
+          const Range(startLine: 1, startColumn: 1, endLine: 1, endColumn: 5),
         );
         final joined = bundle.webview.executed.join('\n');
         expect(joined, contains('applyEdits'));
@@ -647,12 +663,7 @@ void main() {
       test('replaceRange creates replace operation', () async {
         final bundle = await _createBundle();
         await bundle.controller.replaceRange(
-          const Range(
-            startLine: 1,
-            startColumn: 1,
-            endLine: 1,
-            endColumn: 5,
-          ),
+          const Range(startLine: 1, startColumn: 1, endLine: 1, endColumn: 5),
           'replacement',
         );
         final joined = bundle.webview.executed.join('\n');
@@ -672,8 +683,10 @@ void main() {
     group('decorations', () {
       test('setDecorations tracks ids across calls', () async {
         final bundle = await _createBundle();
-        bundle.webview
-            .injectCommandSuccess('deltaDecorations', value: ['a', 'b']);
+        bundle.webview.injectCommandSuccess(
+          'deltaDecorations',
+          value: ['a', 'b'],
+        );
         bundle.webview.injectCommandSuccess('deltaDecorations', value: ['c']);
 
         final first = await bundle.controller.setDecorations([
@@ -699,8 +712,10 @@ void main() {
       test('setDecorations throws on malformed bridge result', () async {
         final bundle = await _createBundle();
         bundle.webview.injectCommandSuccess('deltaDecorations', value: ['a']);
-        bundle.webview
-            .injectCommandSuccess('deltaDecorations', value: 'not-a-list');
+        bundle.webview.injectCommandSuccess(
+          'deltaDecorations',
+          value: 'not-a-list',
+        );
         bundle.webview.injectCommandSuccess('deltaDecorations', value: ['b']);
 
         final first = await bundle.controller.setDecorations([
@@ -719,16 +734,16 @@ void main() {
         await expectLater(
           () => bundle.controller.setDecorations(const []),
           throwsA(
-            isA<MonacoJavaScriptException>()
-                .having((e) => e.operation, 'operation', 'deltaDecorations'),
+            isA<MonacoJavaScriptException>().having(
+              (e) => e.operation,
+              'operation',
+              'deltaDecorations',
+            ),
           ),
         );
 
         await bundle.controller.setDecorations(const []);
-        expect(
-          bundle.webview.executed.join('\n'),
-          contains('["a"]'),
-        );
+        expect(bundle.webview.executed.join('\n'), contains('["a"]'));
       });
 
       test('addInlineDecorations creates correct options', () async {
@@ -746,21 +761,25 @@ void main() {
 
       test('addLineDecorations creates whole line decorations', () async {
         final bundle = await _createBundle();
-        bundle.webview
-            .injectCommandSuccess('deltaDecorations', value: ['l1', 'l2']);
-
-        final ids = await bundle.controller.addLineDecorations(
-          [1, 2],
-          'line-highlight',
+        bundle.webview.injectCommandSuccess(
+          'deltaDecorations',
+          value: ['l1', 'l2'],
         );
+
+        final ids = await bundle.controller.addLineDecorations([
+          1,
+          2,
+        ], 'line-highlight');
         expect(ids, ['l1', 'l2']);
         expect(bundle.webview.executed.join('\n'), contains('isWholeLine'));
       });
 
       test('clearDecorations passes empty array', () async {
         final bundle = await _createBundle();
-        bundle.webview
-            .injectCommandSuccess('deltaDecorations', value: <String>[]);
+        bundle.webview.injectCommandSuccess(
+          'deltaDecorations',
+          value: <String>[],
+        );
 
         await bundle.controller.clearDecorations();
         expect(
@@ -773,20 +792,17 @@ void main() {
     group('markers', () {
       test('setMarkers uses owner and severity values', () async {
         final bundle = await _createBundle();
-        await bundle.controller.setMarkers(
-          [
-            MarkerData.error(
-              range: const Range(
-                startLine: 1,
-                startColumn: 1,
-                endLine: 1,
-                endColumn: 10,
-              ),
-              message: 'Error message',
+        await bundle.controller.setMarkers([
+          MarkerData.error(
+            range: const Range(
+              startLine: 1,
+              startColumn: 1,
+              endLine: 1,
+              endColumn: 10,
             ),
-          ],
-          owner: 'flutter-errors',
-        );
+            message: 'Error message',
+          ),
+        ], owner: 'flutter-errors');
 
         final joined = bundle.webview.executed.join('\n');
         expect(joined, contains('setModelMarkers'));
@@ -824,7 +840,9 @@ void main() {
           ),
         ]);
         expect(
-            bundle.webview.executed.join('\n'), contains('flutter-warnings'));
+          bundle.webview.executed.join('\n'),
+          contains('flutter-warnings'),
+        );
       });
 
       test('clearAllMarkers clears all known owners', () async {
@@ -1043,16 +1061,18 @@ void main() {
         await bundle.controller.setCursorPosition(
           const Position(line: 3, column: 7),
         );
-        final invocation =
-            bundle.webview.scriptsContaining('"setCursorPosition"').single;
+        final invocation = bundle.webview
+            .scriptsContaining('"setCursorPosition"')
+            .single;
         expect(invocation, contains('[3,7]'));
       });
 
       test('setCursorPositionZeroBased converts to 1-based', () async {
         final bundle = await _createBundle();
         await bundle.controller.setCursorPositionZeroBased(0, 0);
-        final invocation =
-            bundle.webview.scriptsContaining('"setCursorPosition"').single;
+        final invocation = bundle.webview
+            .scriptsContaining('"setCursorPosition"')
+            .single;
         expect(invocation, contains('[1,1]'));
       });
 
@@ -1073,10 +1093,7 @@ void main() {
       test('format calls formatDocument action', () async {
         final bundle = await _createBundle();
         await bundle.controller.format();
-        expect(
-          bundle.webview.executed.join('\n'),
-          contains('formatDocument'),
-        );
+        expect(bundle.webview.executed.join('\n'), contains('formatDocument'));
       });
 
       test('find calls find action', () async {
@@ -1097,10 +1114,7 @@ void main() {
       test('toggleWordWrap calls action', () async {
         final bundle = await _createBundle();
         await bundle.controller.toggleWordWrap();
-        expect(
-          bundle.webview.executed.join('\n'),
-          contains('toggleWordWrap'),
-        );
+        expect(bundle.webview.executed.join('\n'), contains('toggleWordWrap'));
       });
 
       test('undo/redo call correct actions', () async {
@@ -1166,51 +1180,50 @@ void main() {
       });
 
       testWidgets(
-          'focus and ensureEditorFocus do not steal the keyboard from a '
-          'focused Flutter text input', (tester) async {
-        final bundle = await _createBundle();
-        final focusNode = FocusNode();
-        addTearDown(focusNode.dispose);
+        'focus and ensureEditorFocus do not steal the keyboard from a '
+        'focused Flutter text input',
+        (tester) async {
+          final bundle = await _createBundle();
+          final focusNode = FocusNode();
+          addTearDown(focusNode.dispose);
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: TextField(focusNode: focusNode, autofocus: true),
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: TextField(focusNode: focusNode, autofocus: true),
+              ),
             ),
-          ),
-        );
-        await tester.pump();
-        expect(focusNode.hasPrimaryFocus, isTrue);
+          );
+          await tester.pump();
+          expect(focusNode.hasPrimaryFocus, isTrue);
 
-        // While the TextField owns the keyboard, both helpers must no-op:
-        // on Windows requestNativeFocus would move real Win32 focus to the
-        // WebView and typing would land in the editor instead of the field.
-        await tester.runAsync(() => bundle.controller.focus());
-        await tester.runAsync(
-          () => bundle.controller.ensureEditorFocus(
-            attempts: 2,
-            interval: Duration.zero,
-          ),
-        );
-        expect(
-          bundle.webview.executed.where((s) => s.contains('forceFocus')),
-          isEmpty,
-        );
-        expect(
-          bundle.webview.executed,
-          isNot(contains('REQUEST_NATIVE_FOCUS')),
-        );
+          // While the TextField owns the keyboard, both helpers must no-op:
+          // on Windows requestNativeFocus would move real Win32 focus to the
+          // WebView and typing would land in the editor instead of the field.
+          await tester.runAsync(() => bundle.controller.focus());
+          await tester.runAsync(
+            () => bundle.controller.ensureEditorFocus(
+              attempts: 2,
+              interval: Duration.zero,
+            ),
+          );
+          expect(
+            bundle.webview.executed.where((s) => s.contains('forceFocus')),
+            isEmpty,
+          );
+          expect(
+            bundle.webview.executed,
+            isNot(contains('REQUEST_NATIVE_FOCUS')),
+          );
 
-        // Once the text input releases the keyboard, focusing works again.
-        focusNode.unfocus();
-        await tester.pump();
-        await tester.runAsync(() => bundle.controller.focus());
-        expect(bundle.webview.executed, contains('REQUEST_NATIVE_FOCUS'));
-        expect(
-          bundle.webview.executed.join('\n'),
-          contains('forceFocus'),
-        );
-      });
+          // Once the text input releases the keyboard, focusing works again.
+          focusNode.unfocus();
+          await tester.pump();
+          await tester.runAsync(() => bundle.controller.focus());
+          expect(bundle.webview.executed, contains('REQUEST_NATIVE_FOCUS'));
+          expect(bundle.webview.executed.join('\n'), contains('forceFocus'));
+        },
+      );
 
       test('layout calls layout', () async {
         final bundle = await _createBundle();
@@ -1269,8 +1282,10 @@ void main() {
           'JSON.stringify(flutterMonaco.getCursorPosition())',
           '{"lineNumber":1,"column":3}',
         );
-        bundle.webview
-            .enqueueResult('flutterMonaco.hasUnsavedChanges()', false);
+        bundle.webview.enqueueResult(
+          'flutterMonaco.hasUnsavedChanges()',
+          false,
+        );
 
         final state = await bundle.controller.getEditorState();
 
@@ -1365,10 +1380,7 @@ void main() {
         expect(bundle.webview.executed, isEmpty);
         bundle.controller.completeReadyForTesting();
         await future;
-        expect(
-          bundle.webview.hasExecuted('setJsonDiagnosticsOptions'),
-          true,
-        );
+        expect(bundle.webview.hasExecuted('setJsonDiagnosticsOptions'), true);
       });
 
       test('generates correct JS payload', () async {
@@ -1416,11 +1428,7 @@ void main() {
                   'operation',
                   'setJsonDiagnosticsOptions',
                 )
-                .having(
-                  (e) => e.message,
-                  'message',
-                  'json diagnostics failed',
-                ),
+                .having((e) => e.message, 'message', 'json diagnostics failed'),
           ),
         );
       });
@@ -1546,23 +1554,25 @@ void main() {
         expect(result, 'hello');
       });
 
-      test('preserves numeric-looking string result when T is String',
-          () async {
-        final bundle = await _createBundle();
-        bundle.webview.resultResolver = (script) {
-          if (script.contains('__flutterMonacoEval')) {
-            return _evaluationEnvelope(value: '42');
-          }
-          return null;
-        };
+      test(
+        'preserves numeric-looking string result when T is String',
+        () async {
+          final bundle = await _createBundle();
+          bundle.webview.resultResolver = (script) {
+            if (script.contains('__flutterMonacoEval')) {
+              return _evaluationEnvelope(value: '42');
+            }
+            return null;
+          };
 
-        final result = await bundle.controller.evaluateJavaScript<String>(
-          '"42"',
-        );
+          final result = await bundle.controller.evaluateJavaScript<String>(
+            '"42"',
+          );
 
-        expect(result, '42');
-        expect(result, isA<String>());
-      });
+          expect(result, '42');
+          expect(result, isA<String>());
+        },
+      );
 
       test('returns maps', () async {
         final bundle = await _createBundle();
@@ -1677,16 +1687,18 @@ void main() {
         final bundle = await _createBundle();
         bundle.webview.enqueueResult('myQuery()', '42');
 
-        final result = await bundle.controller
-            .runJavaScriptReturningResultRaw('myQuery()');
+        final result = await bundle.controller.runJavaScriptReturningResultRaw(
+          'myQuery()',
+        );
 
         expect(result, '42');
       });
 
       test('waits for ready before executing', () async {
         final bundle = await _createBundle(ready: false);
-        final future =
-            bundle.controller.runJavaScriptReturningResultRaw('myQuery()');
+        final future = bundle.controller.runJavaScriptReturningResultRaw(
+          'myQuery()',
+        );
         expect(bundle.webview.executed, isEmpty);
 
         bundle.webview.enqueueResult('myQuery()', 42);

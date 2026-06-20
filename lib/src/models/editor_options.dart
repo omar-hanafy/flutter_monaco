@@ -172,17 +172,20 @@ sealed class EditorOptions with _$EditorOptions {
     final rawThemeId = json.tryGetString('themeId');
     final legacyCustomThemeId =
         rawThemeId == null && !builtInIds.contains(rawBuiltInTheme)
-            ? rawBuiltInTheme
-            : null;
+        ? rawBuiltInTheme
+        : null;
 
     return EditorOptions(
       language: MonacoLanguage.fromId(
-          json.getString('language', defaultValue: 'markdown')),
+        json.getString('language', defaultValue: 'markdown'),
+      ),
       theme: MonacoTheme.fromId(rawBuiltInTheme, orElse: MonacoTheme.vsDark),
       themeId: rawThemeId ?? legacyCustomThemeId,
       fontSize: json.getDouble('fontSize', defaultValue: 14),
-      fontFamily: json.getString('fontFamily',
-          defaultValue: 'Consolas, "Courier New", monospace'),
+      fontFamily: json.getString(
+        'fontFamily',
+        defaultValue: 'Consolas, "Courier New", monospace',
+      ),
       lineHeight: json.getDouble('lineHeight', defaultValue: 1.4),
       wordWrap: json.getBool('wordWrap', defaultValue: true),
       minimap: json.getBool('minimap', defaultValue: false),
@@ -193,21 +196,30 @@ sealed class EditorOptions with _$EditorOptions {
       readOnly: json.getBool('readOnly', defaultValue: false),
       automaticLayout: json.getBool('automaticLayout', defaultValue: true),
       padding: json.tryGetMap<String, int>('padding'),
-      scrollBeyondLastLine:
-          json.getBool('scrollBeyondLastLine', defaultValue: true),
+      scrollBeyondLastLine: json.getBool(
+        'scrollBeyondLastLine',
+        defaultValue: true,
+      ),
       smoothScrolling: json.getBool('smoothScrolling', defaultValue: false),
       cursorBlinking: CursorBlinking.fromId(
-          json.getString('cursorBlinking', defaultValue: 'blink')),
+        json.getString('cursorBlinking', defaultValue: 'blink'),
+      ),
       cursorStyle: CursorStyle.fromId(
-          json.getString('cursorStyle', defaultValue: 'line')),
+        json.getString('cursorStyle', defaultValue: 'line'),
+      ),
       renderWhitespace: RenderWhitespace.fromId(
-          json.getString('renderWhitespace', defaultValue: 'selection')),
-      bracketPairColorization:
-          json.getBool('bracketPairColorization', defaultValue: true),
-      autoClosingBrackets: AutoClosingBehavior.fromId(json
-          .getString('autoClosingBrackets', defaultValue: 'languageDefined')),
+        json.getString('renderWhitespace', defaultValue: 'selection'),
+      ),
+      bracketPairColorization: json.getBool(
+        'bracketPairColorization',
+        defaultValue: true,
+      ),
+      autoClosingBrackets: AutoClosingBehavior.fromId(
+        json.getString('autoClosingBrackets', defaultValue: 'languageDefined'),
+      ),
       autoClosingQuotes: AutoClosingBehavior.fromId(
-          json.getString('autoClosingQuotes', defaultValue: 'languageDefined')),
+        json.getString('autoClosingQuotes', defaultValue: 'languageDefined'),
+      ),
       formatOnPaste: json.getBool('formatOnPaste', defaultValue: false),
       formatOnType: json.getBool('formatOnType', defaultValue: false),
       quickSuggestions: json.getBool('quickSuggestions', defaultValue: true),
@@ -217,16 +229,26 @@ sealed class EditorOptions with _$EditorOptions {
       contextMenu: json.getBool('contextMenu', defaultValue: true),
       mouseWheelZoom: json.getBool('mouseWheelZoom', defaultValue: false),
       roundedSelection: json.getBool('roundedSelection', defaultValue: true),
-      selectionHighlight:
-          json.getBool('selectionHighlight', defaultValue: true),
-      overviewRulerBorder:
-          json.getBool('overviewRulerBorder', defaultValue: true),
-      renderControlCharacters:
-          json.getBool('renderControlCharacters', defaultValue: false),
-      disableLayerHinting:
-          json.getBool('disableLayerHinting', defaultValue: false),
-      disableMonospaceOptimizations:
-          json.getBool('disableMonospaceOptimizations', defaultValue: false),
+      selectionHighlight: json.getBool(
+        'selectionHighlight',
+        defaultValue: true,
+      ),
+      overviewRulerBorder: json.getBool(
+        'overviewRulerBorder',
+        defaultValue: true,
+      ),
+      renderControlCharacters: json.getBool(
+        'renderControlCharacters',
+        defaultValue: false,
+      ),
+      disableLayerHinting: json.getBool(
+        'disableLayerHinting',
+        defaultValue: false,
+      ),
+      disableMonospaceOptimizations: json.getBool(
+        'disableMonospaceOptimizations',
+        defaultValue: false,
+      ),
     );
   }
 
@@ -235,13 +257,13 @@ sealed class EditorOptions with _$EditorOptions {
     final int? lineHeightPx = lineHeight <= 0
         ? null
         : (lineHeight < 8
-            ? (fontSize * lineHeight).round()
-            : lineHeight.round());
+              ? (fontSize * lineHeight).round()
+              : lineHeight.round());
 
     return {
       'fontSize': fontSize,
       'fontFamily': fontFamily,
-      if (lineHeightPx != null) 'lineHeight': lineHeightPx,
+      'lineHeight': ?lineHeightPx,
       'wordWrap': wordWrap ? 'on' : 'off',
       'minimap': {'enabled': minimap},
       'lineNumbers': lineNumbers ? 'on' : 'off',

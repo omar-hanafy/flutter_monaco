@@ -41,13 +41,14 @@ void main() {
   }
 
   Map<String, Widget> sections(ShowcaseController controller) => {
-        'hero': HeroSection(onTryPlayground: () {}),
-        'features': FeaturesSection(controller: controller),
-        'getStarted': const GetStartedSection(),
-      };
+    'hero': HeroSection(onTryPlayground: () {}),
+    'features': FeaturesSection(controller: controller),
+    'getStarted': const GetStartedSection(),
+  };
 
-  testWidgets('sections render without overflow at tablet and desktop',
-      (tester) async {
+  testWidgets('sections render without overflow at tablet and desktop', (
+    tester,
+  ) async {
     final controller = ShowcaseController();
     addTearDown(controller.dispose);
 
@@ -56,7 +57,8 @@ void main() {
       for (final entry in sections(controller).entries) {
         final errors = await errorsFor(tester, entry.value, size);
         all.addAll(
-            errors.map((e) => '${entry.key} @${size.width.toInt()}: $e'));
+          errors.map((e) => '${entry.key} @${size.width.toInt()}: $e'),
+        );
       }
     }
     expect(all, isEmpty, reason: all.join('\n---\n'));
@@ -73,7 +75,10 @@ void main() {
     }
 
     await errorsFor(
-        tester, FeaturesSection(controller: controller), const Size(390, 3600));
+      tester,
+      FeaturesSection(controller: controller),
+      const Size(390, 3600),
+    );
     expect(find.text('Everything the editor can do'), findsOneWidget);
   });
 }

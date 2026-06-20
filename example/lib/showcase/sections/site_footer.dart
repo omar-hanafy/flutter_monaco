@@ -17,20 +17,29 @@ class SiteFooter extends StatelessWidget {
 
     final brand = _Brand();
     final columns = [
-      _LinkColumn(title: 'Package', links: const [
-        ('pub.dev', Links.pubDev),
-        ('API docs', Links.apiDocs),
-        ('Changelog', Links.changelog),
-      ]),
-      _LinkColumn(title: 'Source', links: const [
-        ('GitHub', Links.github),
-        ('Issues', Links.issues),
-        ('License', Links.license),
-      ]),
-      _LinkColumn(title: 'More', links: const [
-        ('Other projects', Links.portfolio),
-        ('Buy me a coffee', Links.buyMeACoffee),
-      ]),
+      _LinkColumn(
+        title: 'Package',
+        links: const [
+          ('pub.dev', Links.pubDev),
+          ('API docs', Links.apiDocs),
+          ('Changelog', Links.changelog),
+        ],
+      ),
+      _LinkColumn(
+        title: 'Source',
+        links: const [
+          ('GitHub', Links.github),
+          ('Issues', Links.issues),
+          ('License', Links.license),
+        ],
+      ),
+      _LinkColumn(
+        title: 'More',
+        links: const [
+          ('Other projects', Links.portfolio),
+          ('Buy me a coffee', Links.buyMeACoffee),
+        ],
+      ),
     ];
 
     return SectionContainer(
@@ -61,10 +70,14 @@ class SiteFooter extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             runSpacing: Insets.sm,
             children: [
-              Text('Built with flutter_monaco by Omar Hanafy',
-                  style: ShowcaseText.small.copyWith(color: c.textFaint)),
-              Text('v$kPackageVersion - MIT License',
-                  style: ShowcaseText.monoLabel.copyWith(color: c.textFaint)),
+              Text(
+                'Built with flutter_monaco by Omar Hanafy',
+                style: ShowcaseText.small.copyWith(color: c.textFaint),
+              ),
+              Text(
+                'v$kPackageVersion - MIT License',
+                style: ShowcaseText.monoLabel.copyWith(color: c.textFaint),
+              ),
             ],
           ),
         ],
@@ -93,15 +106,19 @@ class _Brand extends StatelessWidget {
               child: const Icon(Icons.code, color: Colors.white, size: 17),
             ),
             const SizedBox(width: Insets.sm),
-            Text('flutter_monaco',
-                style: ShowcaseText.h3.copyWith(color: c.textPrimary)),
+            Text(
+              'flutter_monaco',
+              style: ShowcaseText.h3.copyWith(color: c.textPrimary),
+            ),
           ],
         ),
         const SizedBox(height: Insets.md),
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 320),
-          child: Text("VS Code's editor, inside your Flutter app.",
-              style: ShowcaseText.body.copyWith(color: c.textSecondary)),
+          child: Text(
+            "VS Code's editor, inside your Flutter app.",
+            style: ShowcaseText.body.copyWith(color: c.textSecondary),
+          ),
         ),
         const SizedBox(height: Insets.md),
         MouseRegion(
@@ -134,8 +151,10 @@ class _LinkColumn extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title.toUpperCase(),
-            style: ShowcaseText.label.copyWith(color: c.textFaint)),
+        Text(
+          title.toUpperCase(),
+          style: ShowcaseText.label.copyWith(color: c.textFaint),
+        ),
         const SizedBox(height: Insets.md),
         for (final (label, url) in links)
           Padding(
@@ -144,8 +163,10 @@ class _LinkColumn extends StatelessWidget {
               cursor: SystemMouseCursors.click,
               child: GestureDetector(
                 onTap: () => openUrl(url),
-                child: Text(label,
-                    style: ShowcaseText.body.copyWith(color: c.textSecondary)),
+                child: Text(
+                  label,
+                  style: ShowcaseText.body.copyWith(color: c.textSecondary),
+                ),
               ),
             ),
           ),

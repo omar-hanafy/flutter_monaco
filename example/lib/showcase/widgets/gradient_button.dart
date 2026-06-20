@@ -40,8 +40,8 @@ class _GradientButtonState extends State<GradientButton> {
     final Color fg = filled
         ? Colors.white
         : outline
-            ? c.textPrimary
-            : c.textSecondary;
+        ? c.textPrimary
+        : c.textSecondary;
 
     final content = Row(
       mainAxisSize: MainAxisSize.min,
@@ -64,15 +64,17 @@ class _GradientButtonState extends State<GradientButton> {
           duration: const Duration(milliseconds: 160),
           curve: Curves.easeOut,
           transform: Matrix4.translationValues(0, _hovered ? -2 : 0, 0),
-          padding:
-              const EdgeInsets.symmetric(horizontal: Insets.lg, vertical: 14),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Insets.lg,
+            vertical: 14,
+          ),
           decoration: BoxDecoration(
             gradient: filled ? accentGradient : null,
             color: filled
                 ? null
                 : outline
-                    ? Colors.transparent
-                    : (_hovered ? c.surface : Colors.transparent),
+                ? Colors.transparent
+                : (_hovered ? c.surface : Colors.transparent),
             borderRadius: BorderRadius.circular(Radii.md),
             border: outline ? Border.all(color: c.border) : null,
             boxShadow: filled && _hovered

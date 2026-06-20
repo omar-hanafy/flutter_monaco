@@ -69,25 +69,32 @@ class _FeatureCardState extends State<FeatureCard> {
               child: Icon(widget.icon, color: Colors.white, size: 22),
             ),
             const SizedBox(height: Insets.md),
-            Text(widget.title,
-                style: ShowcaseText.h3.copyWith(color: c.textPrimary)),
+            Text(
+              widget.title,
+              style: ShowcaseText.h3.copyWith(color: c.textPrimary),
+            ),
             const SizedBox(height: Insets.sm),
-            Text(widget.body,
-                style: ShowcaseText.body.copyWith(color: c.textSecondary)),
+            Text(
+              widget.body,
+              style: ShowcaseText.body.copyWith(color: c.textSecondary),
+            ),
             if (widget.snippet != null) ...[
               const SizedBox(height: Insets.md),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: Insets.md, vertical: Insets.sm),
+                  horizontal: Insets.md,
+                  vertical: Insets.sm,
+                ),
                 decoration: BoxDecoration(
                   color: c.page,
                   borderRadius: BorderRadius.circular(Radii.sm),
                   border: Border.all(color: c.border),
                 ),
-                child: Text(widget.snippet!,
-                    style:
-                        ShowcaseText.monoSm.copyWith(color: c.textSecondary)),
+                child: Text(
+                  widget.snippet!,
+                  style: ShowcaseText.monoSm.copyWith(color: c.textSecondary),
+                ),
               ),
             ],
             if (widget.onTry != null) ...[
@@ -115,12 +122,18 @@ class _TryLink extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Try it',
-                style: ShowcaseText.small
-                    .copyWith(color: ShowcaseColors.accentBlue)),
+            Text(
+              'Try it',
+              style: ShowcaseText.small.copyWith(
+                color: ShowcaseColors.accentBlue,
+              ),
+            ),
             const SizedBox(width: 4),
-            const Icon(Icons.arrow_forward,
-                size: 15, color: ShowcaseColors.accentBlue),
+            const Icon(
+              Icons.arrow_forward,
+              size: 15,
+              color: ShowcaseColors.accentBlue,
+            ),
           ],
         ),
       ),

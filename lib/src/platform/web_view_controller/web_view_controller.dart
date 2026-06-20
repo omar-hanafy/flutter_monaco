@@ -6,7 +6,7 @@
 /// - **`dart.library.js_interop`** (Web): Uses [web.dart] with iframe-based
 ///   Monaco hosting and `postMessage` communication.
 /// - **`dart.library.io`** (Native): Uses [native.dart] which further
-///   dispatches to `webview_flutter` or `webview_windows` based on OS.
+///   dispatches to `webview_flutter` or `webview_flutter_windows` based on OS.
 /// - **Fallback** (Unsupported): Uses [stub.dart] which throws
 ///   [UnsupportedError] for all operations.
 ///

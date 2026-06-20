@@ -67,8 +67,9 @@ class MonacoBridge extends ChangeNotifier {
   /// Use this to display status bar information like line count, selection
   /// length, and cursor position. Starts with [LiveStats.defaults] until
   /// Monaco sends actual values.
-  final ValueNotifier<LiveStats> liveStats =
-      ValueNotifier(LiveStats.defaults());
+  final ValueNotifier<LiveStats> liveStats = ValueNotifier(
+    LiveStats.defaults(),
+  );
 
   final List<void Function(Map<String, dynamic>)> _rawListeners = [];
   bool _disposed = false;
@@ -240,8 +241,9 @@ class MonacoBridge extends ChangeNotifier {
     if (_disposed) return;
 
     // Create a copy to avoid concurrent modification
-    final listeners =
-        List<void Function(Map<String, dynamic>)>.of(_rawListeners);
+    final listeners = List<void Function(Map<String, dynamic>)>.of(
+      _rawListeners,
+    );
     for (final listener in listeners) {
       try {
         listener(json);

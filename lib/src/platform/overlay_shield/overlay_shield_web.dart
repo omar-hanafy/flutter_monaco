@@ -26,13 +26,10 @@ class MonacoOverlayDomShield {
 
   /// Create a shield attached to the Flutter view with the given [flutterViewId].
   ///
-  /// Set [debug] to render the shield as a translucent green rectangle while
+  /// Set [_debug] to render the shield as a translucent green rectangle while
   /// developing.
-  MonacoOverlayDomShield({
-    required int flutterViewId,
-    required bool debug,
-  })  : _debug = debug,
-        _lockId = 'flutter-monaco-overlay-${_nextLockId()}' {
+  MonacoOverlayDomShield({required int flutterViewId, required this._debug})
+    : _lockId = 'flutter-monaco-overlay-${_nextLockId()}' {
     _host = ui_web.views.getHostElement(flutterViewId) as web.Element?;
     _createElement();
   }
@@ -128,8 +125,9 @@ class MonacoOverlayDomShield {
     element.style.padding = '0';
     element.style.border = '0';
     element.style.pointerEvents = 'none';
-    element.style.backgroundColor =
-        _debug ? 'rgba(0, 255, 0, 0.18)' : 'transparent';
+    element.style.backgroundColor = _debug
+        ? 'rgba(0, 255, 0, 0.18)'
+        : 'transparent';
     element.style.outline = _debug ? '1px solid rgba(0, 128, 0, 0.7)' : 'none';
 
     // Max z-index so the shield beats platform-view wrappers in DOM stacking.

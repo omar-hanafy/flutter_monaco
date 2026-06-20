@@ -26,10 +26,11 @@ class SectionContainer extends StatelessWidget {
     final horizontal = Breakpoints.isMobile(width)
         ? Insets.lg
         : Breakpoints.isTablet(width)
-            ? Insets.xl
-            : Insets.xxl;
-    final vertical =
-        Breakpoints.isMobile(width) ? verticalPadding * 0.55 : verticalPadding;
+        ? Insets.xl
+        : Insets.xxl;
+    final vertical = Breakpoints.isMobile(width)
+        ? verticalPadding * 0.55
+        : verticalPadding;
 
     return Container(
       width: double.infinity,

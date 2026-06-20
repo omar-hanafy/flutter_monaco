@@ -14,7 +14,9 @@ void main() {
         AutoClosingBehavior.languageDefined,
       );
       expect(
-          DiagnosticsSeverity.fromId('unknown'), DiagnosticsSeverity.warning);
+        DiagnosticsSeverity.fromId('unknown'),
+        DiagnosticsSeverity.warning,
+      );
     });
 
     test('ids match expected values', () {

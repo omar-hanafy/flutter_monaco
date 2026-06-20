@@ -58,10 +58,6 @@ Check the [live demo here](https://omar-hanafy.github.io/flutter-monaco/) to try
   </tr>
 </table>
 
-## Known Issues
-
-- **Windows window focus flicker.** When clicking inside the embedded WebView (Monaco) on Windows, the host Flutter window may momentarily lose activation, which disables global keyboard shortcuts until the next click. This is a `flutter_webview_windows`/WebView2 quirk tracked upstream in [jnschulze/flutter-webview-windows#230](https://github.com/jnschulze/flutter-webview-windows/issues/230). We are monitoring that issue and will adopt the upstream fix as soon as it lands. Other platforms are unaffected.
-
 ## Installation
 
 Add `flutter_monaco` to your `pubspec.yaml`:
@@ -824,7 +820,7 @@ The plugin uses a versioned cache system:
 - **Android**: WebView via `webview_flutter`
 - **iOS**: WKWebView with automatic blob worker shim for file:// protocol
 - **macOS**: WKWebView via `webview_flutter` with blob worker shim
-- **Windows**: WebView2 via `webview_windows` (requires WebView2 Runtime)
+- **Windows**: WebView2 via `webview_flutter_windows` (requires WebView2 Runtime)
 - **Web**: Native iframe-based integration with Monaco assets served from Flutter's asset bundle
 
 **Not Supported:**
@@ -839,6 +835,8 @@ The plugin uses a versioned cache system:
 - **Workers**: Web Workers run in separate threads for syntax highlighting
 
 ## Requirements
+
+- Flutter 3.44 / Dart 3.12 or later
 
 ### macOS
 

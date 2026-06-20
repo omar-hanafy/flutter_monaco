@@ -10,8 +10,11 @@ void main() {
     test('every curated language has a non-empty sample', () {
       for (final language in kPlaygroundLanguages) {
         final sample = sampleFor(language);
-        expect(sample.trim(), isNotEmpty,
-            reason: 'missing sample for ${language.id}');
+        expect(
+          sample.trim(),
+          isNotEmpty,
+          reason: 'missing sample for ${language.id}',
+        );
       }
     });
 

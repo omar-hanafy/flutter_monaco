@@ -132,10 +132,7 @@ class _MonacoExamplePageState extends State<MonacoExamplePage> {
   Future<void> _registerCompletionSources(MonacoController controller) async {
     await controller.registerStaticCompletions(
       id: 'keywords',
-      languages: [
-        MonacoLanguage.dart.id,
-        MonacoLanguage.javascript.id,
-      ],
+      languages: [MonacoLanguage.dart.id, MonacoLanguage.javascript.id],
       triggerCharacters: const [' ', '.'],
       items: _keywordCompletions,
     );
@@ -198,7 +195,9 @@ class _MonacoExamplePageState extends State<MonacoExamplePage> {
             itemBuilder: (context) => [
               const PopupMenuItem(value: 'dart', child: Text('Dart')),
               const PopupMenuItem(
-                  value: 'javascript', child: Text('JavaScript')),
+                value: 'javascript',
+                child: Text('JavaScript'),
+              ),
               const PopupMenuItem(value: 'python', child: Text('Python')),
               const PopupMenuItem(value: 'markdown', child: Text('Markdown')),
               const PopupMenuItem(value: 'json', child: Text('JSON')),
@@ -218,7 +217,9 @@ class _MonacoExamplePageState extends State<MonacoExamplePage> {
               const PopupMenuItem(value: 'vs-dark', child: Text('Dark')),
               const PopupMenuItem(value: 'vs', child: Text('Light')),
               const PopupMenuItem(
-                  value: 'hc-black', child: Text('High Contrast')),
+                value: 'hc-black',
+                child: Text('High Contrast'),
+              ),
             ],
           ),
           // Format button
@@ -268,15 +269,13 @@ class _MonacoExamplePageState extends State<MonacoExamplePage> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _controller != null
-                    ? MonacoEditor(
-                        controller: _controller!,
-                        onReady: (controller) {
-                          debugPrint('Monaco Editor is ready!');
-                        },
-                      )
-                    : const Center(
-                        child: Text('Failed to initialize editor'),
-                      ),
+                ? MonacoEditor(
+                    controller: _controller!,
+                    onReady: (controller) {
+                      debugPrint('Monaco Editor is ready!');
+                    },
+                  )
+                : const Center(child: Text('Failed to initialize editor')),
           ),
         ],
       ),
@@ -343,8 +342,12 @@ class _MonacoExamplePageState extends State<MonacoExamplePage> {
                   builder: (context) => AlertDialog(
                     title: const Text('Editor Content'),
                     content: SingleChildScrollView(
-                      child: Text(content.substring(
-                          0, content.length > 500 ? 500 : content.length)),
+                      child: Text(
+                        content.substring(
+                          0,
+                          content.length > 500 ? 500 : content.length,
+                        ),
+                      ),
                     ),
                     actions: [
                       TextButton(

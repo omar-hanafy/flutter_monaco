@@ -136,17 +136,13 @@ class MonacoWebInteractionCoordinator {
 
   Rect _rectForElement(web.Element element) {
     final rect = element.getBoundingClientRect();
-    return Rect.fromLTWH(
-      rect.left,
-      rect.top,
-      rect.width,
-      rect.height,
-    );
+    return Rect.fromLTWH(rect.left, rect.top, rect.width, rect.height);
   }
 
   void _apply(_EditorEntry entry) {
-    entry.iframe.style.pointerEvents =
-        entry.baseEnabled && entry.locks.isEmpty ? 'auto' : 'none';
+    entry.iframe.style.pointerEvents = entry.baseEnabled && entry.locks.isEmpty
+        ? 'auto'
+        : 'none';
   }
 }
 

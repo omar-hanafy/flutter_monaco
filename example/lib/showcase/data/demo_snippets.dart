@@ -10,7 +10,10 @@ final MonacoThemeDefinition kMidnightTheme = MonacoThemeDefinition(
   base: MonacoTheme.vsDark,
   rules: const [
     MonacoThemeRule(
-        token: 'comment', foreground: '6E7681', fontStyle: 'italic'),
+      token: 'comment',
+      foreground: '6E7681',
+      fontStyle: 'italic',
+    ),
     MonacoThemeRule(token: 'keyword', foreground: '6E5BFF'),
     MonacoThemeRule(token: 'string', foreground: '00D8FF'),
     MonacoThemeRule(token: 'number', foreground: '7EE787'),

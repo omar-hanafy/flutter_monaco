@@ -11,8 +11,8 @@ import 'package:flutter_monaco/src/platform/platform_webview.dart';
 /// A callback function that provides completion items for a given
 /// [CompletionRequest]. It should return a [Future] that resolves to a
 /// [CompletionList].
-typedef CompletionProvider = Future<CompletionList> Function(
-    CompletionRequest request);
+typedef CompletionProvider =
+    Future<CompletionList> Function(CompletionRequest request);
 
 /// Manages the lifecycle and interaction with a Monaco Editor instance.
 ///
@@ -183,7 +183,7 @@ class MonacoController {
       })();
 
       if (kIsWeb) {
-        unawaited(readyFuture.catchError((Object _, StackTrace __) {}));
+        unawaited(readyFuture.catchError((Object _, StackTrace _) {}));
       } else {
         await readyFuture;
       }
@@ -274,10 +274,9 @@ class MonacoController {
   ///
   /// See [JsonDiagnosticsOptions] for available settings and defaults.
   Future<void> setJsonDiagnostics(JsonDiagnosticsOptions diagnostics) async {
-    await _invokeMonacoCommand(
-      'setJsonDiagnosticsOptions',
-      [diagnostics.toJson()],
-    );
+    await _invokeMonacoCommand('setJsonDiagnosticsOptions', [
+      diagnostics.toJson(),
+    ]);
   }
 
   /// Changes the editor's color theme.
@@ -339,10 +338,7 @@ class MonacoController {
   /// an [ArgumentError] when [id] is empty.
   ///
   /// [data] must follow Monaco's `IStandaloneThemeData` shape.
-  Future<void> defineThemeFromJson(
-    String id,
-    Map<String, Object?> data,
-  ) async {
+  Future<void> defineThemeFromJson(String id, Map<String, Object?> data) async {
     if (id.trim().isEmpty) {
       throw ArgumentError.value(
         id,
@@ -469,7 +465,8 @@ class MonacoController {
       throw ArgumentError.value(id, 'id', 'Completion source already exists');
     }
 
-    final providerId = id ??
+    final providerId =
+        id ??
         'flutter_${DateTime.now().millisecondsSinceEpoch}_${_completionSources.length}';
     final entry = _RegisteredCompletion(
       id: providerId,
@@ -612,7 +609,8 @@ class MonacoController {
     var nativeFocusRequested = false;
 
     // On mobile, multiple async focus() calls interrupt the IME lifecycle.
-    final isMobileNative = !kIsWeb &&
+    final isMobileNative =
+        !kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.android ||
             defaultTargetPlatform == TargetPlatform.iOS);
     final effectiveAttempts = isMobileNative ? 1 : attempts;
@@ -748,8 +746,9 @@ class MonacoController {
             'selection',
             alternativeKeys: ['sel', 'range'],
           );
-          final selection =
-              selectionMap != null ? Range.fromJson(selectionMap) : null;
+          final selection = selectionMap != null
+              ? Range.fromJson(selectionMap)
+              : null;
           _onSelectionChanged.add(selection);
           break;
         case 'focus':
@@ -815,7 +814,8 @@ class MonacoController {
 
       // Windows WebView2 might auto-decode JSON, handle both cases
       // Only decode if jsonAware is true (for API calls that return JSON)
-      final result = (jsonAware &&
+      final result =
+          (jsonAware &&
               raw is String &&
               (raw.startsWith('{') || raw.startsWith('[')))
           ? (raw.tryDecode() ?? raw)
@@ -1132,10 +1132,9 @@ class MonacoController {
   /// This is the most efficient way to make multiple changes at once.
   Future<void> applyEdits(List<EditOperation> edits) async {
     if (edits.isEmpty) return;
-    await _invokeMonacoCommand(
-      'applyEdits',
-      [edits.map((e) => e.toJson()).toList()],
-    );
+    await _invokeMonacoCommand('applyEdits', [
+      edits.map((e) => e.toJson()).toList(),
+    ]);
   }
 
   /// Inserts [text] at the specified [position].
@@ -1171,10 +1170,10 @@ class MonacoController {
   Future<List<String>> setDecorations(
     List<DecorationOptions> decorations,
   ) async {
-    final raw = await _invokeMonacoCommand(
-      'deltaDecorations',
-      [_decorationIds, decorations.map((d) => d.toJson()).toList()],
-    );
+    final raw = await _invokeMonacoCommand('deltaDecorations', [
+      _decorationIds,
+      decorations.map((d) => d.toJson()).toList(),
+    ]);
     if (raw is! List) {
       throw MonacoJavaScriptException(
         operation: 'deltaDecorations',
@@ -1183,8 +1182,10 @@ class MonacoController {
       );
     }
 
-    return _decorationIds =
-        raw.map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
+    return _decorationIds = raw
+        .map((e) => e.toString())
+        .where((s) => s.isNotEmpty)
+        .toList();
   }
 
   /// Adds inline style decorations (e.g., text color, background) to specific [ranges].
@@ -1239,10 +1240,10 @@ class MonacoController {
     List<MarkerData> markers, {
     String owner = 'flutter',
   }) async {
-    await _invokeMonacoCommand(
-      'setModelMarkers',
-      [owner, markers.map((m) => m.toJson()).toList()],
-    );
+    await _invokeMonacoCommand('setModelMarkers', [
+      owner,
+      markers.map((m) => m.toJson()).toList(),
+    ]);
   }
 
   /// Convenience method to set error markers.
@@ -1341,7 +1342,8 @@ class MonacoController {
     Uri? uri,
     Uri? defaultUri,
   }) async {
-    final script = '''
+    final script =
+        '''
       flutterMonaco.createModel(
         ${jsonEncode(value)}, 
         ${jsonEncode(language)}, 
@@ -1429,10 +1431,10 @@ class MonacoController {
 
   /// Set cursor position
   Future<void> setCursorPosition(Position position) async {
-    await _invokeMonacoCommand(
-      'setCursorPosition',
-      [position.line, position.column],
-    );
+    await _invokeMonacoCommand('setCursorPosition', [
+      position.line,
+      position.column,
+    ]);
   }
 
   /// Set cursor position from zero-based coordinates

@@ -5,8 +5,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0] - 2026-06-20
 
+### Changed
+- Raised the minimum supported SDK to Dart 3.12 and Flutter 3.44, and moved Windows support to the maintained `webview_flutter_windows` package.
+
 ### Fixed
-- Mobile Safari on Flutter Web: touch scrolling inside the editor no longer pans the host page (#11). The generated editor document and the host iframe statically declare `touch-action: none` and `overscroll-behavior: none`, so touches Monaco does not claim can no longer chain out of the frame.
+- Windows editor focus now recovers after native-focus loss, avoids replaying focus on right-click or repeated clicks, and no longer steals the keyboard from focused Flutter text inputs.
+- Mobile Safari on Flutter Web: touch scrolling inside the editor no longer pans the host page (#11). The generated editor document and the host iframe statically declare `touch-action: none` and `overscroll-behavior: none`, so touches that Monaco does not claim can no longer chain out of the frame.
 - Mobile web soft keyboard (#11): while the keyboard constrains the browser's visual viewport, the editor now pins itself to the visible part of its frame and keeps the caret revealed.
 - iOS/macOS worker bootstrap: the WKWebView worker shim now emits escaped newline sequences inside JavaScript string literals, so Monaco language workers load instead of falling back to the main thread.
 

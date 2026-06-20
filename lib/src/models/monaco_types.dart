@@ -47,10 +47,7 @@ sealed class Position with _$Position {
   int get columnZeroBased => column - 1;
 
   /// Converts the position to a JSON-compatible map.
-  Map<String, dynamic> toJson() => {
-        'lineNumber': line,
-        'column': column,
-      };
+  Map<String, dynamic> toJson() => {'lineNumber': line, 'column': column};
 }
 
 /// Represents a range in the editor, defined by a start and end [Position].
@@ -137,11 +134,11 @@ sealed class Range with _$Range {
 
   /// Converts the range to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
-        'startLineNumber': startLine,
-        'startColumn': startColumn,
-        'endLineNumber': endLine,
-        'endColumn': endColumn,
-      };
+    'startLineNumber': startLine,
+    'startColumn': startColumn,
+    'endLineNumber': endLine,
+    'endColumn': endColumn,
+  };
 
   /// The starting position of the range.
   Position get startPosition => Position(line: startLine, column: startColumn);
@@ -298,8 +295,9 @@ sealed class MarkerData with _$MarkerData {
     if (source != null) json['source'] = source;
     if (tags != null && tags!.isNotEmpty) json['tags'] = tags;
     if (relatedInformation != null && relatedInformation!.isNotEmpty) {
-      json['relatedInformation'] =
-          relatedInformation!.map((info) => info.toJson()).toList();
+      json['relatedInformation'] = relatedInformation!
+          .map((info) => info.toJson())
+          .toList();
     }
 
     return json;
@@ -339,10 +337,10 @@ sealed class RelatedInformation with _$RelatedInformation {
 
   /// Converts the related information to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
-        'resource': resource.toString(),
-        ...range.toJson(),
-        'message': message,
-      };
+    'resource': resource.toString(),
+    ...range.toJson(),
+    'message': message,
+  };
 }
 
 /// Defines options for applying decorations to text in the editor.
@@ -368,7 +366,7 @@ sealed class DecorationOptions with _$DecorationOptions {
       range: range,
       options: {
         'inlineClassName': className,
-        if (hoverMessage != null) 'hoverMessage': hoverMessage,
+        'hoverMessage': ?hoverMessage,
         ...?additionalOptions,
       },
     );
@@ -385,7 +383,7 @@ sealed class DecorationOptions with _$DecorationOptions {
       range: range,
       options: {
         'glyphMarginClassName': className,
-        if (hoverMessage != null) 'glyphMarginHoverMessage': hoverMessage,
+        'glyphMarginHoverMessage': ?hoverMessage,
         ...?additionalOptions,
       },
     );
@@ -414,18 +412,15 @@ sealed class DecorationOptions with _$DecorationOptions {
   factory DecorationOptions.fromJson(Map<String, dynamic> json) {
     return DecorationOptions(
       range: json.parse('range', Range.fromJson),
-      options: json.getMap<String, dynamic>(
-        'options',
-        defaultValue: {},
-      ),
+      options: json.getMap<String, dynamic>('options', defaultValue: {}),
     );
   }
 
   /// Converts the decoration options to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
-        'range': range.toJson(),
-        'options': options,
-      };
+    'range': range.toJson(),
+    'options': options,
+  };
 }
 
 /// Represents a single text edit operation to be applied to the editor.
@@ -459,10 +454,7 @@ sealed class EditOperation with _$EditOperation {
   }
 
   /// A convenience factory for creating a deletion operation over a [range].
-  factory EditOperation.delete({
-    required Range range,
-    bool? forceMoveMarkers,
-  }) {
+  factory EditOperation.delete({required Range range, bool? forceMoveMarkers}) {
     return EditOperation(
       range: range,
       text: '',
@@ -485,10 +477,7 @@ sealed class EditOperation with _$EditOperation {
 
   /// Converts the edit operation to a JSON-compatible map.
   Map<String, dynamic> toJson() {
-    final json = <String, dynamic>{
-      'range': range.toJson(),
-      'text': text,
-    };
+    final json = <String, dynamic>{'range': range.toJson(), 'text': text};
     if (forceMoveMarkers != null) {
       json['forceMoveMarkers'] = forceMoveMarkers;
     }
@@ -536,38 +525,37 @@ sealed class CompletionItem with _$CompletionItem {
 
   /// Creates a [CompletionItem] from a JSON map.
   factory CompletionItem.fromJson(Map<String, dynamic> json) => CompletionItem(
-        label: json.getString('label', defaultValue: ''),
-        insertText: json.tryGetString('insertText'),
-        kind: CompletionItemKind.maybeFromJsonValue(
-          json.tryGetString('kind'),
-        ),
-        detail: json.tryGetString('detail'),
-        documentation: json.tryGetString('documentation'),
-        sortText: json.tryGetString('sortText'),
-        filterText: json.tryGetString('filterText'),
-        range: json.tryParse('range', Range.fromJson),
-        commitCharacters: json.tryGetList<String>('commitCharacters'),
-        insertTextRules: json
-            .tryGetList<String>('insertTextRules')
-            ?.map(InsertTextRule.fromJsonValue)
-            .toSet(),
-      );
+    label: json.getString('label', defaultValue: ''),
+    insertText: json.tryGetString('insertText'),
+    kind: CompletionItemKind.maybeFromJsonValue(json.tryGetString('kind')),
+    detail: json.tryGetString('detail'),
+    documentation: json.tryGetString('documentation'),
+    sortText: json.tryGetString('sortText'),
+    filterText: json.tryGetString('filterText'),
+    range: json.tryParse('range', Range.fromJson),
+    commitCharacters: json.tryGetList<String>('commitCharacters'),
+    insertTextRules: json
+        .tryGetList<String>('insertTextRules')
+        ?.map(InsertTextRule.fromJsonValue)
+        .toSet(),
+  );
 
   /// Converts the completion item to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
-        'label': label,
-        if (insertText != null) 'insertText': insertText,
-        if (kind != null) 'kind': kind!.jsonValue,
-        if (detail != null) 'detail': detail,
-        if (documentation != null) 'documentation': documentation,
-        if (sortText != null) 'sortText': sortText,
-        if (filterText != null) 'filterText': filterText,
-        if (range != null) 'range': range!.toJson(),
-        if (commitCharacters != null) 'commitCharacters': commitCharacters,
-        if (insertTextRules != null && insertTextRules!.isNotEmpty)
-          'insertTextRules':
-              insertTextRules!.map((rule) => rule.jsonValue).toList(),
-      };
+    'label': label,
+    if (insertText != null) 'insertText': insertText,
+    if (kind != null) 'kind': kind!.jsonValue,
+    if (detail != null) 'detail': detail,
+    if (documentation != null) 'documentation': documentation,
+    if (sortText != null) 'sortText': sortText,
+    if (filterText != null) 'filterText': filterText,
+    if (range != null) 'range': range!.toJson(),
+    if (commitCharacters != null) 'commitCharacters': commitCharacters,
+    if (insertTextRules != null && insertTextRules!.isNotEmpty)
+      'insertTextRules': insertTextRules!
+          .map((rule) => rule.jsonValue)
+          .toList(),
+  };
 }
 
 /// A list of completion items to be returned to the editor.
@@ -586,18 +574,18 @@ sealed class CompletionList with _$CompletionList {
 
   /// Creates a [CompletionList] from a JSON map.
   factory CompletionList.fromJson(Map<String, dynamic> json) => CompletionList(
-        suggestions: json
-            .getList<Map<String, dynamic>>('suggestions', defaultValue: [])
-            .map(CompletionItem.fromJson)
-            .toList(),
-        isIncomplete: json.getBool('isIncomplete', defaultValue: false),
-      );
+    suggestions: json
+        .getList<Map<String, dynamic>>('suggestions', defaultValue: [])
+        .map(CompletionItem.fromJson)
+        .toList(),
+    isIncomplete: json.getBool('isIncomplete', defaultValue: false),
+  );
 
   /// Converts the completion list to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
-        'suggestions': suggestions.map((item) => item.toJson()).toList(),
-        'isIncomplete': isIncomplete,
-      };
+    'suggestions': suggestions.map((item) => item.toJson()).toList(),
+    'isIncomplete': isIncomplete,
+  };
 }
 
 /// Represents a request for completion items from the editor.
@@ -655,16 +643,16 @@ sealed class CompletionRequest with _$CompletionRequest {
 
   /// Converts the completion request to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
-        'providerId': providerId,
-        'requestId': requestId,
-        'language': language,
-        if (uri != null) 'uri': uri.toString(),
-        'position': position.toJson(),
-        'defaultRange': defaultRange.toJson(),
-        if (lineText != null) 'lineText': lineText,
-        if (triggerKind != null) 'triggerKind': triggerKind,
-        if (triggerCharacter != null) 'triggerCharacter': triggerCharacter,
-      };
+    'providerId': providerId,
+    'requestId': requestId,
+    'language': language,
+    if (uri != null) 'uri': uri.toString(),
+    'position': position.toJson(),
+    'defaultRange': defaultRange.toJson(),
+    if (lineText != null) 'lineText': lineText,
+    if (triggerKind != null) 'triggerKind': triggerKind,
+    if (triggerCharacter != null) 'triggerCharacter': triggerCharacter,
+  };
 }
 
 /// Defines the kind of a [CompletionItem] for icon and sorting purposes.
@@ -814,22 +802,12 @@ sealed class FindOptions with _$FindOptions {
     bool isRegex = false,
     bool wholeWord = false,
   }) {
-    return FindOptions(
-      isRegex: isRegex,
-      matchCase: true,
-      wholeWord: wholeWord,
-    );
+    return FindOptions(isRegex: isRegex, matchCase: true, wholeWord: wholeWord);
   }
 
   /// A convenience factory for creating regular expression find options.
-  factory FindOptions.regex({
-    bool matchCase = false,
-  }) {
-    return FindOptions(
-      isRegex: true,
-      matchCase: matchCase,
-      wholeWord: false,
-    );
+  factory FindOptions.regex({bool matchCase = false}) {
+    return FindOptions(isRegex: true, matchCase: matchCase, wholeWord: false);
   }
 
   const FindOptions._();
@@ -950,7 +928,7 @@ sealed class LiveStats with _$LiveStats {
           alternativeKeys: [
             'selectedChars',
             'selectionLength',
-            'selectedCharacters'
+            'selectedCharacters',
           ],
           defaultValue: 0,
         ),
@@ -973,7 +951,8 @@ sealed class LiveStats with _$LiveStats {
   }
 
   static ({int value, String label})? _extractCursorPosition(
-      Map<String, dynamic> json) {
+    Map<String, dynamic> json,
+  ) {
     final line = json.tryGetInt(
       'cursorLine',
       alternativeKeys: ['line', 'currentLine'],
@@ -997,24 +976,24 @@ sealed class LiveStats with _$LiveStats {
 
   /// Returns all statistics as a list of labeled values, suitable for UI iteration.
   List<({int value, String label})> get allStats => [
-        lineCount,
-        charCount,
-        selectedLines,
-        selectedCharacters,
-        caretCount,
-        if (cursorPosition != null) cursorPosition!,
-      ];
+    lineCount,
+    charCount,
+    selectedLines,
+    selectedCharacters,
+    caretCount,
+    ?cursorPosition,
+  ];
 
   /// Converts the live stats to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
-        'lineCount': lineCount.value,
-        'charCount': charCount.value,
-        'selLines': selectedLines.value,
-        'selChars': selectedCharacters.value,
-        'caretCount': caretCount.value,
-        if (cursorPosition != null) 'cursorPosition': cursorPosition!.label,
-        if (language != null) 'language': language,
-      };
+    'lineCount': lineCount.value,
+    'charCount': charCount.value,
+    'selLines': selectedLines.value,
+    'selChars': selectedCharacters.value,
+    'caretCount': caretCount.value,
+    if (cursorPosition != null) 'cursorPosition': cursorPosition!.label,
+    if (language != null) 'language': language,
+  };
 }
 
 /// A snapshot of the editor's complete state.
@@ -1080,15 +1059,15 @@ sealed class EditorState with _$EditorState {
 
   /// Converts the editor state to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
-        'content': content,
-        if (selection != null) 'selection': selection!.toJson(),
-        if (cursorPosition != null) 'cursorPosition': cursorPosition!.toJson(),
-        'lineCount': lineCount,
-        'hasUnsavedChanges': hasUnsavedChanges,
-        if (language != null) 'language': language,
-        if (theme != null) 'theme': theme,
-        if (stats != null) 'stats': stats!.toJson(),
-      };
+    'content': content,
+    if (selection != null) 'selection': selection!.toJson(),
+    if (cursorPosition != null) 'cursorPosition': cursorPosition!.toJson(),
+    'lineCount': lineCount,
+    'hasUnsavedChanges': hasUnsavedChanges,
+    if (language != null) 'language': language,
+    if (theme != null) 'theme': theme,
+    if (stats != null) 'stats': stats!.toJson(),
+  };
 
   /// Returns `true` if the editor content is empty.
   bool get isEmpty => content.isEmpty;
@@ -1122,9 +1101,9 @@ sealed class FindMatch with _$FindMatch {
 
   /// Converts the find match to a JSON-compatible map.
   Map<String, dynamic> toJson() => {
-        'range': range.toJson(),
-        if (match != null) 'match': match,
-      };
+    'range': range.toJson(),
+    if (match != null) 'match': match,
+  };
 }
 
 /// Configures Monaco's JSON language diagnostics and schema validation.
@@ -1213,14 +1192,16 @@ sealed class JsonDiagnosticsOptions with _$JsonDiagnosticsOptions {
       allowComments: json.tryGetBool('allowComments'),
       validate: json.tryGetBool('validate'),
       enableSchemaRequest: json.tryGetBool('enableSchemaRequest'),
-      schemaRequest:
-          json.tryGetString('schemaRequest')?.let(DiagnosticsSeverity.fromId),
+      schemaRequest: json
+          .tryGetString('schemaRequest')
+          ?.let(DiagnosticsSeverity.fromId),
       comments: json.tryGetString('comments')?.let(DiagnosticsSeverity.fromId),
       schemaValidation: json
           .tryGetString('schemaValidation')
           ?.let(DiagnosticsSeverity.fromId),
-      trailingCommas:
-          json.tryGetString('trailingCommas')?.let(DiagnosticsSeverity.fromId),
+      trailingCommas: json
+          .tryGetString('trailingCommas')
+          ?.let(DiagnosticsSeverity.fromId),
       schemas: json
           .tryGetList<Map<String, dynamic>>('schemas')
           ?.map(JsonDiagnosticsSchema.fromJson)
@@ -1233,17 +1214,16 @@ sealed class JsonDiagnosticsOptions with _$JsonDiagnosticsOptions {
   /// `null` fields are omitted so Monaco keeps its own defaults for those
   /// settings. Severity values are serialized as their string [DiagnosticsSeverity.id].
   Map<String, dynamic> toJson() => {
-        if (validate != null) 'validate': validate,
-        if (allowComments != null) 'allowComments': allowComments,
-        if (enableSchemaRequest != null)
-          'enableSchemaRequest': enableSchemaRequest,
-        if (schemas != null && schemas!.isNotEmpty)
-          'schemas': schemas!.map((schema) => schema.toJson()).toList(),
-        if (schemaRequest != null) 'schemaRequest': schemaRequest!.id,
-        if (schemaValidation != null) 'schemaValidation': schemaValidation!.id,
-        if (comments != null) 'comments': comments!.id,
-        if (trailingCommas != null) 'trailingCommas': trailingCommas!.id,
-      };
+    if (validate != null) 'validate': validate,
+    if (allowComments != null) 'allowComments': allowComments,
+    if (enableSchemaRequest != null) 'enableSchemaRequest': enableSchemaRequest,
+    if (schemas != null && schemas!.isNotEmpty)
+      'schemas': schemas!.map((schema) => schema.toJson()).toList(),
+    if (schemaRequest != null) 'schemaRequest': schemaRequest!.id,
+    if (schemaValidation != null) 'schemaValidation': schemaValidation!.id,
+    if (comments != null) 'comments': comments!.id,
+    if (trailingCommas != null) 'trailingCommas': trailingCommas!.id,
+  };
 }
 
 /// Associates a JSON Schema with a set of Monaco model-URI patterns.
@@ -1283,12 +1263,7 @@ sealed class JsonDiagnosticsSchema with _$JsonDiagnosticsSchema {
   /// Throws a `ConversionException` if neither key is present.
   factory JsonDiagnosticsSchema.fromJson(Map<String, dynamic> json) {
     return JsonDiagnosticsSchema(
-      uri: Uri.parse(
-        json.getString(
-          'uri',
-          alternativeKeys: ['schemaUri'],
-        ),
-      ),
+      uri: Uri.parse(json.getString('uri', alternativeKeys: ['schemaUri'])),
       fileMatch: json.tryGetList<String>('fileMatch'),
       schema: json.tryGetMap<String, dynamic>('schema'),
     );
@@ -1298,8 +1273,8 @@ sealed class JsonDiagnosticsSchema with _$JsonDiagnosticsSchema {
   /// which key was used during deserialization. `null` optional fields are
   /// omitted.
   Map<String, dynamic> toJson() => {
-        'uri': uri.toString(),
-        if (fileMatch != null) 'fileMatch': fileMatch,
-        if (schema != null) 'schema': schema,
-      };
+    'uri': uri.toString(),
+    if (fileMatch != null) 'fileMatch': fileMatch,
+    if (schema != null) 'schema': schema,
+  };
 }

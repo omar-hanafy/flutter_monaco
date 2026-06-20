@@ -22,10 +22,9 @@ void main() {
     testWidgets('resumed triggers ensureEditorFocus', (tester) async {
       final webview = FakePlatformWebViewController();
       final controller = await _controller(webview);
-      await tester.pumpWidget(_wrap(MonacoFocusGuard(
-        controller: controller,
-        ensureAttempts: 1,
-      )));
+      await tester.pumpWidget(
+        _wrap(MonacoFocusGuard(controller: controller, ensureAttempts: 1)),
+      );
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pump();
       expect(webview.executed.join('\n').contains('forceFocus'), true);
@@ -36,34 +35,36 @@ void main() {
       final controller = await _controller(webview);
       final observer = RouteObserver<PageRoute<dynamic>>();
 
-      await tester.pumpWidget(MaterialApp(
-        navigatorObservers: [observer],
-        home: Builder(
-          builder: (context) {
-            return Scaffold(
-              body: Column(
-                children: [
-                  MonacoFocusGuard(
-                    controller: controller,
-                    routeObserver: observer,
-                    ensureAttempts: 1,
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const Scaffold(body: Text('next')),
-                        ),
-                      );
-                    },
-                    child: const Text('push'),
-                  ),
-                ],
-              ),
-            );
-          },
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorObservers: [observer],
+          home: Builder(
+            builder: (context) {
+              return Scaffold(
+                body: Column(
+                  children: [
+                    MonacoFocusGuard(
+                      controller: controller,
+                      routeObserver: observer,
+                      ensureAttempts: 1,
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const Scaffold(body: Text('next')),
+                          ),
+                        );
+                      },
+                      child: const Text('push'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
-      ));
+      );
 
       await tester.tap(find.text('push'));
       await tester.pumpAndSettle();
@@ -79,33 +80,35 @@ void main() {
       final controller = await _controller(webview);
       final observer = MonacoRouteObserver();
 
-      await tester.pumpWidget(MaterialApp(
-        navigatorObservers: [observer],
-        home: Builder(
-          builder: (context) {
-            return Scaffold(
-              body: Column(
-                children: [
-                  MonacoFocusGuard(
-                    controller: controller,
-                    modalRouteObserver: observer,
-                    autoDisableInteraction: true,
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      showDialog<void>(
-                        context: context,
-                        builder: (_) => const Text('Dialog'),
-                      );
-                    },
-                    child: const Text('Show Dialog'),
-                  ),
-                ],
-              ),
-            );
-          },
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorObservers: [observer],
+          home: Builder(
+            builder: (context) {
+              return Scaffold(
+                body: Column(
+                  children: [
+                    MonacoFocusGuard(
+                      controller: controller,
+                      modalRouteObserver: observer,
+                      autoDisableInteraction: true,
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        showDialog<void>(
+                          context: context,
+                          builder: (_) => const Text('Dialog'),
+                        );
+                      },
+                      child: const Text('Show Dialog'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
-      ));
+      );
 
       // Initial state: interaction enabled
       expect(webview.interactionEnabled, true);

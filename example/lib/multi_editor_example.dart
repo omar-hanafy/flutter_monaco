@@ -128,8 +128,9 @@ class _MultiEditorExampleState extends State<MultiEditorExample> {
             tooltip: 'Copy Dart → JS',
             onPressed: () async {
               final content = await _leftController!.getValue();
-              await _rightController!
-                  .setValue('// Copied from Dart editor:\n/*\n$content\n*/');
+              await _rightController!.setValue(
+                '// Copied from Dart editor:\n/*\n$content\n*/',
+              );
             },
           ),
           // Copy from right to left
@@ -138,8 +139,9 @@ class _MultiEditorExampleState extends State<MultiEditorExample> {
             tooltip: 'Copy JS → Dart',
             onPressed: () async {
               final content = await _rightController!.getValue();
-              await _leftController!
-                  .setValue('// Copied from JS editor:\n/*\n$content\n*/');
+              await _leftController!.setValue(
+                '// Copied from JS editor:\n/*\n$content\n*/',
+              );
             },
           ),
           // Sync themes
@@ -157,7 +159,9 @@ class _MultiEditorExampleState extends State<MultiEditorExample> {
               const PopupMenuItem(value: 'vs-dark', child: Text('All Dark')),
               const PopupMenuItem(value: 'vs', child: Text('All Light')),
               const PopupMenuItem(
-                  value: 'hc-black', child: Text('All High Contrast')),
+                value: 'hc-black',
+                child: Text('All High Contrast'),
+              ),
             ],
           ),
         ],
@@ -191,9 +195,7 @@ class _MultiEditorExampleState extends State<MultiEditorExample> {
                         _leftController!,
                         Colors.blue,
                       ),
-                      Expanded(
-                        child: _leftController!.webViewWidget,
-                      ),
+                      Expanded(child: _leftController!.webViewWidget),
                     ],
                   ),
                 ),
@@ -207,9 +209,7 @@ class _MultiEditorExampleState extends State<MultiEditorExample> {
                         _rightController!,
                         Colors.orange,
                       ),
-                      Expanded(
-                        child: _rightController!.webViewWidget,
-                      ),
+                      Expanded(child: _rightController!.webViewWidget),
                     ],
                   ),
                 ),
@@ -227,9 +227,7 @@ class _MultiEditorExampleState extends State<MultiEditorExample> {
                   _bottomController!,
                   Colors.green,
                 ),
-                Expanded(
-                  child: _bottomController!.webViewWidget,
-                ),
+                Expanded(child: _bottomController!.webViewWidget),
               ],
             ),
           ),
@@ -293,10 +291,7 @@ class _MultiEditorExampleState extends State<MultiEditorExample> {
           const SizedBox(width: 8),
           Text(
             title,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+            style: TextStyle(fontWeight: FontWeight.bold, color: color),
           ),
           const Spacer(),
           // Live stats

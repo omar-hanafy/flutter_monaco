@@ -117,7 +117,8 @@ class MonacoAssets {
         final loader = File(p.join(targetDir, 'min', 'vs', 'loader.js'));
         final sentinel = File(p.join(targetDir, '.monaco_complete'));
 
-        final ok = loader.existsSync() &&
+        final ok =
+            loader.existsSync() &&
             sentinel.existsSync() &&
             (await sentinel.readAsString()).trim() == monacoVersion;
 
@@ -458,7 +459,8 @@ class MonacoAssets {
     String platformScript = '';
 
     if (isWeb) {
-      platformScript = '''
+      platformScript =
+          '''
 <script>
   console.log('[Web Init] Setting up for iframe mode');
   self.MonacoEnvironment = {
@@ -516,7 +518,8 @@ class MonacoAssets {
 ''';
     } else if (isIosOrMacOS) {
       // iOS and macOS need blob worker shim for WKWebView + file:// protocol
-      platformScript = '''
+      platformScript =
+          '''
 <script>
   (function () {
     console.log('[Init] Setting up worker shim for WKWebView');
@@ -552,7 +555,8 @@ class MonacoAssets {
     } else {
       // Linux and other platforms: just set baseUrl
       final baseUrl = vsPath.replaceAll('/vs', '/');
-      platformScript = '''
+      platformScript =
+          '''
 <script>
   // Linux/Other: Set base URL for worker resolution
   console.log('[Init] Setting Monaco base URL');

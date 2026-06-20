@@ -23,7 +23,7 @@ class FakePlatformWebViewController implements PlatformWebViewController {
   ///
   /// [widget] - Optional widget to return from [widget] getter.
   FakePlatformWebViewController({Widget? widget})
-      : _widget = widget ?? const SizedBox.shrink();
+    : _widget = widget ?? const SizedBox.shrink();
 
   /// All executed JavaScript scripts in order.
   final List<String> executed = [];

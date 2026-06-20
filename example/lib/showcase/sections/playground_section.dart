@@ -28,20 +28,23 @@ class PlaygroundSection extends StatelessWidget {
     final editorHeight = Breakpoints.isMobile(width)
         ? 380.0
         : Breakpoints.isTablet(width)
-            ? 460.0
-            : 520.0;
+        ? 460.0
+        : 520.0;
 
     return SectionContainer(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Live playground',
-              style: ShowcaseText.h1.copyWith(color: c.textPrimary)),
+          Text(
+            'Live playground',
+            style: ShowcaseText.h1.copyWith(color: c.textPrimary),
+          ),
           const SizedBox(height: Insets.md),
           Text(
-              'Real Monaco, running right here. Switch languages and themes, '
-              'toggle options, or trigger a feature - it all drives one editor.',
-              style: ShowcaseText.bodyLg.copyWith(color: c.textSecondary)),
+            'Real Monaco, running right here. Switch languages and themes, '
+            'toggle options, or trigger a feature - it all drives one editor.',
+            style: ShowcaseText.bodyLg.copyWith(color: c.textSecondary),
+          ),
           const SizedBox(height: Insets.xl),
           _EditorCard(
             controller: controller,
@@ -109,10 +112,7 @@ class _EditorCard extends StatelessWidget {
               modalRouteObserver: routeObserver,
             ),
           if (controller.hint != null)
-            _HintBanner(
-              hint: controller.hint!,
-              onClose: controller.reset,
-            ),
+            _HintBanner(hint: controller.hint!, onClose: controller.reset),
           Divider(height: 1, color: c.border),
           _LiveStatsBar(controller: controller),
         ],
@@ -147,7 +147,9 @@ class _Toolbar extends StatelessWidget {
     return Container(
       color: c.surfaceAlt,
       padding: const EdgeInsets.symmetric(
-          horizontal: Insets.md, vertical: Insets.sm),
+        horizontal: Insets.md,
+        vertical: Insets.sm,
+      ),
       child: Wrap(
         spacing: Insets.sm,
         runSpacing: Insets.sm,
@@ -156,39 +158,40 @@ class _Toolbar extends StatelessWidget {
           _ToolbarMenu<MonacoLanguage>(
             icon: Icons.translate_rounded,
             value: controller.language,
-            entries: [
-              for (final l in kPlaygroundLanguages) (l, l.label),
-            ],
+            entries: [for (final l in kPlaygroundLanguages) (l, l.label)],
             onSelected: controller.setLanguage,
           ),
           _ToolbarMenu<PlaygroundTheme>(
             icon: Icons.palette_outlined,
             value: controller.playgroundTheme,
-            entries: [
-              for (final t in PlaygroundTheme.values) (t, t.label),
-            ],
+            entries: [for (final t in PlaygroundTheme.values) (t, t.label)],
             onSelected: controller.setPlaygroundTheme,
           ),
           _ToolbarAction(
-              icon: Icons.format_align_left_rounded,
-              tooltip: 'Format',
-              onTap: controller.format),
+            icon: Icons.format_align_left_rounded,
+            tooltip: 'Format',
+            onTap: controller.format,
+          ),
           _ToolbarAction(
-              icon: Icons.search_rounded,
-              tooltip: 'Find',
-              onTap: controller.find),
+            icon: Icons.search_rounded,
+            tooltip: 'Find',
+            onTap: controller.find,
+          ),
           _ToolbarAction(
-              icon: Icons.unfold_less_rounded,
-              tooltip: 'Fold all',
-              onTap: controller.foldAll),
+            icon: Icons.unfold_less_rounded,
+            tooltip: 'Fold all',
+            onTap: controller.foldAll,
+          ),
           _ToolbarAction(
-              icon: Icons.content_copy_rounded,
-              tooltip: 'Copy',
-              onTap: () => _copy(context)),
+            icon: Icons.content_copy_rounded,
+            tooltip: 'Copy',
+            onTap: () => _copy(context),
+          ),
           _ToolbarAction(
-              icon: Icons.restart_alt_rounded,
-              tooltip: 'Reset',
-              onTap: controller.reset),
+            icon: Icons.restart_alt_rounded,
+            tooltip: 'Reset',
+            onTap: controller.reset,
+          ),
         ],
       ),
     );
@@ -230,21 +233,27 @@ class _ToolbarMenu<T> extends StatelessWidget {
             height: 40,
             child: Row(
               children: [
-                Icon(Icons.check,
-                    size: 16,
-                    color: v == value
-                        ? ShowcaseColors.accentBlue
-                        : Colors.transparent),
+                Icon(
+                  Icons.check,
+                  size: 16,
+                  color: v == value
+                      ? ShowcaseColors.accentBlue
+                      : Colors.transparent,
+                ),
                 const SizedBox(width: Insets.sm),
-                Text(label,
-                    style: ShowcaseText.small.copyWith(color: c.textPrimary)),
+                Text(
+                  label,
+                  style: ShowcaseText.small.copyWith(color: c.textPrimary),
+                ),
               ],
             ),
           ),
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(
-            horizontal: Insets.md, vertical: Insets.sm),
+          horizontal: Insets.md,
+          vertical: Insets.sm,
+        ),
         decoration: BoxDecoration(
           color: c.surface,
           borderRadius: BorderRadius.circular(Radii.sm),
@@ -255,8 +264,10 @@ class _ToolbarMenu<T> extends StatelessWidget {
           children: [
             Icon(icon, size: 16, color: c.textSecondary),
             const SizedBox(width: 6),
-            Text(_currentLabel,
-                style: ShowcaseText.small.copyWith(color: c.textPrimary)),
+            Text(
+              _currentLabel,
+              style: ShowcaseText.small.copyWith(color: c.textPrimary),
+            ),
             const SizedBox(width: 2),
             Icon(Icons.arrow_drop_down, size: 18, color: c.textFaint),
           ],
@@ -309,8 +320,10 @@ class _OptionsRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('EDITOR OPTIONS',
-            style: ShowcaseText.label.copyWith(color: c.textFaint)),
+        Text(
+          'EDITOR OPTIONS',
+          style: ShowcaseText.label.copyWith(color: c.textFaint),
+        ),
         const SizedBox(height: Insets.md),
         Wrap(
           spacing: Insets.sm,
@@ -318,25 +331,29 @@ class _OptionsRow extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             _ToggleChip(
-                icon: Icons.map_outlined,
-                label: 'Minimap',
-                value: controller.minimap,
-                onChanged: controller.setMinimap),
+              icon: Icons.map_outlined,
+              label: 'Minimap',
+              value: controller.minimap,
+              onChanged: controller.setMinimap,
+            ),
             _ToggleChip(
-                icon: Icons.wrap_text_rounded,
-                label: 'Word wrap',
-                value: controller.wordWrap,
-                onChanged: controller.setWordWrap),
+              icon: Icons.wrap_text_rounded,
+              label: 'Word wrap',
+              value: controller.wordWrap,
+              onChanged: controller.setWordWrap,
+            ),
             _ToggleChip(
-                icon: Icons.format_list_numbered_rounded,
-                label: 'Line numbers',
-                value: controller.lineNumbers,
-                onChanged: controller.setLineNumbers),
+              icon: Icons.format_list_numbered_rounded,
+              label: 'Line numbers',
+              value: controller.lineNumbers,
+              onChanged: controller.setLineNumbers,
+            ),
             _ToggleChip(
-                icon: Icons.lock_outline_rounded,
-                label: 'Read-only',
-                value: controller.readOnly,
-                onChanged: controller.setReadOnly),
+              icon: Icons.lock_outline_rounded,
+              label: 'Read-only',
+              value: controller.readOnly,
+              onChanged: controller.setReadOnly,
+            ),
             _FontSizeChip(controller: controller),
           ],
         ),
@@ -369,7 +386,9 @@ class _ToggleChip extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 140),
           padding: const EdgeInsets.symmetric(
-              horizontal: Insets.md, vertical: Insets.sm),
+            horizontal: Insets.md,
+            vertical: Insets.sm,
+          ),
           decoration: BoxDecoration(
             color: active ? c.accentWash : c.surface,
             borderRadius: BorderRadius.circular(Radii.pill),
@@ -382,15 +401,18 @@ class _ToggleChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon,
-                  size: 15,
-                  color: active ? ShowcaseColors.accentBlue : c.textSecondary),
+              Icon(
+                icon,
+                size: 15,
+                color: active ? ShowcaseColors.accentBlue : c.textSecondary,
+              ),
               const SizedBox(width: 6),
-              Text(label,
-                  style: ShowcaseText.small.copyWith(
-                      color: active
-                          ? ShowcaseColors.accentBlue
-                          : c.textSecondary)),
+              Text(
+                label,
+                style: ShowcaseText.small.copyWith(
+                  color: active ? ShowcaseColors.accentBlue : c.textSecondary,
+                ),
+              ),
             ],
           ),
         ),
@@ -418,14 +440,20 @@ class _FontSizeChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _StepButton(
-              icon: Icons.remove, onTap: () => controller.changeFontSize(-1)),
+            icon: Icons.remove,
+            onTap: () => controller.changeFontSize(-1),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Text('${controller.fontSize.toInt()}px',
-                style: ShowcaseText.monoLabel.copyWith(color: c.textSecondary)),
+            child: Text(
+              '${controller.fontSize.toInt()}px',
+              style: ShowcaseText.monoLabel.copyWith(color: c.textSecondary),
+            ),
           ),
           _StepButton(
-              icon: Icons.add, onTap: () => controller.changeFontSize(1)),
+            icon: Icons.add,
+            onTap: () => controller.changeFontSize(1),
+          ),
         ],
       ),
     );
@@ -467,29 +495,35 @@ class _DemosRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('TRY A FEATURE',
-            style: ShowcaseText.label.copyWith(color: c.textFaint)),
+        Text(
+          'TRY A FEATURE',
+          style: ShowcaseText.label.copyWith(color: c.textFaint),
+        ),
         const SizedBox(height: Insets.md),
         Wrap(
           spacing: Insets.sm,
           runSpacing: Insets.sm,
           children: [
             _DemoButton(
-                icon: Icons.auto_awesome_outlined,
-                label: 'IntelliSense',
-                onTap: controller.runIntelliSenseDemo),
+              icon: Icons.auto_awesome_outlined,
+              label: 'IntelliSense',
+              onTap: controller.runIntelliSenseDemo,
+            ),
             _DemoButton(
-                icon: Icons.fact_check_outlined,
-                label: 'JSON validation',
-                onTap: controller.runJsonValidationDemo),
+              icon: Icons.fact_check_outlined,
+              label: 'JSON validation',
+              onTap: controller.runJsonValidationDemo,
+            ),
             _DemoButton(
-                icon: Icons.error_outline_rounded,
-                label: 'Markers',
-                onTap: controller.runMarkersDemo),
+              icon: Icons.error_outline_rounded,
+              label: 'Markers',
+              onTap: controller.runMarkersDemo,
+            ),
             _DemoButton(
-                icon: Icons.format_color_fill_outlined,
-                label: 'Decorations',
-                onTap: controller.runDecorationsDemo),
+              icon: Icons.format_color_fill_outlined,
+              label: 'Decorations',
+              onTap: controller.runDecorationsDemo,
+            ),
           ],
         ),
       ],
@@ -517,7 +551,9 @@ class _DemoButton extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(
-              horizontal: Insets.md, vertical: Insets.sm),
+            horizontal: Insets.md,
+            vertical: Insets.sm,
+          ),
           decoration: BoxDecoration(
             color: c.surface,
             borderRadius: BorderRadius.circular(Radii.sm),
@@ -528,8 +564,10 @@ class _DemoButton extends StatelessWidget {
             children: [
               Icon(icon, size: 16, color: ShowcaseColors.accentBlue),
               const SizedBox(width: 6),
-              Text(label,
-                  style: ShowcaseText.small.copyWith(color: c.textPrimary)),
+              Text(
+                label,
+                style: ShowcaseText.small.copyWith(color: c.textPrimary),
+              ),
             ],
           ),
         ),
@@ -551,15 +589,22 @@ class _HintBanner extends StatelessWidget {
       width: double.infinity,
       color: ShowcaseColors.accentBlue.withValues(alpha: 0.12),
       padding: const EdgeInsets.symmetric(
-          horizontal: Insets.md, vertical: Insets.sm),
+        horizontal: Insets.md,
+        vertical: Insets.sm,
+      ),
       child: Row(
         children: [
-          const Icon(Icons.lightbulb_outline,
-              size: 16, color: ShowcaseColors.accentBlue),
+          const Icon(
+            Icons.lightbulb_outline,
+            size: 16,
+            color: ShowcaseColors.accentBlue,
+          ),
           const SizedBox(width: Insets.sm),
           Expanded(
-            child: Text(hint,
-                style: ShowcaseText.small.copyWith(color: c.textPrimary)),
+            child: Text(
+              hint,
+              style: ShowcaseText.small.copyWith(color: c.textPrimary),
+            ),
           ),
           InkWell(
             onTap: onClose,
@@ -583,21 +628,23 @@ class _LiveStatsBar extends StatelessWidget {
     final style = ShowcaseText.monoLabel.copyWith(color: c.textSecondary);
 
     Widget bar(List<String> left, String right) => Container(
-          width: double.infinity,
-          color: c.surfaceAlt,
-          padding: const EdgeInsets.symmetric(
-              horizontal: Insets.md, vertical: Insets.sm),
-          child: Row(
-            children: [
-              for (final item in left) ...[
-                Text(item, style: style),
-                const SizedBox(width: Insets.md),
-              ],
-              const Spacer(),
-              Text(right, style: style),
-            ],
-          ),
-        );
+      width: double.infinity,
+      color: c.surfaceAlt,
+      padding: const EdgeInsets.symmetric(
+        horizontal: Insets.md,
+        vertical: Insets.sm,
+      ),
+      child: Row(
+        children: [
+          for (final item in left) ...[
+            Text(item, style: style),
+            const SizedBox(width: Insets.md),
+          ],
+          const Spacer(),
+          Text(right, style: style),
+        ],
+      ),
+    );
 
     if (stats == null) {
       return bar(const ['Ready when the editor loads'], 'UTF-8');
@@ -606,15 +653,12 @@ class _LiveStatsBar extends StatelessWidget {
     return ValueListenableBuilder<LiveStats>(
       valueListenable: stats,
       builder: (context, value, _) {
-        return bar(
-          [
-            'Ln ${value.cursorPosition?.label ?? '1:1'}',
-            '${value.lineCount.value} lines',
-            if (value.selectedCharacters.value > 0)
-              '${value.selectedCharacters.value} selected',
-          ],
-          (value.language ?? controller.language.id).toUpperCase(),
-        );
+        return bar([
+          'Ln ${value.cursorPosition?.label ?? '1:1'}',
+          '${value.lineCount.value} lines',
+          if (value.selectedCharacters.value > 0)
+            '${value.selectedCharacters.value} selected',
+        ], (value.language ?? controller.language.id).toUpperCase());
       },
     );
   }

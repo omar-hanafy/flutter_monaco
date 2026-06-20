@@ -28,17 +28,12 @@ class MonacoEditorTheme extends InheritedTheme {
   /// `child` is a runtime parameter. Call sites incur a normal allocation,
   /// not a const lookup - acceptable for a theme widget that sits at the
   /// top of a subtree rather than rebuilding frequently.
-  MonacoEditorTheme({
-    super.key,
-    required this.data,
-    required Widget child,
-  })  : _isResolved = false,
-        super(child: _MonacoEditorThemeResolver(child: child));
+  MonacoEditorTheme({super.key, required this.data, required Widget child})
+    : _isResolved = false,
+      super(child: _MonacoEditorThemeResolver(child: child));
 
-  const MonacoEditorTheme._resolved({
-    required this.data,
-    required super.child,
-  }) : _isResolved = true;
+  const MonacoEditorTheme._resolved({required this.data, required super.child})
+    : _isResolved = true;
 
   /// The chrome theme applied to descendants.
   final MonacoEditorThemeData data;
@@ -245,8 +240,9 @@ class MonacoEditorThemeData {
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: theme.colorScheme.onPrimary,
       ),
-      statusBarBackgroundColor:
-          theme.colorScheme.surface.withValues(alpha: 0.95),
+      statusBarBackgroundColor: theme.colorScheme.surface.withValues(
+        alpha: 0.95,
+      ),
       statusBarBorderColor: theme.dividerColor,
       statusBarTextStyle:
           theme.textTheme.bodySmall ?? const TextStyle(fontSize: 12),

@@ -144,7 +144,8 @@ const features = {
           theme: MonacoTheme.vsDark,
           language: MonacoLanguage.javascript,
         ),
-        customCss: '''
+        customCss:
+            '''
           @font-face {
             font-family: 'MyCustomFont';
             src: url('data:font/woff2;base64,$mockBase64Font') format('woff2');
@@ -212,37 +213,38 @@ function secureCustomFont() {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error, size: 48, color: Colors.red),
-                      const SizedBox(height: 16),
-                      Text('Error: $_error'),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _initializeEditor,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error: $_error'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _initializeEditor,
+                    child: const Text('Retry'),
                   ),
-                )
-              : Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      color: Colors.blue.shade100,
-                      child: const Text(
-                        'Tip: Install Fira Code or JetBrains Mono font on your system to see ligatures!',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ),
-                    Expanded(
-                      child: _controller?.webViewWidget ??
-                          const Center(child: Text('No editor')),
-                    ),
-                  ],
+                ],
+              ),
+            )
+          : Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  color: Colors.blue.shade100,
+                  child: const Text(
+                    'Tip: Install Fira Code or JetBrains Mono font on your system to see ligatures!',
+                    style: TextStyle(fontSize: 12),
+                  ),
                 ),
+                Expanded(
+                  child:
+                      _controller?.webViewWidget ??
+                      const Center(child: Text('No editor')),
+                ),
+              ],
+            ),
     );
   }
 }

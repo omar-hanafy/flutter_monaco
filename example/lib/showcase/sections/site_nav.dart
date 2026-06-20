@@ -63,8 +63,10 @@ class SiteNav extends StatelessWidget {
                     package: 'flutter_monaco',
                     width: 20,
                     height: 20,
-                    colorFilter:
-                        ColorFilter.mode(c.textSecondary, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(
+                      c.textSecondary,
+                      BlendMode.srcIn,
+                    ),
                   ),
                 ),
               ),
@@ -95,19 +97,25 @@ class _Logo extends StatelessWidget {
           child: const Icon(Icons.code, color: Colors.white, size: 18),
         ),
         const SizedBox(width: Insets.sm),
-        Text('flutter_monaco',
-            style: ShowcaseText.h3.copyWith(color: c.textPrimary)),
+        Text(
+          'flutter_monaco',
+          style: ShowcaseText.h3.copyWith(color: c.textPrimary),
+        ),
         const SizedBox(width: Insets.sm),
         Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: Insets.sm, vertical: 2),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Insets.sm,
+            vertical: 2,
+          ),
           decoration: BoxDecoration(
             color: c.surface,
             borderRadius: BorderRadius.circular(Radii.pill),
             border: Border.all(color: c.border),
           ),
-          child: Text('v$kPackageVersion',
-              style: ShowcaseText.monoLabel.copyWith(color: c.textFaint)),
+          child: Text(
+            'v$kPackageVersion',
+            style: ShowcaseText.monoLabel.copyWith(color: c.textFaint),
+          ),
         ),
       ],
     );
@@ -127,8 +135,10 @@ class _NavLink extends StatelessWidget {
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: onTap,
-        child: Text(label,
-            style: ShowcaseText.small.copyWith(color: c.textSecondary)),
+        child: Text(
+          label,
+          style: ShowcaseText.small.copyWith(color: c.textSecondary),
+        ),
       ),
     );
   }
@@ -147,13 +157,17 @@ class _PubButton extends StatelessWidget {
         onTap: () => openUrl(Links.pubDev),
         child: Container(
           padding: EdgeInsets.symmetric(
-              horizontal: compact ? Insets.md : Insets.lg, vertical: 9),
+            horizontal: compact ? Insets.md : Insets.lg,
+            vertical: 9,
+          ),
           decoration: BoxDecoration(
             gradient: accentGradient,
             borderRadius: BorderRadius.circular(Radii.sm),
           ),
-          child: Text(compact ? 'pub.dev' : 'Get it on pub.dev',
-              style: ShowcaseText.small.copyWith(color: Colors.white)),
+          child: Text(
+            compact ? 'pub.dev' : 'Get it on pub.dev',
+            style: ShowcaseText.small.copyWith(color: Colors.white),
+          ),
         ),
       ),
     );

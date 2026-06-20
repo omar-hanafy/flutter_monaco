@@ -5,10 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('Position', () {
     test('fromJson with standard keys', () {
-      final pos = Position.fromJson({
-        'lineNumber': 5,
-        'column': 10,
-      });
+      final pos = Position.fromJson({'lineNumber': 5, 'column': 10});
       expect(pos.line, 5);
       expect(pos.column, 10);
     });
@@ -171,7 +168,9 @@ void main() {
       expect(range.containsPosition(const Position(line: 1, column: 5)), false);
       expect(range.containsPosition(const Position(line: 2, column: 4)), false);
       expect(
-          range.containsPosition(const Position(line: 4, column: 11)), false);
+        range.containsPosition(const Position(line: 4, column: 11)),
+        false,
+      );
       expect(range.containsPosition(const Position(line: 5, column: 1)), false);
     });
 
@@ -264,12 +263,7 @@ void main() {
 
     test('toJson includes all fields', () {
       const marker = MarkerData(
-        range: Range(
-          startLine: 1,
-          startColumn: 1,
-          endLine: 1,
-          endColumn: 10,
-        ),
+        range: Range(startLine: 1, startColumn: 1, endLine: 1, endColumn: 10),
         message: 'Test message',
         severity: MarkerSeverity.error,
         code: 'E001',
@@ -287,12 +281,7 @@ void main() {
 
     test('toJson excludes null optional fields', () {
       const marker = MarkerData(
-        range: Range(
-          startLine: 1,
-          startColumn: 1,
-          endLine: 1,
-          endColumn: 5,
-        ),
+        range: Range(startLine: 1, startColumn: 1, endLine: 1, endColumn: 5),
         message: 'Test',
       );
 
@@ -418,12 +407,7 @@ void main() {
 
     test('toJson excludes forceMoveMarkers when null', () {
       const edit = EditOperation(
-        range: Range(
-          startLine: 1,
-          startColumn: 1,
-          endLine: 1,
-          endColumn: 1,
-        ),
+        range: Range(startLine: 1, startColumn: 1, endLine: 1, endColumn: 1),
         text: 'test',
       );
 
@@ -484,7 +468,9 @@ void main() {
 
     test('fromJsonValue defaults to text', () {
       expect(
-          CompletionItemKind.fromJsonValue('Unknown'), CompletionItemKind.text);
+        CompletionItemKind.fromJsonValue('Unknown'),
+        CompletionItemKind.text,
+      );
     });
 
     test('maybeFromJsonValue returns null for unknown', () {
@@ -570,22 +556,10 @@ void main() {
     });
 
     test('hasSelection and hasMultipleCursors', () {
-      expect(
-        LiveStats.fromJson({'selChars': 5}).hasSelection,
-        true,
-      );
-      expect(
-        LiveStats.fromJson({'selChars': 0}).hasSelection,
-        false,
-      );
-      expect(
-        LiveStats.fromJson({'caretCount': 3}).hasMultipleCursors,
-        true,
-      );
-      expect(
-        LiveStats.fromJson({'caretCount': 1}).hasMultipleCursors,
-        false,
-      );
+      expect(LiveStats.fromJson({'selChars': 5}).hasSelection, true);
+      expect(LiveStats.fromJson({'selChars': 0}).hasSelection, false);
+      expect(LiveStats.fromJson({'caretCount': 3}).hasMultipleCursors, true);
+      expect(LiveStats.fromJson({'caretCount': 1}).hasMultipleCursors, false);
     });
 
     test('allStats returns all statistics', () {
@@ -633,10 +607,7 @@ void main() {
           'endLineNumber': 1,
           'endColumn': 5,
         },
-        'cursorPosition': {
-          'lineNumber': 1,
-          'column': 3,
-        },
+        'cursorPosition': {'lineNumber': 1, 'column': 3},
         'language': 'dart',
         'theme': 'vs-dark',
       });
@@ -670,12 +641,7 @@ void main() {
 
     test('toJson', () {
       const match = FindMatch(
-        range: Range(
-          startLine: 1,
-          startColumn: 1,
-          endLine: 1,
-          endColumn: 5,
-        ),
+        range: Range(startLine: 1, startColumn: 1, endLine: 1, endColumn: 5),
         match: 'test',
       );
 
@@ -784,7 +750,7 @@ void main() {
         fileMatch: ['*.json', 'config.*'],
         schema: {
           'type': 'object',
-          'required': ['name']
+          'required': ['name'],
         },
       );
 
@@ -794,7 +760,7 @@ void main() {
       expect(json['fileMatch'], ['*.json', 'config.*']);
       expect(json['schema'], {
         'type': 'object',
-        'required': ['name']
+        'required': ['name'],
       });
     });
 

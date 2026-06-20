@@ -179,14 +179,14 @@ class MonacoEditor extends StatefulWidget {
   ///
   /// Defaults to an error icon and retry button.
   final Widget Function(BuildContext context, Object error, StackTrace? st)?
-      errorBuilder;
+  errorBuilder;
 
   /// If `true`, displays a status bar with line/column info at the bottom.
   final bool showStatusBar;
 
   /// Builder for a custom status bar widget.
   final Widget Function(BuildContext context, LiveStats stats)?
-      statusBarBuilder;
+  statusBarBuilder;
 
   /// The background color of the WebView container.
   ///
@@ -265,7 +265,8 @@ class _MonacoEditorState extends State<MonacoEditor> {
     }
 
     // If we OWN the controller and HTML-affecting knobs changed, rebuild.
-    final htmlKnobsChanged = (oldWidget.customCss != widget.customCss) ||
+    final htmlKnobsChanged =
+        (oldWidget.customCss != widget.customCss) ||
         (oldWidget.allowCdnFonts != widget.allowCdnFonts);
     if (_ownsController && htmlKnobsChanged) {
       _teardown(disposeOldController: true);
@@ -276,7 +277,8 @@ class _MonacoEditorState extends State<MonacoEditor> {
     if (widget.interactionEnabled != oldWidget.interactionEnabled &&
         _controller != null) {
       _ignoreAsync(
-          _controller!.setInteractionEnabled(widget.interactionEnabled));
+        _controller!.setInteractionEnabled(widget.interactionEnabled),
+      );
     }
 
     if (_connectionState != _ConnectionState.ready || _controller == null) {
@@ -287,9 +289,7 @@ class _MonacoEditorState extends State<MonacoEditor> {
     if (widget.options != oldWidget.options) {
       _ignoreAsync(_controller!.updateOptions(widget.options));
       // Explicitly update theme and language as they require separate bridge calls.
-      _ignoreAsync(
-        _controller!.setThemeById(widget.options.effectiveThemeId),
-      );
+      _ignoreAsync(_controller!.setThemeById(widget.options.effectiveThemeId));
       _ignoreAsync(_controller!.setLanguage(widget.options.language));
     }
 
@@ -319,7 +319,8 @@ class _MonacoEditorState extends State<MonacoEditor> {
     try {
       final ownsController = widget.controller == null;
       _ownsController = ownsController;
-      final controller = widget.controller ??
+      final controller =
+          widget.controller ??
           await (widget.controllerFactory?.call() ??
               MonacoController.create(
                 options: widget.options,
@@ -361,8 +362,9 @@ class _MonacoEditorState extends State<MonacoEditor> {
           debugPrint('[MonacoEditor] setBackgroundColor failed: $e');
         }
         try {
-          await _controller!
-              .setHostPageBackgroundColor(widget.backgroundColor!);
+          await _controller!.setHostPageBackgroundColor(
+            widget.backgroundColor!,
+          );
         } catch (e) {
           debugPrint('[MonacoEditor] setHostPageBackgroundColor failed: $e');
         }
@@ -431,8 +433,9 @@ class _MonacoEditorState extends State<MonacoEditor> {
 
     _wireContentListener();
     if (widget.onSelectionChanged != null) {
-      final selectionSub = _controller!.onSelectionChanged
-          .listen((r) => widget.onSelectionChanged?.call(r));
+      final selectionSub = _controller!.onSelectionChanged.listen(
+        (r) => widget.onSelectionChanged?.call(r),
+      );
       _streamSubscriptions.add(selectionSub);
     }
     final focusSub = _controller!.onFocus.listen((_) {
@@ -446,15 +449,17 @@ class _MonacoEditorState extends State<MonacoEditor> {
     });
     _streamSubscriptions.add(blurSub);
 
-    _statsListener =
-        () => widget.onLiveStats?.call(_controller!.liveStats.value);
+    _statsListener = () =>
+        widget.onLiveStats?.call(_controller!.liveStats.value);
     _controller!.liveStats.addListener(_statsListener!);
   }
 
   void _ignoreAsync(Future<void> future) {
-    unawaited(future.catchError((e, st) {
-      debugPrint('[MonacoEditor] Async update error: $e');
-    }));
+    unawaited(
+      future.catchError((e, st) {
+        debugPrint('[MonacoEditor] Async update error: $e');
+      }),
+    );
   }
 
   /// Wires only the content changed listener, allowing it to be updated separately.
@@ -486,8 +491,10 @@ class _MonacoEditorState extends State<MonacoEditor> {
       }
 
       _contentDebounceTimer?.cancel();
-      _contentDebounceTimer =
-          Timer(widget.contentDebounce, () => _ignoreAsync(pullAndEmit()));
+      _contentDebounceTimer = Timer(
+        widget.contentDebounce,
+        () => _ignoreAsync(pullAndEmit()),
+      );
     });
   }
 
@@ -522,7 +529,8 @@ class _MonacoEditorState extends State<MonacoEditor> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bg = widget.backgroundColor ??
+    final bg =
+        widget.backgroundColor ??
         (theme.brightness == Brightness.dark
             ? const Color(0xFF1E1E1E)
             : Colors.white);
@@ -609,7 +617,8 @@ class _MonacoEditorState extends State<MonacoEditor> {
         children: [
           webView,
           Positioned.fill(
-            child: widget.errorBuilder?.call(context, _error!, _stack) ??
+            child:
+                widget.errorBuilder?.call(context, _error!, _stack) ??
                 _DefaultError(
                   error: _error!,
                   onRetry: _ownsController ? _bootstrap : null,
@@ -663,7 +672,8 @@ class _MonacoStatusBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = MonacoEditorTheme.of(context);
-    final style = theme.statusBarTextStyle ??
+    final style =
+        theme.statusBarTextStyle ??
         Theme.of(context).textTheme.bodySmall ??
         const TextStyle(fontSize: 12);
 
@@ -681,13 +691,15 @@ class _MonacoStatusBar extends StatelessWidget {
         ].where((s) => s.isNotEmpty).toList();
 
         return Container(
-          padding: theme.statusBarPadding ??
+          padding:
+              theme.statusBarPadding ??
               const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           decoration: BoxDecoration(
             color: theme.statusBarBackgroundColor,
             border: Border(
               top: BorderSide(
-                color: theme.statusBarBorderColor ??
+                color:
+                    theme.statusBarBorderColor ??
                     Theme.of(context).dividerColor,
                 width: 0.5,
               ),
@@ -697,9 +709,7 @@ class _MonacoStatusBar extends StatelessWidget {
             alignment: WrapAlignment.end,
             spacing: theme.statusBarSpacing ?? 16,
             runSpacing: 4,
-            children: [
-              for (final entry in entries) Text(entry, style: style),
-            ],
+            children: [for (final entry in entries) Text(entry, style: style)],
           ),
         );
       },
@@ -730,10 +740,7 @@ class _DefaultLoading extends StatelessWidget {
 }
 
 class _DefaultError extends StatelessWidget {
-  const _DefaultError({
-    required this.error,
-    this.onRetry,
-  });
+  const _DefaultError({required this.error, this.onRetry});
 
   final Object error;
   final VoidCallback? onRetry;

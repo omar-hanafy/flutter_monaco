@@ -8,8 +8,9 @@ void main() {
 
   test('web focus handler only amplifies Monaco focus on desktop', () {
     final source = webControllerSource();
-    final focusBlockStart = source
-        .indexOf('// When Monaco reports focus, unfocus Flutter widgets.');
+    final focusBlockStart = source.indexOf(
+      '// When Monaco reports focus, unfocus Flutter widgets.',
+    );
     final focusBlockEnd = source.indexOf('// Forward to all channels');
 
     expect(focusBlockStart, isNonNegative);
@@ -52,8 +53,7 @@ void main() {
     expect(source, contains('Unknown Monaco load error'));
   });
 
-  test(
-      'web Monaco vs path resolves via the Flutter asset manager, not '
+  test('web Monaco vs path resolves via the Flutter asset manager, not '
       'Uri.base', () {
     final source = webControllerSource();
 

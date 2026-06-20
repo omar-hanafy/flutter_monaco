@@ -7,11 +7,7 @@ import '../theme/showcase_tokens.dart';
 /// A styled, static code snippet (not a Monaco instance) with an optional
 /// filename header and a copy button. Keeps the page to a single live editor.
 class CodeBlock extends StatelessWidget {
-  const CodeBlock({
-    super.key,
-    required this.code,
-    this.filename,
-  });
+  const CodeBlock({super.key, required this.code, this.filename});
 
   final String code;
   final String? filename;
@@ -34,7 +30,11 @@ class CodeBlock extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.fromLTRB(
-                Insets.md, Insets.sm, Insets.sm, Insets.sm),
+              Insets.md,
+              Insets.sm,
+              Insets.sm,
+              Insets.sm,
+            ),
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: c.border)),
             ),
@@ -47,9 +47,10 @@ class CodeBlock extends StatelessWidget {
                 _dot(const Color(0xFF27C93F)),
                 const SizedBox(width: Insets.md),
                 if (filename != null)
-                  Text(filename!,
-                      style:
-                          ShowcaseText.monoLabel.copyWith(color: c.textFaint)),
+                  Text(
+                    filename!,
+                    style: ShowcaseText.monoLabel.copyWith(color: c.textFaint),
+                  ),
                 const Spacer(),
                 Tooltip(
                   message: 'Copy',
@@ -71,8 +72,11 @@ class CodeBlock extends StatelessWidget {
                       },
                       child: Padding(
                         padding: const EdgeInsets.all(6),
-                        child: Icon(Icons.copy_rounded,
-                            size: 15, color: c.textSecondary),
+                        child: Icon(
+                          Icons.copy_rounded,
+                          size: 15,
+                          color: c.textSecondary,
+                        ),
                       ),
                     ),
                   ),
@@ -94,8 +98,8 @@ class CodeBlock extends StatelessWidget {
   }
 
   Widget _dot(Color color) => Container(
-        width: 11,
-        height: 11,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      );
+    width: 11,
+    height: 11,
+    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  );
 }

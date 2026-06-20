@@ -27,7 +27,8 @@ class FeaturesSection extends StatelessWidget {
       FeatureCard(
         icon: Icons.translate_rounded,
         title: '100+ languages',
-        body: 'Syntax highlighting for Dart, TypeScript, Python, Rust, Go, '
+        body:
+            'Syntax highlighting for Dart, TypeScript, Python, Rust, Go, '
             'SQL and 100+ more - switch instantly.',
         snippet: 'controller.setLanguage(MonacoLanguage.rust);',
         onTry: () => _go(() => controller.setLanguage(MonacoLanguage.rust)),
@@ -35,7 +36,8 @@ class FeaturesSection extends StatelessWidget {
       FeatureCard(
         icon: Icons.palette_outlined,
         title: 'Theming',
-        body: 'Four built-in themes, or register your own token colors with '
+        body:
+            'Four built-in themes, or register your own token colors with '
             'defineTheme.',
         snippet: 'controller.defineTheme(midnightTheme);',
         onTry: () =>
@@ -51,7 +53,8 @@ class FeaturesSection extends StatelessWidget {
       FeatureCard(
         icon: Icons.fact_check_outlined,
         title: 'JSON schema validation',
-        body: 'Live diagnostics and JSON schema validation, configured in a '
+        body:
+            'Live diagnostics and JSON schema validation, configured in a '
             'single call.',
         snippet: 'controller.setJsonDiagnostics(options);',
         onTry: () => _go(controller.runJsonValidationDemo),
@@ -66,7 +69,8 @@ class FeaturesSection extends StatelessWidget {
       FeatureCard(
         icon: Icons.terminal_rounded,
         title: 'Full controller API',
-        body: 'getValue, edits, find/replace, folding, live stats and much '
+        body:
+            'getValue, edits, find/replace, folding, live stats and much '
             'more.',
         snippet: 'final code = await controller.getValue();',
         onTry: () => _go(controller.runDecorationsDemo),
@@ -78,8 +82,10 @@ class FeaturesSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Everything the editor can do',
-              style: ShowcaseText.h1.copyWith(color: c.textPrimary)),
+          Text(
+            'Everything the editor can do',
+            style: ShowcaseText.h1.copyWith(color: c.textPrimary),
+          ),
           const SizedBox(height: Insets.md),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 620),
@@ -96,8 +102,8 @@ class FeaturesSection extends StatelessWidget {
               final columns = width >= Breakpoints.desktop
                   ? 3
                   : width >= Breakpoints.tablet
-                      ? 2
-                      : 1;
+                  ? 2
+                  : 1;
               const gap = Insets.lg;
               final itemWidth = (width - gap * (columns - 1)) / columns;
               return Wrap(

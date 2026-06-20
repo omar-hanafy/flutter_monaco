@@ -10,14 +10,8 @@ void main() {
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
       home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Flutter Monaco Editor'),
-        ),
-        body: const SafeArea(
-          child: MonacoEditor(
-            showStatusBar: true,
-          ),
-        ),
+        appBar: AppBar(title: const Text('Flutter Monaco Editor')),
+        body: const SafeArea(child: MonacoEditor(showStatusBar: true)),
       ),
     ),
   );

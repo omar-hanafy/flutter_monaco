@@ -44,7 +44,7 @@ class PlatformWebViewFactory {
   /// Creates a new [PlatformWebViewController] for the current platform.
   ///
   /// On native platforms, this returns a controller backed by `webview_flutter`
-  /// (Android/iOS/macOS) or `webview_windows` (Windows). On web, it returns
+  /// (Android/iOS/macOS) or `webview_flutter_windows` (Windows). On web, it returns
   /// an iframe-based controller.
   ///
   /// If [debugCreateOverride] is set, returns the result of that function
@@ -87,10 +87,7 @@ class WebViewController implements PlatformWebViewController {
 
   @override
   Future<void> load({String? customCss, bool allowCdnFonts = false}) {
-    return _controller.load(
-      customCss: customCss,
-      allowCdnFonts: allowCdnFonts,
-    );
+    return _controller.load(customCss: customCss, allowCdnFonts: allowCdnFonts);
   }
 
   @override

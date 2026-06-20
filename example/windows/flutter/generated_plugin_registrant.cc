@@ -7,7 +7,7 @@
 #include "generated_plugin_registrant.h"
 
 #include <url_launcher_windows/url_launcher_windows.h>
-#include <webview_windows/webview_windows_plugin.h>
+#include <webview_flutter_windows/webview_windows_plugin.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
   UrlLauncherWindowsRegisterWithRegistrar(

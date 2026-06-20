@@ -12,8 +12,9 @@ class FocusTestExample extends StatefulWidget {
 
 class _FocusTestExampleState extends State<FocusTestExample> {
   MonacoController? _controller;
-  final _textController =
-      TextEditingController(text: 'Flutter TextField content');
+  final _textController = TextEditingController(
+    text: 'Flutter TextField content',
+  );
 
   @override
   void initState() {
@@ -29,8 +30,9 @@ class _FocusTestExampleState extends State<FocusTestExample> {
         fontSize: 14,
       ),
     );
-    await _controller!
-        .setValue('// Monaco Editor\nlet message = "Hello World";');
+    await _controller!.setValue(
+      '// Monaco Editor\nlet message = "Hello World";',
+    );
     setState(() {});
   }
 
@@ -61,7 +63,8 @@ class _FocusTestExampleState extends State<FocusTestExample> {
               children: [
                 // Left: Monaco Editor
                 Expanded(
-                  child: _controller?.webViewWidget ??
+                  child:
+                      _controller?.webViewWidget ??
                       const Center(child: CircularProgressIndicator()),
                 ),
                 const VerticalDivider(width: 1),
@@ -113,8 +116,9 @@ class _FocusTestExampleState extends State<FocusTestExample> {
                       Navigator.pop(context);
                       // Send dialog text to Monaco
                       final current = await _controller?.getValue() ?? '';
-                      await _controller
-                          ?.setValue('$current\n// From dialog: $dialogText');
+                      await _controller?.setValue(
+                        '$current\n// From dialog: $dialogText',
+                      );
                     },
                     child: const Text('Send to Monaco'),
                   ),

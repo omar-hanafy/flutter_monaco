@@ -25,7 +25,9 @@ class PlatformBadges extends StatelessWidget {
         for (final (icon, label) in _items)
           Container(
             padding: const EdgeInsets.symmetric(
-                horizontal: Insets.md, vertical: Insets.sm),
+              horizontal: Insets.md,
+              vertical: Insets.sm,
+            ),
             decoration: BoxDecoration(
               color: c.surface,
               borderRadius: BorderRadius.circular(Radii.pill),
@@ -36,8 +38,10 @@ class PlatformBadges extends StatelessWidget {
               children: [
                 Icon(icon, size: 15, color: c.textSecondary),
                 const SizedBox(width: 6),
-                Text(label,
-                    style: ShowcaseText.small.copyWith(color: c.textSecondary)),
+                Text(
+                  label,
+                  style: ShowcaseText.small.copyWith(color: c.textSecondary),
+                ),
               ],
             ),
           ),

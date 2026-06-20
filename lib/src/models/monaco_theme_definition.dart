@@ -57,9 +57,7 @@ sealed class MonacoThemeDefinition with _$MonacoThemeDefinition {
     final rawRules = json['rules'];
     final rules = rawRules is List
         ? rawRules.whereType<Map>().map((entry) {
-            return MonacoThemeRule.fromJson(
-              Map<String, dynamic>.from(entry),
-            );
+            return MonacoThemeRule.fromJson(Map<String, dynamic>.from(entry));
           }).toList()
         : const <MonacoThemeRule>[];
 
@@ -100,10 +98,7 @@ sealed class MonacoThemeDefinition with _$MonacoThemeDefinition {
     String id,
     Map<String, dynamic> data,
   ) {
-    return MonacoThemeDefinition.fromJson({
-      'id': id,
-      ...data,
-    });
+    return MonacoThemeDefinition.fromJson({'id': id, ...data});
   }
 
   /// Serializes this theme for app persistence.
@@ -111,10 +106,7 @@ sealed class MonacoThemeDefinition with _$MonacoThemeDefinition {
   /// The shape includes [id] so [fromJson] can rebuild a complete
   /// definition. Use [toMonacoThemeData] when forwarding to the JS bridge.
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      ...toMonacoThemeData(),
-    };
+    return {'id': id, ...toMonacoThemeData()};
   }
 
   /// Serializes this theme to Monaco's `IStandaloneThemeData` shape.

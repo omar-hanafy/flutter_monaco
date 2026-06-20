@@ -35,20 +35,22 @@ class HeroSection extends StatelessWidget {
               const SizedBox(height: Insets.lg),
               Text(
                 "VS Code's editor,",
-                style: (headlineSize != null
-                        ? headlineTop.copyWith(fontSize: headlineSize)
-                        : headlineTop)
-                    .copyWith(color: c.textPrimary),
+                style:
+                    (headlineSize != null
+                            ? headlineTop.copyWith(fontSize: headlineSize)
+                            : headlineTop)
+                        .copyWith(color: c.textPrimary),
               ),
               ShaderMask(
                 shaderCallback: (bounds) => accentGradient.createShader(bounds),
                 blendMode: BlendMode.srcIn,
                 child: Text(
                   'inside your Flutter app.',
-                  style: (headlineSize != null
-                          ? headlineTop.copyWith(fontSize: headlineSize)
-                          : headlineTop)
-                      .copyWith(color: Colors.white),
+                  style:
+                      (headlineSize != null
+                              ? headlineTop.copyWith(fontSize: headlineSize)
+                              : headlineTop)
+                          .copyWith(color: Colors.white),
                 ),
               ),
               const SizedBox(height: Insets.lg),
@@ -108,12 +110,15 @@ class _EyebrowPill extends StatelessWidget {
     final c = context.showcaseColors;
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: Insets.md, vertical: Insets.sm),
+        horizontal: Insets.md,
+        vertical: Insets.sm,
+      ),
       decoration: BoxDecoration(
         color: c.accentWash,
         borderRadius: BorderRadius.circular(Radii.pill),
-        border:
-            Border.all(color: ShowcaseColors.accentBlue.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: ShowcaseColors.accentBlue.withValues(alpha: 0.3),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -121,10 +126,13 @@ class _EyebrowPill extends StatelessWidget {
           const Icon(Icons.bolt, size: 14, color: ShowcaseColors.accentBlue),
           const SizedBox(width: 6),
           Flexible(
-            child: Text(text,
-                overflow: TextOverflow.ellipsis,
-                style: ShowcaseText.eyebrow
-                    .copyWith(color: ShowcaseColors.accentBlue)),
+            child: Text(
+              text,
+              overflow: TextOverflow.ellipsis,
+              style: ShowcaseText.eyebrow.copyWith(
+                color: ShowcaseColors.accentBlue,
+              ),
+            ),
           ),
         ],
       ),

@@ -303,10 +303,13 @@ MonacoEditor(
     String? appVersion;
 
     try {
-      final pubspec =
-          await rootBundle.loadString('packages/flutter_monaco/pubspec.yaml');
-      final match =
-          RegExp(r'^version:\s*([^\s]+)', multiLine: true).firstMatch(pubspec);
+      final pubspec = await rootBundle.loadString(
+        'packages/flutter_monaco/pubspec.yaml',
+      );
+      final match = RegExp(
+        r'^version:\s*([^\s]+)',
+        multiLine: true,
+      ).firstMatch(pubspec);
       packageVersion = match?.group(1);
     } catch (_) {
       packageVersion = null;
@@ -332,15 +335,16 @@ MonacoEditor(
   }
 
   Future<void> _registerJsonDiagnostics(MonacoController controller) async {
-    await controller.setJsonDiagnostics(JsonDiagnosticsOptions(
+    await controller.setJsonDiagnostics(
+      JsonDiagnosticsOptions(
         allowComments: true,
         trailingCommas: DiagnosticsSeverity.warning,
         schemaValidation: DiagnosticsSeverity.error,
         schemas: [
           JsonDiagnosticsSchema(
-              uri: Uri.parse("https://example.com/schema.json"),
-              fileMatch: ["*"],
-              schema: jsonDecode("""
+            uri: Uri.parse("https://example.com/schema.json"),
+            fileMatch: ["*"],
+            schema: jsonDecode("""
 {
   "\$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Example Schema",
@@ -424,8 +428,11 @@ MonacoEditor(
       "required": ["defaultTheme", "features"]
     }
     }
-} """))
-        ]));
+} """),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _registerCompletions(MonacoController controller) async {
@@ -485,8 +492,10 @@ MonacoEditor(
       output += 'Valid JSON document (${code.length} characters)\n';
     } else if (file.language == MonacoLanguage.markdown) {
       final lineCount = code.split('\n').length;
-      final wordCount =
-          code.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+      final wordCount = code
+          .split(RegExp(r'\s+'))
+          .where((w) => w.isNotEmpty)
+          .length;
       output += 'Markdown Preview\n';
       output += 'Lines: $lineCount | Words: $wordCount\n';
     } else {
@@ -522,10 +531,7 @@ MonacoEditor(
 
   Future<void> _openUrl(String url) async {
     final uri = Uri.parse(url);
-    final launched = await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    );
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -591,12 +597,12 @@ MonacoEditor(
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(4),
-              onTap: () => _openUrl(
-                'https://pub.dev/packages/flutter_monaco',
-              ),
+              onTap: () => _openUrl('https://pub.dev/packages/flutter_monaco'),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF0098FF).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(4),
@@ -617,8 +623,10 @@ MonacoEditor(
                     const SizedBox(width: 8),
                     Text(
                       _appVersion,
-                      style:
-                          const TextStyle(color: Colors.white54, fontSize: 12),
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -632,8 +640,8 @@ MonacoEditor(
             icon: _currentTheme == MonacoTheme.vsDark
                 ? Icons.dark_mode
                 : _currentTheme == MonacoTheme.vs
-                    ? Icons.light_mode
-                    : Icons.contrast,
+                ? Icons.light_mode
+                : Icons.contrast,
             label: _currentTheme.id,
             onPressed: () => _showThemeMenu(context),
           ),
@@ -699,16 +707,17 @@ MonacoEditor(
           const SizedBox(width: 8),
           IconButton(
             tooltip: 'GitHub',
-            onPressed: () => _openUrl(
-              'https://github.com/omar-hanafy/flutter_monaco',
-            ),
+            onPressed: () =>
+                _openUrl('https://github.com/omar-hanafy/flutter_monaco'),
             icon: SvgPicture.asset(
               'assets/github.svg',
               package: 'flutter_monaco',
               width: 20,
               height: 20,
-              colorFilter:
-                  const ColorFilter.mode(Colors.white70, BlendMode.srcIn),
+              colorFilter: const ColorFilter.mode(
+                Colors.white70,
+                BlendMode.srcIn,
+              ),
             ),
           ),
         ],
@@ -726,7 +735,10 @@ MonacoEditor(
         _buildThemeMenuItem(MonacoTheme.vsDark, 'Dark', Icons.dark_mode),
         _buildThemeMenuItem(MonacoTheme.vs, 'Light', Icons.light_mode),
         _buildThemeMenuItem(
-            MonacoTheme.hcBlack, 'High Contrast', Icons.contrast),
+          MonacoTheme.hcBlack,
+          'High Contrast',
+          Icons.contrast,
+        ),
       ],
     );
     if (!mounted || theme == null) return;
@@ -735,16 +747,21 @@ MonacoEditor(
   }
 
   PopupMenuItem<MonacoTheme> _buildThemeMenuItem(
-      MonacoTheme theme, String label, IconData icon) {
+    MonacoTheme theme,
+    String label,
+    IconData icon,
+  ) {
     return PopupMenuItem(
       value: theme,
       child: Row(
         children: [
-          Icon(icon,
-              size: 18,
-              color: _currentTheme == theme
-                  ? const Color(0xFF0098FF)
-                  : Colors.white70),
+          Icon(
+            icon,
+            size: 18,
+            color: _currentTheme == theme
+                ? const Color(0xFF0098FF)
+                : Colors.white70,
+          ),
           const SizedBox(width: 12),
           Text(label),
           if (_currentTheme == theme) ...[
@@ -766,8 +783,10 @@ MonacoEditor(
           builder: (context, setDialogState) => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('${_fontSize.toInt()}px',
-                  style: const TextStyle(fontSize: 24)),
+              Text(
+                '${_fontSize.toInt()}px',
+                style: const TextStyle(fontSize: 24),
+              ),
               Slider(
                 value: _fontSize,
                 min: 10,
@@ -825,8 +844,10 @@ MonacoEditor(
                 return InkWell(
                   onTap: () => _switchFile(index),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: isActive
                           ? const Color(0xFF37373D)
@@ -834,7 +855,9 @@ MonacoEditor(
                       border: isActive
                           ? const Border(
                               left: BorderSide(
-                                  color: Color(0xFF0098FF), width: 2),
+                                color: Color(0xFF0098FF),
+                                width: 2,
+                              ),
                             )
                           : null,
                     ),
@@ -913,9 +936,7 @@ MonacoEditor(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: const BoxDecoration(
         color: Color(0xFF1E1E1E),
-        border: Border(
-          top: BorderSide(color: Color(0xFF0098FF), width: 2),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFF0098FF), width: 2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -981,14 +1002,20 @@ MonacoEditor(
                 const Spacer(),
                 InkWell(
                   onTap: () => setState(() => _output = ''),
-                  child: const Icon(Icons.delete_outline,
-                      size: 16, color: Colors.white54),
+                  child: const Icon(
+                    Icons.delete_outline,
+                    size: 16,
+                    color: Colors.white54,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 InkWell(
                   onTap: () => setState(() => _showOutput = false),
-                  child:
-                      const Icon(Icons.close, size: 16, color: Colors.white54),
+                  child: const Icon(
+                    Icons.close,
+                    size: 16,
+                    color: Colors.white54,
+                  ),
                 ),
               ],
             ),
@@ -1055,8 +1082,10 @@ MonacoEditor(
                 children: [
                   Icon(Icons.terminal, size: 14, color: Colors.white),
                   SizedBox(width: 4),
-                  Text('Output',
-                      style: TextStyle(color: Colors.white, fontSize: 12)),
+                  Text(
+                    'Output',
+                    style: TextStyle(color: Colors.white, fontSize: 12),
+                  ),
                 ],
               ),
             ),
@@ -1109,8 +1138,10 @@ class _HeaderButton extends StatelessWidget {
           children: [
             Icon(icon, size: 16, color: Colors.white70),
             const SizedBox(width: 6),
-            Text(label,
-                style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
             const SizedBox(width: 4),
             const Icon(Icons.arrow_drop_down, size: 16, color: Colors.white54),
           ],
@@ -1147,15 +1178,18 @@ class _HeaderToggle extends StatelessWidget {
           borderRadius: BorderRadius.circular(4),
           border: value
               ? Border.all(
-                  color: const Color(0xFF0098FF).withValues(alpha: 0.5))
+                  color: const Color(0xFF0098FF).withValues(alpha: 0.5),
+                )
               : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                size: 16,
-                color: value ? const Color(0xFF0098FF) : Colors.white54),
+            Icon(
+              icon,
+              size: 16,
+              color: value ? const Color(0xFF0098FF) : Colors.white54,
+            ),
             const SizedBox(width: 6),
             Text(
               label,
@@ -1186,10 +1220,7 @@ class _FeatureChip extends StatelessWidget {
           Container(
             width: 8,
             height: 8,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 8),
           Text(

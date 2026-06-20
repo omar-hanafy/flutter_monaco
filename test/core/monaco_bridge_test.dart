@@ -46,7 +46,7 @@ void main() {
         final bridge = MonacoBridge();
         // Lists should not crash, just not be processed as events
         bridge.handleJavaScriptMessage([
-          {'event': 'stats'}
+          {'event': 'stats'},
         ]);
         expect(bridge.liveStats.value.lineCount.value, 0); // Default
       });
@@ -155,8 +155,12 @@ void main() {
         bridge.handleJavaScriptMessage('{"event":"focus"}');
         bridge.handleJavaScriptMessage('{"event":"blur"}');
 
-        expect(
-            received, ['contentChanged', 'selectionChanged', 'focus', 'blur']);
+        expect(received, [
+          'contentChanged',
+          'selectionChanged',
+          'focus',
+          'blur',
+        ]);
       });
 
       test('isolates exceptions between listeners', () {

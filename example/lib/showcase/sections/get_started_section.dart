@@ -35,13 +35,16 @@ class GetStartedSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Get started in seconds',
-              style: ShowcaseText.h1.copyWith(color: c.textPrimary)),
+          Text(
+            'Get started in seconds',
+            style: ShowcaseText.h1.copyWith(color: c.textPrimary),
+          ),
           const SizedBox(height: Insets.md),
           Text(
-              'Add the package, drop in the widget, and you have a working '
-              'editor.',
-              style: ShowcaseText.bodyLg.copyWith(color: c.textSecondary)),
+            'Add the package, drop in the widget, and you have a working '
+            'editor.',
+            style: ShowcaseText.bodyLg.copyWith(color: c.textSecondary),
+          ),
           const SizedBox(height: Insets.xl),
           const _Step(
             number: 1,
@@ -102,13 +105,13 @@ class _Step extends StatelessWidget {
                   gradient: accentGradient,
                   shape: BoxShape.circle,
                 ),
-                child: Text('$number',
-                    style: ShowcaseText.label.copyWith(color: Colors.white)),
+                child: Text(
+                  '$number',
+                  style: ShowcaseText.label.copyWith(color: Colors.white),
+                ),
               ),
               if (!isLast)
-                Expanded(
-                  child: Container(width: 2, color: c.border),
-                ),
+                Expanded(child: Container(width: 2, color: c.border)),
             ],
           ),
           const SizedBox(width: Insets.md),
@@ -120,8 +123,10 @@ class _Step extends StatelessWidget {
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(top: 6, bottom: Insets.md),
-                    child: Text(title,
-                        style: ShowcaseText.h3.copyWith(color: c.textPrimary)),
+                    child: Text(
+                      title,
+                      style: ShowcaseText.h3.copyWith(color: c.textPrimary),
+                    ),
                   ),
                   child,
                 ],

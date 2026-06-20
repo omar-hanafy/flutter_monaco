@@ -77,14 +77,17 @@ class _ShowcaseAppState extends State<ShowcaseApp> {
                     child: Column(
                       children: [
                         HeroSection(
-                            onTryPlayground: () => _scrollTo(_playgroundKey)),
+                          onTryPlayground: () => _scrollTo(_playgroundKey),
+                        ),
                         PlaygroundSection(
                           key: _playgroundKey,
                           controller: _controller,
                           routeObserver: _routeObserver,
                         ),
                         FeaturesSection(
-                            key: _featuresKey, controller: _controller),
+                          key: _featuresKey,
+                          controller: _controller,
+                        ),
                         const GetStartedSection(),
                         const SiteFooter(),
                       ],

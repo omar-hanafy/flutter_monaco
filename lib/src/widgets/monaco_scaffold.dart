@@ -135,8 +135,9 @@ class MonacoScaffold extends StatelessWidget {
       floatingActionButton: _shield(floatingActionButton),
       floatingActionButtonLocation: floatingActionButtonLocation,
       floatingActionButtonAnimator: floatingActionButtonAnimator,
-      persistentFooterButtons:
-          persistentFooterButtons?.map((button) => _shield(button)!).toList(),
+      persistentFooterButtons: persistentFooterButtons
+          ?.map((button) => _shield(button)!)
+          .toList(),
       persistentFooterAlignment: persistentFooterAlignment,
       drawer: _shield(drawer),
       onDrawerChanged: onDrawerChanged,
@@ -160,20 +161,14 @@ class MonacoScaffold extends StatelessWidget {
     if (child == null) return null;
     if (!shieldStaticOverlays) return child;
 
-    return MonacoOverlayBoundary(
-      debug: overlayDebug,
-      child: child,
-    );
+    return MonacoOverlayBoundary(debug: overlayDebug, child: child);
   }
 
   PreferredSizeWidget? _shieldPreferredSize(PreferredSizeWidget? child) {
     if (child == null) return null;
     if (!shieldStaticOverlays) return child;
 
-    return _PreferredMonacoOverlayBoundary(
-      debug: overlayDebug,
-      child: child,
-    );
+    return _PreferredMonacoOverlayBoundary(debug: overlayDebug, child: child);
   }
 }
 
@@ -192,9 +187,6 @@ class _PreferredMonacoOverlayBoundary extends StatelessWidget
 
   @override
   Widget build(BuildContext context) {
-    return MonacoOverlayBoundary(
-      debug: debug,
-      child: child,
-    );
+    return MonacoOverlayBoundary(debug: debug, child: child);
   }
 }

@@ -13,7 +13,7 @@ import 'package:flutter_monaco/src/platform/platform_webview.dart';
 ///
 /// If you encounter errors from this stub, verify that:
 /// 1. You're running on a supported platform (Android, iOS, macOS, Windows, Web)
-/// 2. The `webview_flutter` or `webview_windows` dependencies are properly configured
+/// 2. The `webview_flutter` or `webview_flutter_windows` dependencies are properly configured
 ///
 /// See also:
 /// - [web_view_controller.dart] for the conditional export logic.

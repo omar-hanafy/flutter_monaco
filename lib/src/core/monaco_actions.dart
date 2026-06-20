@@ -487,7 +487,7 @@ class MonacoAction {
   static const String unicodeHighlightDisableHighlightingOfInvisibleCharacters =
       'editor.action.unicodeHighlight.disableHighlightingOfInvisibleCharacters';
   static const String
-      unicodeHighlightDisableHighlightingOfNonBasicAsciiCharacters =
+  unicodeHighlightDisableHighlightingOfNonBasicAsciiCharacters =
       'editor.action.unicodeHighlight.disableHighlightingOfNonBasicAsciiCharacters';
   static const String unicodeHighlightShowExcludeOptions =
       'editor.action.unicodeHighlight.showExcludeOptions';

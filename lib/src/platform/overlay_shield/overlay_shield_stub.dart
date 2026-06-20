@@ -11,10 +11,7 @@ class MonacoOverlayDomShield {
 
   /// No-op constructor. Construction is permitted so callers can share the
   /// same code path on web and native, but no DOM work happens.
-  MonacoOverlayDomShield({
-    required int flutterViewId,
-    required bool debug,
-  });
+  MonacoOverlayDomShield({required int flutterViewId, required bool debug});
 
   /// Update the shield's tracked rect. No-op on native.
   void update(Rect rect) {}
