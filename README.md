@@ -1,13 +1,17 @@
 # Flutter Monaco
 
-[![pub package](https://img.shields.io/pub/v/flutter_monaco.svg?label=pub)](https://pub.dev/packages/flutter_monaco)
-[![License: MIT](https://img.shields.io/badge/License-MIT-success.svg)](LICENSE)
-[![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20macOS%20%7C%20Windows%20%7C%20Web-blue)](#platform-support)
+[![pub package](https://img.shields.io/pub/v/flutter_monaco.svg?label=pub)](https://omar-hanafy.github.io/flutter-monaco/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-success.svg)](https://omar-hanafy.github.io/flutter-monaco/)
+[![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20macOS%20%7C%20Windows%20%7C%20Web-blue)](https://omar-hanafy.github.io/flutter-monaco/)
 
 A Flutter plugin for integrating the Monaco Editor (VS Code's editor) into Flutter applications via WebView.
 
+Check the [live demo here](https://omar-hanafy.github.io/flutter-monaco/) to try Flutter Monaco in your browser.
+
 <p align="center">
-  <img src="https://github.com/omar-hanafy/flutter_monaco/blob/main/screenshots/macos.png?raw=true" alt="Flutter Monaco Editor on macOS" width="90%">
+  <a href="https://omar-hanafy.github.io/flutter-monaco/">
+    <img src="https://github.com/omar-hanafy/flutter_monaco/blob/main/screenshots/macos.png?raw=true" alt="Flutter Monaco Editor on macOS" width="90%">
+  </a>
 </p>
 
 ## Features
@@ -37,20 +41,20 @@ A Flutter plugin for integrating the Monaco Editor (VS Code's editor) into Flutt
     <td align="center" width="50%"><b>Android</b></td>
   </tr>
   <tr>
-    <td><img src="https://github.com/omar-hanafy/flutter_monaco/blob/main/screenshots/ios.jpg?raw=true" alt="iOS Screenshot" width="100%"></td>
-    <td><img src="https://github.com/omar-hanafy/flutter_monaco/blob/main/screenshots/android.jpg?raw=true" alt="Android Screenshot" width="100%"></td>
+    <td><a href="https://omar-hanafy.github.io/flutter-monaco/"><img src="https://github.com/omar-hanafy/flutter_monaco/blob/main/screenshots/ios.jpg?raw=true" alt="iOS Screenshot" width="100%"></a></td>
+    <td><a href="https://omar-hanafy.github.io/flutter-monaco/"><img src="https://github.com/omar-hanafy/flutter_monaco/blob/main/screenshots/android.jpg?raw=true" alt="Android Screenshot" width="100%"></a></td>
   </tr>
   <tr>
     <td align="center" colspan="2"><b>Windows</b></td>
   </tr>
   <tr>
-    <td colspan="2"><img src="https://github.com/omar-hanafy/flutter_monaco/blob/main/screenshots/windows.png?raw=true" alt="Windows Screenshot" width="100%"></td>
+    <td colspan="2"><a href="https://omar-hanafy.github.io/flutter-monaco/"><img src="https://github.com/omar-hanafy/flutter_monaco/blob/main/screenshots/windows.png?raw=true" alt="Windows Screenshot" width="100%"></a></td>
   </tr>
   <tr>
     <td align="center" colspan="2"><b>Web</b></td>
   </tr>
   <tr>
-    <td colspan="2"><img src="https://github.com/omar-hanafy/flutter_monaco/blob/main/screenshots/web.png?raw=true" alt="Web Screenshot" width="100%"></td>
+    <td colspan="2"><a href="https://omar-hanafy.github.io/flutter-monaco/"><img src="https://github.com/omar-hanafy/flutter_monaco/blob/main/screenshots/web.png?raw=true" alt="Web Screenshot" width="100%"></a></td>
   </tr>
 </table>
 
@@ -910,11 +914,7 @@ This pattern works on all platforms and is the recommended approach. The `Monaco
 
 ### Live Web Demo
 
-You can try the live web demo here:
-
-```text
-https://omar-hanafy.github.io/flutter-monaco/
-```
+You can try the [live web demo here](https://omar-hanafy.github.io/flutter-monaco/).
 
 The [example](example/) directory contains a full demonstration app with:
 
