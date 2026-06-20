@@ -86,33 +86,28 @@ class _EditorCard extends StatelessWidget {
           ),
         ],
       ),
-      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           _Toolbar(controller: controller),
           Divider(height: 1, color: c.border),
+          // Keep the iframe-backed HtmlElementView as a direct sized child.
+          // In the web showcase, Stack/Positioned.fill collapses its DOM rect.
           SizedBox(
             height: editorHeight,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: MonacoEditor(
-                    key: const ValueKey('showcase-playground-editor'),
-                    options: controller.initialEditorOptions,
-                    initialValue: controller.initialValue,
-                    customCss: kEditorCustomCss,
-                    backgroundColor: const Color(0xFF0D1117),
-                    onReady: controller.attachEditor,
-                  ),
-                ),
-                if (monaco != null)
-                  MonacoFocusGuard(
-                    controller: monaco,
-                    modalRouteObserver: routeObserver,
-                  ),
-              ],
+            child: MonacoEditor(
+              key: const ValueKey('showcase-playground-editor'),
+              options: controller.initialEditorOptions,
+              initialValue: controller.initialValue,
+              customCss: kEditorCustomCss,
+              backgroundColor: const Color(0xFF0D1117),
+              onReady: controller.attachEditor,
             ),
           ),
+          if (monaco != null)
+            MonacoFocusGuard(
+              controller: monaco,
+              modalRouteObserver: routeObserver,
+            ),
           if (controller.hint != null)
             _HintBanner(
               hint: controller.hint!,
