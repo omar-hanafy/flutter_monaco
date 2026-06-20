@@ -1,38 +1,103 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="description" content="Embed Monaco - the editor that powers VS Code - in your Flutter app. 100+ languages, rich theming, IntelliSense, and a full Dart API. Web, desktop and mobile.">
+  <meta name="theme-color" content="#0D1117">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="flutter_monaco - VS Code's editor, inside Flutter">
+  <meta property="og:description" content="Embed Monaco - the editor that powers VS Code - in your Flutter app. 100+ languages, theming, IntelliSense, and a full Dart API.">
+  <meta property="og:url" content="https://omar-hanafy.github.io/flutter-monaco/">
+  <meta property="og:image" content="https://omar-hanafy.github.io/flutter-monaco/og.png">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="flutter_monaco - VS Code's editor, inside Flutter">
+  <meta name="twitter:description" content="Embed Monaco in your Flutter app. 100+ languages, theming, IntelliSense, and a full Dart API.">
+  <meta name="twitter:image" content="https://omar-hanafy.github.io/flutter-monaco/og.png">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="flutter_monaco_example">
+  <meta name="apple-mobile-web-app-title" content="flutter_monaco">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>flutter_monaco_example</title>
+  <title>flutter_monaco - VS Code's editor, inside Flutter</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    html, body { margin: 0; padding: 0; background-color: #0D1117; }
+    #loading {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: #0D1117;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    #loading .mark {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #0098FF, #00D8FF, #6E5BFF);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 12px 40px rgba(0, 152, 255, 0.35);
+    }
+    #loading .title {
+      margin-top: 20px;
+      color: #E6EDF3;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+    #loading .sub { margin-top: 6px; color: #8B949E; font-size: 13px; }
+    #loading .spinner {
+      margin-top: 22px;
+      width: 26px;
+      height: 26px;
+      border: 3px solid #21262D;
+      border-top-color: #0098FF;
+      border-radius: 50%;
+      animation: fm-spin 0.8s linear infinite;
+    }
+    @keyframes fm-spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
+  <div id="loading">
+    <div class="mark">
+      <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="16 18 22 12 16 6"></polyline>
+        <polyline points="8 6 2 12 8 18"></polyline>
+      </svg>
+    </div>
+    <div class="title">flutter_monaco</div>
+    <div class="sub">Loading the editor...</div>
+    <div class="spinner"></div>
+  </div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var el = document.getElementById('loading');
+      if (!el) return;
+      el.style.transition = 'opacity 0.3s ease';
+      el.style.opacity = '0';
+      setTimeout(function () { el.remove(); }, 320);
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -1,11 +1,11 @@
 {
-    "name": "flutter_monaco_example",
-    "short_name": "flutter_monaco_example",
+    "name": "flutter_monaco - VS Code's editor, inside Flutter",
+    "short_name": "flutter_monaco",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0D1117",
+    "theme_color": "#0D1117",
+    "description": "Embed Monaco - the editor that powers VS Code - in your Flutter app. 100+ languages, theming, IntelliSense, and a full Dart API.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
