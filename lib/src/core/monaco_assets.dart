@@ -821,6 +821,17 @@ class MonacoAssets {
                         if (!rect.width || !rect.height) {
                           return requestAnimationFrame(attempt);
                         }
+                        // Idempotency guard: if the editor's input already owns
+                        // focus, return WITHOUT the document.body.focus() handoff
+                        // below. That handoff blurs then refocuses, which flickers
+                        // the caret and tears down an open context menu. Refocusing
+                        // an already-focused editor must be a no-op - this removes
+                        // the flicker for EVERY caller, not just guarded pointers.
+                        const input = node.querySelector(
+                          'textarea.inputarea, .native-edit-context');
+                        if (input && document.activeElement === input) {
+                          return;
+                        }
                         try { window.focus && window.focus(); } catch (_) {}
                         try {
                           if (document.body && !document.body.hasAttribute('tabindex')) {

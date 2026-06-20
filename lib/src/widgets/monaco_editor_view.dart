@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
@@ -15,6 +16,19 @@ enum _ConnectionState {
 
   /// An error occurred during the initialization of the editor.
   error,
+}
+
+bool _pointerMayClaimKeyboard(PointerDownEvent event) {
+  if (event.kind == PointerDeviceKind.mouse ||
+      event.kind == PointerDeviceKind.trackpad) {
+    return event.buttons == kPrimaryMouseButton;
+  }
+  return true;
+}
+
+bool _pointerShouldNudgeFocus(PointerDownEvent event,
+    {required bool hasFocus}) {
+  return !hasFocus && _pointerMayClaimKeyboard(event);
 }
 
 /// A widget that renders a Monaco Editor instance.
@@ -535,11 +549,15 @@ class _MonacoEditorState extends State<MonacoEditor> {
           },
           child: Listener(
             behavior: HitTestBehavior.translucent,
-            onPointerDown: (_) {
+            onPointerDown: (event) {
               if (!widget.interactionEnabled) return;
-              if (!_webFocusNode.hasFocus) {
-                _webFocusNode.requestFocus();
+              if (!_pointerShouldNudgeFocus(
+                event,
+                hasFocus: _webFocusNode.hasFocus,
+              )) {
+                return;
               }
+              _webFocusNode.requestFocus();
               unawaited(_controller!.ensureEditorFocus(attempts: 1));
             },
             child: _controller!.webViewWidget,

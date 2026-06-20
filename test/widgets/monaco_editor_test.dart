@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -372,6 +373,102 @@ void main() {
             find.ancestor(of: webview, matching: monacoPointerWrapper),
             findsOneWidget,
           );
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      });
+
+      testWidgets('desktop primary mouse down requests editor focus',
+          (tester) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        try {
+          final bundle = await _createBundle();
+          await tester.pumpWidget(_wrap(MonacoEditor(
+            controller: bundle.controller,
+          )));
+          await tester.pumpAndSettle();
+          bundle.webview.executed.clear();
+
+          final gesture = await tester.createGesture(
+            kind: PointerDeviceKind.mouse,
+            buttons: kPrimaryMouseButton,
+          );
+          await gesture
+              .down(tester.getCenter(find.byKey(const Key('webview'))));
+          await tester.pumpAndSettle();
+          await gesture.up();
+
+          expect(bundle.webview.executed, contains('REQUEST_NATIVE_FOCUS'));
+          bundle.webview.assertExecuted('forceFocus');
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      });
+
+      testWidgets('desktop secondary mouse down does not force editor focus',
+          (tester) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        try {
+          final bundle = await _createBundle();
+          await tester.pumpWidget(_wrap(MonacoEditor(
+            controller: bundle.controller,
+          )));
+          await tester.pumpAndSettle();
+          bundle.webview.executed.clear();
+
+          final gesture = await tester.createGesture(
+            kind: PointerDeviceKind.mouse,
+            buttons: kSecondaryMouseButton,
+          );
+          await gesture
+              .down(tester.getCenter(find.byKey(const Key('webview'))));
+          await tester.pumpAndSettle();
+          await gesture.up();
+
+          expect(
+            bundle.webview.executed,
+            isNot(contains('REQUEST_NATIVE_FOCUS')),
+          );
+          bundle.webview.assertNotExecuted('forceFocus');
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      });
+
+      testWidgets('desktop repeated primary mouse down does not refocus',
+          (tester) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        try {
+          final bundle = await _createBundle();
+          await tester.pumpWidget(_wrap(MonacoEditor(
+            controller: bundle.controller,
+          )));
+          await tester.pumpAndSettle();
+
+          final target = tester.getCenter(find.byKey(const Key('webview')));
+          final first = await tester.createGesture(
+            kind: PointerDeviceKind.mouse,
+            buttons: kPrimaryMouseButton,
+          );
+          await first.down(target);
+          await tester.pumpAndSettle();
+          await first.up();
+          await tester.pump();
+
+          bundle.webview.executed.clear();
+          final second = await tester.createGesture(
+            kind: PointerDeviceKind.mouse,
+            buttons: kPrimaryMouseButton,
+          );
+          await second.down(target);
+          await tester.pumpAndSettle();
+          await second.up();
+
+          expect(
+            bundle.webview.executed,
+            isNot(contains('REQUEST_NATIVE_FOCUS')),
+          );
+          bundle.webview.assertNotExecuted('forceFocus');
         } finally {
           debugDefaultTargetPlatformOverride = null;
         }
