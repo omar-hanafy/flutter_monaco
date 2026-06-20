@@ -453,6 +453,9 @@ void main() {
           await first.down(target);
           await tester.pumpAndSettle();
           await first.up();
+          // Monaco reports the editor focused after the first click; a second
+          // click on the already-focused editor must not replay focus.
+          bundle.webview.emitToChannel('flutterChannel', '{"event":"focus"}');
           await tester.pump();
 
           bundle.webview.executed.clear();
@@ -469,6 +472,54 @@ void main() {
             isNot(contains('REQUEST_NATIVE_FOCUS')),
           );
           bundle.webview.assertNotExecuted('forceFocus');
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      });
+
+      testWidgets(
+          'desktop click re-asserts focus after Monaco blurs (alt-tab/dialog '
+          'desync)', (tester) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        try {
+          final bundle = await _createBundle();
+          await tester.pumpWidget(_wrap(MonacoEditor(
+            controller: bundle.controller,
+          )));
+          await tester.pumpAndSettle();
+
+          final target = tester.getCenter(find.byKey(const Key('webview')));
+          // First click focuses; Monaco then reports focused.
+          final first = await tester.createGesture(
+            kind: PointerDeviceKind.mouse,
+            buttons: kPrimaryMouseButton,
+          );
+          await first.down(target);
+          await tester.pumpAndSettle();
+          await first.up();
+          bundle.webview.emitToChannel('flutterChannel', '{"event":"focus"}');
+          await tester.pump();
+
+          // The editor silently loses native focus (alt-tab / dialog): Monaco
+          // reports a blur while Flutter still thinks the view is focused.
+          bundle.webview.emitToChannel('flutterChannel', '{"event":"blur"}');
+          await tester.pump();
+          bundle.webview.executed.clear();
+
+          // A click must now re-assert focus so typing recovers.
+          final second = await tester.createGesture(
+            kind: PointerDeviceKind.mouse,
+            buttons: kPrimaryMouseButton,
+          );
+          await second.down(target);
+          await tester.pumpAndSettle();
+          await second.up();
+
+          expect(
+            bundle.webview.executed,
+            contains('REQUEST_NATIVE_FOCUS'),
+          );
+          bundle.webview.assertExecuted('forceFocus');
         } finally {
           debugDefaultTargetPlatformOverride = null;
         }
