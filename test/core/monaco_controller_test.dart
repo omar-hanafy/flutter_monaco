@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_monaco/src/core/monaco_bridge.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -1218,6 +1219,20 @@ void main() {
         'focused Flutter text input',
         (tester) async {
           final bundle = await _createBundle();
+          final textInputCalls = <MethodCall>[];
+          tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.textInput,
+            (call) async {
+              textInputCalls.add(call);
+              return null;
+            },
+          );
+          addTearDown(() {
+            tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+              SystemChannels.textInput,
+              null,
+            );
+          });
           final focusNode = FocusNode();
           addTearDown(focusNode.dispose);
 
@@ -1230,6 +1245,7 @@ void main() {
           );
           await tester.pump();
           expect(focusNode.hasPrimaryFocus, isTrue);
+          textInputCalls.clear();
 
           // While the TextField owns the keyboard, both helpers must no-op:
           // on Windows requestNativeFocus would move real Win32 focus to the
@@ -1249,6 +1265,10 @@ void main() {
             bundle.webview.executed,
             isNot(contains('REQUEST_NATIVE_FOCUS')),
           );
+          expect(
+            textInputCalls.map((call) => call.method),
+            isNot(contains('TextInput.hide')),
+          );
 
           // Once the text input releases the keyboard, focusing works again.
           focusNode.unfocus();
@@ -1256,6 +1276,83 @@ void main() {
           await tester.runAsync(() => bundle.controller.focus());
           expect(bundle.webview.executed, contains('REQUEST_NATIVE_FOCUS'));
           expect(bundle.webview.executed.join('\n'), contains('forceFocus'));
+        },
+      );
+
+      testWidgets(
+        'user focus intent releases Flutter text input before editor focus',
+        (tester) async {
+          debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+          final textInputCalls = <MethodCall>[];
+          FakePlatformWebViewController? activeWebview;
+          tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.textInput,
+            (call) async {
+              textInputCalls.add(call);
+              activeWebview?.executed.add('TEXT_INPUT:${call.method}');
+              return null;
+            },
+          );
+          addTearDown(() {
+            tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+              SystemChannels.textInput,
+              null,
+            );
+            debugDefaultTargetPlatformOverride = null;
+          });
+
+          try {
+            final bundle = await _createBundle();
+            activeWebview = bundle.webview;
+            final focusNode = FocusNode();
+            addTearDown(focusNode.dispose);
+
+            await tester.pumpWidget(
+              MaterialApp(
+                home: Scaffold(
+                  body: TextField(focusNode: focusNode, autofocus: true),
+                ),
+              ),
+            );
+            await tester.pump();
+            expect(focusNode.hasPrimaryFocus, isTrue);
+
+            bundle.webview.executed.clear();
+            textInputCalls.clear();
+
+            await tester.runAsync(
+              () => bundle.controller.ensureEditorFocus(
+                attempts: 1,
+                interval: Duration.zero,
+                intent: MonacoFocusIntent.user,
+              ),
+            );
+            await tester.pump();
+
+            expect(focusNode.hasPrimaryFocus, isFalse);
+            expect(
+              textInputCalls.map((call) => call.method),
+              contains('TextInput.hide'),
+            );
+
+            final calls = bundle.webview.executed;
+            expect(calls, contains('TEXT_INPUT:TextInput.hide'));
+            expect(calls, contains('REQUEST_NATIVE_FOCUS'));
+            expect(calls.join('\n'), contains('forceFocus'));
+
+            final textInputIndex = calls.indexOf('TEXT_INPUT:TextInput.hide');
+            final nativeFocusIndex = calls.indexOf('REQUEST_NATIVE_FOCUS');
+            final forceFocusIndex = calls.indexWhere(
+              (call) => call.contains('forceFocus'),
+            );
+            expect(textInputIndex, isNonNegative);
+            expect(nativeFocusIndex, isNonNegative);
+            expect(forceFocusIndex, isNonNegative);
+            expect(textInputIndex, lessThan(nativeFocusIndex));
+            expect(nativeFocusIndex, lessThan(forceFocusIndex));
+          } finally {
+            debugDefaultTargetPlatformOverride = null;
+          }
         },
       );
 

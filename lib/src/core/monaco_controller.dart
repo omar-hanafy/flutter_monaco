@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:convert_object/convert_object.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_monaco/src/core/monaco_bridge.dart';
 import 'package:flutter_monaco/src/platform/platform_webview.dart';
@@ -18,7 +19,8 @@ typedef CompletionProvider =
 ///
 /// The distinction matters on desktop platform views: background maintenance
 /// must not steal the keyboard from Flutter text inputs, while direct user
-/// interaction with Monaco is an intentional keyboard handoff.
+/// interaction with Monaco is an intentional keyboard handoff that may release
+/// Flutter's active text input before Monaco is focused.
 enum MonacoFocusIntent {
   /// Focus requested because the user directly interacted with Monaco.
   user,
@@ -593,6 +595,25 @@ class MonacoController {
         intent == MonacoFocusIntent.user;
   }
 
+  static bool _shouldReleaseFlutterTextInput(MonacoFocusIntent intent) {
+    if (kIsWeb || intent != MonacoFocusIntent.user) return false;
+    return defaultTargetPlatform == TargetPlatform.macOS ||
+        defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.linux;
+  }
+
+  static Future<void> _releaseFlutterTextInputForUserFocus() async {
+    if (_flutterTextInputHasFocus()) {
+      try {
+        FocusManager.instance.primaryFocus?.unfocus();
+      } catch (_) {}
+    }
+    try {
+      await SystemChannels.textInput.invokeMethod<void>('TextInput.hide');
+    } catch (_) {}
+    await Future<void>.delayed(Duration.zero);
+  }
+
   static String _forceFocusScript(MonacoFocusIntent intent) {
     final replayArg = _shouldReplayInputFocus(intent)
         ? '({ replayInputFocus: true })'
@@ -634,9 +655,11 @@ class MonacoController {
   /// resume cannot steal the keyboard from a focused TextField.
   ///
   /// Pass [MonacoFocusIntent.user] only from direct user interaction with the
-  /// editor, such as a primary pointer down inside the Monaco view. On macOS
-  /// that intent also replays the in-page focus path because WKWebView native
-  /// input readiness can become stale while Monaco still reports DOM focus.
+  /// editor, such as a primary pointer down inside the Monaco view. On desktop
+  /// that intent first releases Flutter's text-input channel so a stale
+  /// TextField/dialog client cannot keep swallowing native input. On macOS it
+  /// also replays the in-page focus path because WKWebView native input
+  /// readiness can become stale while Monaco still reports DOM focus.
   Future<void> ensureEditorFocus({
     int attempts = 3,
     Duration interval = const Duration(milliseconds: 24),
@@ -653,6 +676,11 @@ class MonacoController {
         (defaultTargetPlatform == TargetPlatform.android ||
             defaultTargetPlatform == TargetPlatform.iOS);
     final effectiveAttempts = isMobileNative ? 1 : attempts;
+    if (effectiveAttempts <= 0) return;
+
+    if (_shouldReleaseFlutterTextInput(intent)) {
+      await _releaseFlutterTextInputForUserFocus();
+    }
 
     for (var i = 0; i < effectiveAttempts; i++) {
       // Re-evaluated per attempt: a text input losing focus mid-loop (e.g.
