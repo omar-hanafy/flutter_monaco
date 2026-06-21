@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../data/showcase_metadata.dart';
 import '../theme/showcase_text.dart';
 import '../theme/showcase_tokens.dart';
 import '../util/links.dart';
@@ -8,29 +9,31 @@ import '../widgets/section_container.dart';
 
 /// The page footer: link columns + brand line.
 class SiteFooter extends StatelessWidget {
-  const SiteFooter({super.key});
+  const SiteFooter({super.key, required this.metadata});
+
+  final ShowcaseMetadata metadata;
 
   @override
   Widget build(BuildContext context) {
     final c = context.showcaseColors;
     final mobile = Breakpoints.isMobile(MediaQuery.sizeOf(context).width);
 
-    final brand = _Brand();
+    final brand = _Brand(metadata: metadata);
     final columns = [
       _LinkColumn(
         title: 'Package',
-        links: const [
-          ('pub.dev', Links.pubDev),
-          ('API docs', Links.apiDocs),
-          ('Changelog', Links.changelog),
+        links: [
+          ('pub.dev', metadata.pubDevUrl),
+          ('API docs', metadata.apiDocsUrl),
+          ('Changelog', metadata.changelogUrl),
         ],
       ),
       _LinkColumn(
         title: 'Source',
-        links: const [
-          ('GitHub', Links.github),
-          ('Issues', Links.issues),
-          ('License', Links.license),
+        links: [
+          ('GitHub', metadata.repositoryUrl),
+          ('Issues', metadata.issueUrl),
+          ('License', metadata.licenseUrl),
         ],
       ),
       _LinkColumn(
@@ -75,7 +78,7 @@ class SiteFooter extends StatelessWidget {
                 style: ShowcaseText.small.copyWith(color: c.textFaint),
               ),
               Text(
-                'v$kPackageVersion - MIT License',
+                '${metadata.versionLabel} - ${metadata.licenseLabel} License',
                 style: ShowcaseText.monoLabel.copyWith(color: c.textFaint),
               ),
             ],
@@ -87,6 +90,10 @@ class SiteFooter extends StatelessWidget {
 }
 
 class _Brand extends StatelessWidget {
+  const _Brand({required this.metadata});
+
+  final ShowcaseMetadata metadata;
+
   @override
   Widget build(BuildContext context) {
     final c = context.showcaseColors;
@@ -116,7 +123,7 @@ class _Brand extends StatelessWidget {
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 320),
           child: Text(
-            "VS Code's editor, inside your Flutter app.",
+            metadata.productSummary,
             style: ShowcaseText.body.copyWith(color: c.textSecondary),
           ),
         ),
@@ -124,7 +131,7 @@ class _Brand extends StatelessWidget {
         MouseRegion(
           cursor: SystemMouseCursors.click,
           child: GestureDetector(
-            onTap: () => openUrl(Links.github),
+            onTap: () => openUrl(metadata.repositoryUrl),
             child: SvgPicture.asset(
               'assets/github.svg',
               package: 'flutter_monaco',

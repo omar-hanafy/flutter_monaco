@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_monaco_example/showcase/sections/features_section.dart';
 import 'package:flutter_monaco_example/showcase/sections/get_started_section.dart';
 import 'package:flutter_monaco_example/showcase/sections/hero_section.dart';
+import 'package:flutter_monaco_example/showcase/data/showcase_metadata.dart';
 import 'package:flutter_monaco_example/showcase/state/showcase_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -41,9 +42,15 @@ void main() {
   }
 
   Map<String, Widget> sections(ShowcaseController controller) => {
-    'hero': HeroSection(onTryPlayground: () {}),
-    'features': FeaturesSection(controller: controller),
-    'getStarted': const GetStartedSection(),
+    'hero': HeroSection(
+      metadata: ShowcaseMetadata.fallback,
+      onTryPlayground: () {},
+    ),
+    'features': FeaturesSection(
+      controller: controller,
+      metadata: ShowcaseMetadata.fallback,
+    ),
+    'getStarted': const GetStartedSection(metadata: ShowcaseMetadata.fallback),
   };
 
   testWidgets('sections render without overflow at tablet and desktop', (
@@ -76,7 +83,10 @@ void main() {
 
     await errorsFor(
       tester,
-      FeaturesSection(controller: controller),
+      FeaturesSection(
+        controller: controller,
+        metadata: ShowcaseMetadata.fallback,
+      ),
       const Size(390, 3600),
     );
     expect(find.text('Everything the editor can do'), findsOneWidget);

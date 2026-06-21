@@ -28,6 +28,7 @@ class SiteNav extends StatelessWidget {
     final width = MediaQuery.sizeOf(context).width;
     final compact = Breakpoints.isMobile(width);
     final horizontal = compact ? Insets.lg : Insets.xl;
+    final metadata = controller.metadata;
 
     return Container(
       height: height,
@@ -38,7 +39,7 @@ class SiteNav extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _Logo(),
+          _Logo(versionLabel: metadata.versionLabel),
           const Spacer(),
           if (!compact) ...[
             _NavLink(label: 'Features', onTap: onTapFeatures),
@@ -48,32 +49,34 @@ class SiteNav extends StatelessWidget {
           ],
           ThemeToggle(controller: controller),
           const SizedBox(width: Insets.xs),
-          Tooltip(
-            message: 'GitHub',
-            child: Material(
-              color: Colors.transparent,
-              shape: const CircleBorder(),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: () => openUrl(Links.github),
-                child: Padding(
-                  padding: const EdgeInsets.all(Insets.sm),
-                  child: SvgPicture.asset(
-                    'assets/github.svg',
-                    package: 'flutter_monaco',
-                    width: 20,
-                    height: 20,
-                    colorFilter: ColorFilter.mode(
-                      c.textSecondary,
-                      BlendMode.srcIn,
+          if (!compact) ...[
+            Tooltip(
+              message: 'GitHub',
+              child: Material(
+                color: Colors.transparent,
+                shape: const CircleBorder(),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => openUrl(metadata.repositoryUrl),
+                  child: Padding(
+                    padding: const EdgeInsets.all(Insets.sm),
+                    child: SvgPicture.asset(
+                      'assets/github.svg',
+                      package: 'flutter_monaco',
+                      width: 20,
+                      height: 20,
+                      colorFilter: ColorFilter.mode(
+                        c.textSecondary,
+                        BlendMode.srcIn,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: Insets.sm),
-          _PubButton(compact: compact),
+            const SizedBox(width: Insets.sm),
+          ],
+          _PubButton(compact: compact, url: metadata.pubDevUrl),
         ],
       ),
     );
@@ -81,6 +84,10 @@ class SiteNav extends StatelessWidget {
 }
 
 class _Logo extends StatelessWidget {
+  const _Logo({required this.versionLabel});
+
+  final String versionLabel;
+
   @override
   Widget build(BuildContext context) {
     final c = context.showcaseColors;
@@ -113,7 +120,7 @@ class _Logo extends StatelessWidget {
             border: Border.all(color: c.border),
           ),
           child: Text(
-            'v$kPackageVersion',
+            versionLabel,
             style: ShowcaseText.monoLabel.copyWith(color: c.textFaint),
           ),
         ),
@@ -145,30 +152,36 @@ class _NavLink extends StatelessWidget {
 }
 
 class _PubButton extends StatelessWidget {
-  const _PubButton({required this.compact});
+  const _PubButton({required this.compact, required this.url});
 
   final bool compact;
+  final String url;
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () => openUrl(Links.pubDev),
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: compact ? Insets.md : Insets.lg,
-            vertical: 9,
-          ),
-          decoration: BoxDecoration(
-            gradient: accentGradient,
-            borderRadius: BorderRadius.circular(Radii.sm),
-          ),
-          child: Text(
-            compact ? 'pub.dev' : 'Get it on pub.dev',
-            style: ShowcaseText.small.copyWith(color: Colors.white),
-          ),
-        ),
+    final child = Container(
+      width: compact ? 40 : null,
+      height: compact ? 40 : null,
+      padding: compact
+          ? EdgeInsets.zero
+          : const EdgeInsets.symmetric(horizontal: Insets.lg, vertical: 9),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        gradient: accentGradient,
+        borderRadius: BorderRadius.circular(Radii.sm),
+      ),
+      child: compact
+          ? const Icon(Icons.open_in_new_rounded, color: Colors.white, size: 18)
+          : Text(
+              'Get it on pub.dev',
+              style: ShowcaseText.small.copyWith(color: Colors.white),
+            ),
+    );
+    return Tooltip(
+      message: 'pub.dev',
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(onTap: () => openUrl(url), child: child),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
 
+import '../data/showcase_metadata.dart';
 import '../state/showcase_controller.dart';
 import '../theme/showcase_text.dart';
 import '../theme/showcase_tokens.dart';
@@ -10,9 +11,14 @@ import '../widgets/section_container.dart';
 /// The features grid. Each card's "Try it" scrolls to the playground and runs
 /// the matching live demo on the shared editor.
 class FeaturesSection extends StatelessWidget {
-  const FeaturesSection({super.key, required this.controller});
+  const FeaturesSection({
+    super.key,
+    required this.controller,
+    required this.metadata,
+  });
 
   final ShowcaseController controller;
+  final ShowcaseMetadata metadata;
 
   void _go(VoidCallback action) {
     controller.scrollToPlayground();
@@ -26,10 +32,10 @@ class FeaturesSection extends StatelessWidget {
     final cards = <FeatureCard>[
       FeatureCard(
         icon: Icons.translate_rounded,
-        title: '100+ languages',
+        title: '${metadata.typedLanguageCount} typed languages',
         body:
             'Syntax highlighting for Dart, TypeScript, Python, Rust, Go, '
-            'SQL and 100+ more - switch instantly.',
+            'SQL and more - switch instantly.',
         snippet: 'controller.setLanguage(MonacoLanguage.rust);',
         onTry: () => _go(() => controller.setLanguage(MonacoLanguage.rust)),
       ),
@@ -37,8 +43,8 @@ class FeaturesSection extends StatelessWidget {
         icon: Icons.palette_outlined,
         title: 'Theming',
         body:
-            'Four built-in themes, or register your own token colors with '
-            'defineTheme.',
+            '${metadata.builtInThemeCount} built-in themes, plus custom token '
+            'colors with defineTheme.',
         snippet: 'controller.defineTheme(midnightTheme);',
         onTry: () =>
             _go(() => controller.setPlaygroundTheme(PlaygroundTheme.midnight)),
@@ -91,7 +97,7 @@ class FeaturesSection extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 620),
             child: Text(
               'A typed Dart API over the full Monaco surface - drive any of '
-              'these on the live editor below.',
+              'these on the live ${metadata.versionLabel} editor below.',
               style: ShowcaseText.bodyLg.copyWith(color: c.textSecondary),
             ),
           ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
 
@@ -31,6 +33,7 @@ class _ShowcaseAppState extends State<ShowcaseApp> {
   void initState() {
     super.initState();
     _controller.onRequestScrollToPlayground = () => _scrollTo(_playgroundKey);
+    unawaited(_controller.loadMetadata());
   }
 
   void _scrollTo(GlobalKey key) {
@@ -56,6 +59,7 @@ class _ShowcaseAppState extends State<ShowcaseApp> {
       listenable: _controller,
       builder: (context, _) {
         final isDark = _controller.brightness == Brightness.dark;
+        final metadata = _controller.metadata;
         return MaterialApp(
           title: "flutter_monaco - VS Code's editor in Flutter",
           debugShowCheckedModeBanner: false,
@@ -77,6 +81,7 @@ class _ShowcaseAppState extends State<ShowcaseApp> {
                     child: Column(
                       children: [
                         HeroSection(
+                          metadata: metadata,
                           onTryPlayground: () => _scrollTo(_playgroundKey),
                         ),
                         PlaygroundSection(
@@ -87,9 +92,10 @@ class _ShowcaseAppState extends State<ShowcaseApp> {
                         FeaturesSection(
                           key: _featuresKey,
                           controller: _controller,
+                          metadata: metadata,
                         ),
-                        const GetStartedSection(),
-                        const SiteFooter(),
+                        GetStartedSection(metadata: metadata),
+                        SiteFooter(metadata: metadata),
                       ],
                     ),
                   ),

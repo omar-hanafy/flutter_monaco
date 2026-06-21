@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_monaco_example/showcase/data/demo_snippets.dart';
 import 'package:flutter_monaco_example/showcase/data/samples.dart';
+import 'package:flutter_monaco_example/showcase/data/showcase_metadata.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -27,8 +28,30 @@ void main() {
     });
 
     test('the JSON sample is valid JSON', () {
-      final decoded = jsonDecode(sampleFor(MonacoLanguage.json));
+      final decoded = jsonDecode(
+        sampleFor(MonacoLanguage.json, metadata: ShowcaseMetadata.fallback),
+      );
       expect(decoded, isA<Map<String, dynamic>>());
+    });
+
+    test('the JSON sample follows current package metadata', () {
+      final decoded =
+          jsonDecode(
+                sampleFor(
+                  MonacoLanguage.json,
+                  metadata: ShowcaseMetadata.fallback,
+                ),
+              )
+              as Map<String, dynamic>;
+
+      expect(decoded['version'], ShowcaseMetadata.fallback.version);
+      expect(decoded['platforms'], [
+        for (final platform in ShowcaseMetadata.fallback.platforms) platform.id,
+      ]);
+      expect(
+        (decoded['features'] as Map<String, dynamic>)['typedLanguages'],
+        MonacoLanguage.values.length,
+      );
     });
   });
 

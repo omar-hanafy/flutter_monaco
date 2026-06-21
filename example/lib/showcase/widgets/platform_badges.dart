@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../data/showcase_metadata.dart';
 import '../theme/showcase_text.dart';
 import '../theme/showcase_tokens.dart';
 
 /// A small chip row of the platforms the package supports.
 class PlatformBadges extends StatelessWidget {
-  const PlatformBadges({super.key});
+  const PlatformBadges({super.key, required this.platforms});
 
-  static const _items = <(IconData, String)>[
-    (Icons.public, 'Web'),
-    (Icons.phone_iphone, 'iOS'),
-    (Icons.android, 'Android'),
-    (Icons.laptop_mac, 'macOS'),
-    (Icons.desktop_windows, 'Windows'),
-  ];
+  final List<ShowcasePlatform> platforms;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +17,7 @@ class PlatformBadges extends StatelessWidget {
       spacing: Insets.sm,
       runSpacing: Insets.sm,
       children: [
-        for (final (icon, label) in _items)
+        for (final platform in platforms)
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: Insets.md,
@@ -36,10 +31,10 @@ class PlatformBadges extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 15, color: c.textSecondary),
+                Icon(iconFor(platform), size: 15, color: c.textSecondary),
                 const SizedBox(width: 6),
                 Text(
-                  label,
+                  platform.label,
                   style: ShowcaseText.small.copyWith(color: c.textSecondary),
                 ),
               ],
@@ -48,4 +43,14 @@ class PlatformBadges extends StatelessWidget {
       ],
     );
   }
+
+  IconData iconFor(ShowcasePlatform platform) => switch (platform.id) {
+    'web' => Icons.public,
+    'ios' => Icons.phone_iphone,
+    'android' => Icons.android,
+    'macos' => Icons.laptop_mac,
+    'windows' => Icons.desktop_windows,
+    'linux' => Icons.terminal,
+    _ => Icons.devices_other,
+  };
 }

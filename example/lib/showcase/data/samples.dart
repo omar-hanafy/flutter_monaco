@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter_monaco/flutter_monaco.dart';
+
+import 'showcase_metadata.dart';
 
 /// The curated set of languages offered in the playground language picker,
 /// in display order. Every entry has a matching sample in [_samples].
@@ -22,8 +26,14 @@ const List<MonacoLanguage> kPlaygroundLanguages = [
 
 /// Returns the sample source for [language], or a short plaintext placeholder
 /// when no curated sample exists.
-String sampleFor(MonacoLanguage language) =>
-    _samples[language] ?? '// ${language.label} sample\n';
+String sampleFor(
+  MonacoLanguage language, {
+  ShowcaseMetadata metadata = ShowcaseMetadata.fallback,
+}) {
+  if (language == MonacoLanguage.json) return _jsonSample(metadata);
+  if (language == MonacoLanguage.markdown) return _markdownSample(metadata);
+  return _samples[language] ?? '// ${language.label} sample\n';
+}
 
 final Map<MonacoLanguage, String> _samples = {
   MonacoLanguage.dart: r'''
@@ -102,20 +112,6 @@ def total_path(points: Iterable[Point]) -> float:
 
 
 print(total_path([Point(0, 0), Point(3, 4), Point(3, 0)]))
-''',
-  MonacoLanguage.json: r'''
-{
-  "name": "flutter_monaco",
-  "version": "1.7.1",
-  "description": "VS Code's editor, inside your Flutter app.",
-  "platforms": ["web", "ios", "android", "macos", "windows"],
-  "features": {
-    "languages": 100,
-    "themes": ["vs", "vs-dark", "hc-black", "hc-light"],
-    "intelliSense": true,
-    "diagnostics": true
-  }
-}
 ''',
   MonacoLanguage.rust: r'''
 #[derive(Debug, Clone)]
@@ -237,24 +233,6 @@ jobs:
   transform: translateY(-2px);
 }
 ''',
-  MonacoLanguage.markdown: r'''
-# flutter_monaco
-
-> VS Code's editor, inside your Flutter app.
-
-## Features
-
-- **100+ languages** with syntax highlighting
-- **Theming** - 4 built-ins + define your own
-- **IntelliSense** - custom completion providers
-- **Diagnostics** - markers + JSON schema validation
-
-```dart
-MonacoEditor(
-  options: EditorOptions(language: MonacoLanguage.dart),
-)
-```
-''',
   MonacoLanguage.java: r'''
 import java.util.List;
 import java.util.stream.Collectors;
@@ -303,3 +281,35 @@ for reading in readings {
 }
 ''',
 };
+
+String _jsonSample(ShowcaseMetadata metadata) {
+  const encoder = JsonEncoder.withIndent('  ');
+  return '${encoder.convert({
+    'name': metadata.packageName,
+    'version': metadata.version,
+    'description': metadata.productSummary,
+    'platforms': [for (final platform in metadata.platforms) platform.id],
+    'features': {'typedLanguages': metadata.typedLanguageCount, 'playgroundLanguages': kPlaygroundLanguages.length, 'themes': metadata.showcasedThemeCount, 'intelliSense': true, 'diagnostics': true},
+    if (metadata.publishedAt != null) 'publishedAt': metadata.publishedAt!.toUtc().toIso8601String(),
+  })}\n';
+}
+
+String _markdownSample(ShowcaseMetadata metadata) =>
+    '''
+# ${metadata.packageName}
+
+> ${metadata.productSummary}
+
+## Current package data
+
+- **Version** - ${metadata.versionLabel}
+- **Platforms** - ${metadata.platformSummary}
+- **Languages** - ${metadata.typedLanguageCount} typed entries
+- **Theming** - ${metadata.showcasedThemeCount} demo themes
+
+```dart
+MonacoEditor(
+  options: EditorOptions(language: MonacoLanguage.dart),
+)
+```
+''';

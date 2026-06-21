@@ -3,6 +3,7 @@ import 'package:flutter_monaco/flutter_monaco.dart';
 
 import '../data/demo_snippets.dart';
 import '../data/samples.dart';
+import '../data/showcase_metadata.dart';
 
 /// The editor theme choices exposed in the playground theme picker: the four
 /// built-in Monaco themes plus one custom theme registered at runtime.
@@ -43,9 +44,20 @@ enum PlaygroundTheme {
 /// is never rebuilt with new options/content; instead every change is applied
 /// imperatively here, which keeps the editor instance stable.
 class ShowcaseController extends ChangeNotifier {
+  ShowcaseController({ShowcaseMetadataLoader? metadataLoader})
+    : _metadataLoader = metadataLoader ?? ShowcaseMetadataLoader();
+
+  final ShowcaseMetadataLoader _metadataLoader;
+
   // --- Page state ---
   Brightness _brightness = Brightness.dark;
   Brightness get brightness => _brightness;
+
+  ShowcaseMetadata _metadata = ShowcaseMetadata.fallback;
+  ShowcaseMetadata get metadata => _metadata;
+
+  bool _metadataLoading = false;
+  bool get metadataLoading => _metadataLoading;
 
   /// Set by the app so feature cards can scroll the page to the playground.
   VoidCallback? onRequestScrollToPlayground;
@@ -90,7 +102,8 @@ class ShowcaseController extends ChangeNotifier {
   late final EditorOptions initialEditorOptions = _buildOptions();
 
   /// Initial document for the editor widget.
-  String get initialValue => sampleFor(MonacoLanguage.dart);
+  String get initialValue =>
+      sampleFor(MonacoLanguage.dart, metadata: _metadata);
 
   EditorOptions _buildOptions() => EditorOptions(
     language: _language,
@@ -122,6 +135,24 @@ class ShowcaseController extends ChangeNotifier {
       debugPrint('[ShowcaseController] attachEditor failed: $e');
     }
     notifyListeners();
+  }
+
+  Future<void> loadMetadata() async {
+    if (_metadataLoading) return;
+    _metadataLoading = true;
+    notifyListeners();
+    try {
+      _metadata = await _metadataLoader.load();
+      final editor = _editor;
+      if (editor != null && _language == MonacoLanguage.json) {
+        await editor.setValue(sampleFor(_language, metadata: _metadata));
+      }
+    } catch (e) {
+      debugPrint('[ShowcaseController] metadata load failed: $e');
+    } finally {
+      _metadataLoading = false;
+      notifyListeners();
+    }
   }
 
   // --- Page theme ---
@@ -164,7 +195,7 @@ class ShowcaseController extends ChangeNotifier {
     await editor.clearAllMarkers();
     await editor.clearDecorations();
     await editor.setLanguage(language);
-    await editor.setValue(sampleFor(language));
+    await editor.setValue(sampleFor(language, metadata: _metadata));
   }
 
   // --- Options ---
@@ -221,7 +252,7 @@ class ShowcaseController extends ChangeNotifier {
     await editor.clearAllMarkers();
     await editor.clearDecorations();
     await editor.setLanguage(_language);
-    await editor.setValue(sampleFor(_language));
+    await editor.setValue(sampleFor(_language, metadata: _metadata));
   }
 
   /// Scrolls the page to the playground (used by feature-card "Try it" links).
@@ -285,5 +316,11 @@ class ShowcaseController extends ChangeNotifier {
   void _setHint(String message) {
     _hint = message;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _metadataLoader.dispose();
+    super.dispose();
   }
 }

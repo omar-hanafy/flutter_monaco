@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/showcase_metadata.dart';
 import '../theme/showcase_text.dart';
 import '../theme/showcase_tokens.dart';
 import '../util/links.dart';
@@ -11,8 +12,13 @@ import '../widgets/section_container.dart';
 /// The hero: headline, subhead, CTAs, install line, and platform badges,
 /// over a soft accent-gradient glow.
 class HeroSection extends StatelessWidget {
-  const HeroSection({super.key, required this.onTryPlayground});
+  const HeroSection({
+    super.key,
+    required this.metadata,
+    required this.onTryPlayground,
+  });
 
+  final ShowcaseMetadata metadata;
   final VoidCallback onTryPlayground;
 
   @override
@@ -31,7 +37,9 @@ class HeroSection extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _EyebrowPill(text: "Powered by VS Code's Monaco engine"),
+              _EyebrowPill(
+                text: '${metadata.versionLabel} - ${metadata.sourceLabel}',
+              ),
               const SizedBox(height: Insets.lg),
               Text(
                 "VS Code's editor,",
@@ -57,9 +65,7 @@ class HeroSection extends StatelessWidget {
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 640),
                 child: Text(
-                  'Embed Monaco - the engine behind VS Code - with 100+ '
-                  'languages, rich theming, IntelliSense, and a full Dart API. '
-                  'On web, desktop, and mobile.',
+                  metadata.productSummary,
                   style: ShowcaseText.bodyLg.copyWith(color: c.textSecondary),
                 ),
               ),
@@ -78,23 +84,88 @@ class HeroSection extends StatelessWidget {
                     label: 'View on pub.dev',
                     icon: Icons.open_in_new_rounded,
                     variant: GradientButtonVariant.outline,
-                    onPressed: () => openUrl(Links.pubDev),
+                    onPressed: () => openUrl(metadata.pubDevUrl),
                   ),
                   GradientButton(
                     label: 'GitHub',
                     icon: Icons.star_outline_rounded,
                     variant: GradientButtonVariant.ghost,
-                    onPressed: () => openUrl(Links.github),
+                    onPressed: () => openUrl(metadata.repositoryUrl),
                   ),
                 ],
               ),
               const SizedBox(height: Insets.xl),
               const CopyField(text: 'flutter pub add flutter_monaco'),
+              const SizedBox(height: Insets.lg),
+              _LiveFacts(metadata: metadata),
               const SizedBox(height: Insets.xl),
-              const PlatformBadges(),
+              PlatformBadges(platforms: metadata.platforms),
             ],
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _LiveFacts extends StatelessWidget {
+  const _LiveFacts({required this.metadata});
+
+  final ShowcaseMetadata metadata;
+
+  @override
+  Widget build(BuildContext context) {
+    final facts = <(IconData, String)>[
+      (Icons.history_rounded, metadata.publishedLabel),
+      (
+        Icons.translate_rounded,
+        '${metadata.typedLanguageCount} typed languages',
+      ),
+      (Icons.palette_outlined, '${metadata.showcasedThemeCount} demo themes'),
+      if (metadata.downloadCount30Days != null)
+        (
+          Icons.download_rounded,
+          '${compactNumber(metadata.downloadCount30Days!)} downloads / 30d',
+        ),
+      if (metadata.likeCount != null)
+        (
+          Icons.favorite_border_rounded,
+          '${compactNumber(metadata.likeCount!)} likes',
+        ),
+      if (metadata.starCount != null)
+        (
+          Icons.star_outline_rounded,
+          '${compactNumber(metadata.starCount!)} stars',
+        ),
+    ];
+    final c = context.showcaseColors;
+    return Wrap(
+      spacing: Insets.sm,
+      runSpacing: Insets.sm,
+      children: [
+        for (final (icon, label) in facts)
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: Insets.md,
+              vertical: Insets.sm,
+            ),
+            decoration: BoxDecoration(
+              color: c.surface,
+              borderRadius: BorderRadius.circular(Radii.pill),
+              border: Border.all(color: c.border),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 15, color: c.textSecondary),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: ShowcaseText.small.copyWith(color: c.textSecondary),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }

@@ -1,9 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// The package version shown in the nav pill and footer.
-const String kPackageVersion = '1.7.1';
-
 /// External destinations referenced across the showcase.
 abstract final class Links {
   static const String pubDev = 'https://pub.dev/packages/flutter_monaco';

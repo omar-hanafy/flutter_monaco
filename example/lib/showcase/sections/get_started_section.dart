@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/showcase_metadata.dart';
 import '../theme/showcase_text.dart';
 import '../theme/showcase_tokens.dart';
 import '../util/links.dart';
@@ -26,7 +27,9 @@ MonacoEditor(
 
 /// "Get started in seconds" - three numbered steps with copyable code.
 class GetStartedSection extends StatelessWidget {
-  const GetStartedSection({super.key});
+  const GetStartedSection({super.key, required this.metadata});
+
+  final ShowcaseMetadata metadata;
 
   @override
   Widget build(BuildContext context) {
@@ -46,10 +49,16 @@ class GetStartedSection extends StatelessWidget {
             style: ShowcaseText.bodyLg.copyWith(color: c.textSecondary),
           ),
           const SizedBox(height: Insets.xl),
-          const _Step(
+          _Step(
             number: 1,
             title: 'Add the dependency',
-            child: CopyField(text: 'flutter pub add flutter_monaco'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const CopyField(text: 'flutter pub add flutter_monaco'),
+                _DependencyNote(metadata: metadata),
+              ],
+            ),
           ),
           const _Step(
             number: 2,
@@ -134,6 +143,25 @@ class _Step extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DependencyNote extends StatelessWidget {
+  const _DependencyNote({required this.metadata});
+
+  final ShowcaseMetadata metadata;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.showcaseColors;
+    return Padding(
+      padding: const EdgeInsets.only(top: Insets.sm),
+      child: Text(
+        'Latest ${metadata.versionLabel} - Dart ${metadata.sdkConstraint}, '
+        'Flutter ${metadata.flutterConstraint}.',
+        style: ShowcaseText.small.copyWith(color: c.textFaint),
       ),
     );
   }
