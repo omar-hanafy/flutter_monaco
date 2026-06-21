@@ -50,8 +50,9 @@ abstract class WebViewController implements PlatformWebViewController {
 
   @override
   Future<void> requestNativeFocus() async {
-    // No-op by default. webview_flutter platforms participate in the regular
-    // platform focus system; only Windows needs an explicit handoff.
+    // No-op by default. The webview_flutter API used for Android, iOS, and
+    // macOS does not expose a reliable native first-responder handoff here;
+    // only Windows WebView2 has an explicit focus method available.
   }
 
   /// Generates and caches the Monaco editor HTML file for native platforms.

@@ -140,7 +140,10 @@ abstract class PlatformWebViewController {
   ///
   /// On Windows, WebView2 must hold real Win32 keyboard focus before any
   /// in-page (JavaScript) focus call has an effect, so this moves native
-  /// focus to the WebView2 control. On all other platforms this is a no-op;
-  /// their WebViews participate in the regular platform focus system.
+  /// focus to the WebView2 control.
+  ///
+  /// On `webview_flutter` platforms, including macOS WKWebView, the package
+  /// does not expose a reliable first-responder handoff, so this is a no-op.
+  /// Callers must still run the in-page Monaco focus helper after this method.
   Future<void> requestNativeFocus();
 }

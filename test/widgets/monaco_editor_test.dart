@@ -484,7 +484,7 @@ void main() {
         }
       });
 
-      testWidgets('desktop repeated primary mouse down does not refocus', (
+      testWidgets('macOS repeated primary mouse down replays input readiness', (
         tester,
       ) async {
         debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
@@ -503,8 +503,51 @@ void main() {
           await first.down(target);
           await tester.pumpAndSettle();
           await first.up();
-          // Monaco reports the editor focused after the first click; a second
-          // click on the already-focused editor must not replay focus.
+          // Monaco reports the editor focused after the first click, but on
+          // macOS that cached DOM focus is not proof of native input readiness.
+          bundle.webview.emitToChannel('flutterChannel', '{"event":"focus"}');
+          await tester.pump();
+
+          bundle.webview.executed.clear();
+          final second = await tester.createGesture(
+            kind: PointerDeviceKind.mouse,
+            buttons: kPrimaryMouseButton,
+          );
+          await second.down(target);
+          await tester.pumpAndSettle();
+          await second.up();
+
+          expect(bundle.webview.executed, contains('REQUEST_NATIVE_FOCUS'));
+          bundle.webview.assertExecuted(
+            'forceFocus({ replayInputFocus: true })',
+          );
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      });
+
+      testWidgets('Windows repeated primary mouse down does not refocus', (
+        tester,
+      ) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+        try {
+          final bundle = await _createBundle();
+          await tester.pumpWidget(
+            _wrap(MonacoEditor(controller: bundle.controller)),
+          );
+          await tester.pumpAndSettle();
+
+          final target = tester.getCenter(find.byKey(const Key('webview')));
+          final first = await tester.createGesture(
+            kind: PointerDeviceKind.mouse,
+            buttons: kPrimaryMouseButton,
+          );
+          await first.down(target);
+          await tester.pumpAndSettle();
+          await first.up();
+          // Monaco reports the editor focused after the first click; Windows
+          // must not replay focus because WebView2 focus replay flickers the
+          // caret and can tear down the context menu.
           bundle.webview.emitToChannel('flutterChannel', '{"event":"focus"}');
           await tester.pump();
 

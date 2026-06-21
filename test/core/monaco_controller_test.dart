@@ -1162,6 +1162,40 @@ void main() {
         }
       });
 
+      test('user focus intent replays input focus on macOS', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        try {
+          final bundle = await _createBundle();
+          await bundle.controller.ensureEditorFocus(
+            attempts: 1,
+            interval: Duration.zero,
+            intent: MonacoFocusIntent.user,
+          );
+          expect(
+            bundle.webview.executed.join('\n'),
+            contains('forceFocus({ replayInputFocus: true })'),
+          );
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      });
+
+      test('maintenance focus intent keeps default idempotent focus', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        try {
+          final bundle = await _createBundle();
+          await bundle.controller.ensureEditorFocus(
+            attempts: 1,
+            interval: Duration.zero,
+          );
+          final joined = bundle.webview.executed.join('\n');
+          expect(joined, contains('forceFocus()'));
+          expect(joined, isNot(contains('replayInputFocus')));
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      });
+
       test('ensureEditorFocus uses one attempt on mobile', () async {
         debugDefaultTargetPlatformOverride = TargetPlatform.android;
         try {

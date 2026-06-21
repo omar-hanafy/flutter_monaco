@@ -174,6 +174,14 @@ void main() {
 
       expect(html, contains('if (isMobileInputPlatform())'));
       expect(html, contains('focusEditorTextAreaNow();'));
+      expect(html, contains('forceFocus: (options = {}) =>'));
+      expect(html, contains('const replayInputFocus ='));
+      expect(
+        html,
+        contains(
+          'if (!replayInputFocus && input && document.activeElement === input)',
+        ),
+      );
       expect(html, contains('ta.focus({ preventScroll: true });'));
     });
 

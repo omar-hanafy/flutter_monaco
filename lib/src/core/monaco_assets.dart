@@ -809,11 +809,13 @@ class MonacoAssets {
                   focus: () => E().focus(),
                   layout: () => { try { E().layout(); } catch (_) {} },
                   // Force focus robustly: wait for visibility, layout, focus editor and hidden textarea
-                  forceFocus: () => {
+                  forceFocus: (options = {}) => {
                     try {
                       const ed = E();
                       const node = getEditorNode();
                       if (!ed || !node) return;
+                      const replayInputFocus =
+                        options && options.replayInputFocus === true;
 
                       if (isMobileInputPlatform()) {
                         focusEditorTextAreaNow();
@@ -833,7 +835,7 @@ class MonacoAssets {
                         // the flicker for EVERY caller, not just guarded pointers.
                         const input = node.querySelector(
                           'textarea.inputarea, .native-edit-context');
-                        if (input && document.activeElement === input) {
+                        if (!replayInputFocus && input && document.activeElement === input) {
                           return;
                         }
                         try { window.focus && window.focus(); } catch (_) {}

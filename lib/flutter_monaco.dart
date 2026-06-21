@@ -59,7 +59,8 @@ export 'src/core/monaco_actions.dart' show MonacoAction;
 // Core exports
 export 'src/core/monaco_assets.dart' show MonacoAssets;
 export 'src/core/monaco_constants.dart' show MonacoConstants;
-export 'src/core/monaco_controller.dart' show MonacoController;
+export 'src/core/monaco_controller.dart'
+    show MonacoController, MonacoFocusIntent;
 export 'src/core/monaco_js_error.dart' show MonacoJavaScriptException;
 
 // Model exports

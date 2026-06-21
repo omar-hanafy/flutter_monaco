@@ -26,19 +26,18 @@ bool _pointerMayClaimKeyboard(PointerDownEvent event) {
   return true;
 }
 
-bool _pointerShouldNudgeFocus(
+bool _pointerShouldRecoverInputFocus(
   PointerDownEvent event, {
   required bool hasFlutterFocus,
-  required bool editorReportsFocused,
+  required bool monacoReportsFocused,
+  TargetPlatform? platform,
 }) {
-  // Re-assert focus only when the editor is not already fully focused: it
-  // lacks Flutter focus (key routing) OR Monaco itself reports unfocused (its
-  // input cannot receive keystrokes). Reading Monaco's own focus signal - not
-  // just the Flutter-focus proxy - lets a click recover typing after the
-  // editor silently lost native focus (alt-tab, a dialog, a tab switch),
-  // while an already-focused editor is still left alone (no replay).
   if (!_pointerMayClaimKeyboard(event)) return false;
-  return !hasFlutterFocus || !editorReportsFocused;
+  final targetPlatform = platform ?? defaultTargetPlatform;
+  if (targetPlatform == TargetPlatform.macOS) {
+    return true;
+  }
+  return !hasFlutterFocus || !monacoReportsFocused;
 }
 
 /// A widget that renders a Monaco Editor instance.
@@ -241,11 +240,10 @@ class _MonacoEditorState extends State<MonacoEditor> {
   /// FocusNode to explicitly request platform view focus for the WebView.
   final FocusNode _webFocusNode = FocusNode(debugLabel: 'MonacoWebViewFocus');
 
-  /// Whether Monaco itself reports the editor focused (its input can receive
-  /// keystrokes), driven by the controller's focus/blur stream. Lets a
-  /// pointer-down tell "already focused, leave it alone" apart from "Flutter
-  /// thinks it's focused but Monaco lost it" (the alt-tab/dialog desync).
-  bool _editorReportsFocused = false;
+  /// Whether Monaco itself reports DOM focus, driven by the controller's
+  /// focus/blur stream. On macOS this is not proof that WKWebView is still
+  /// native input-ready.
+  bool _monacoReportsFocused = false;
 
   @override
   void initState() {
@@ -439,12 +437,12 @@ class _MonacoEditorState extends State<MonacoEditor> {
       _streamSubscriptions.add(selectionSub);
     }
     final focusSub = _controller!.onFocus.listen((_) {
-      _editorReportsFocused = true;
+      _monacoReportsFocused = true;
       widget.onFocus?.call();
     });
     _streamSubscriptions.add(focusSub);
     final blurSub = _controller!.onBlur.listen((_) {
-      _editorReportsFocused = false;
+      _monacoReportsFocused = false;
       widget.onBlur?.call();
     });
     _streamSubscriptions.add(blurSub);
@@ -581,15 +579,20 @@ class _MonacoEditorState extends State<MonacoEditor> {
             behavior: HitTestBehavior.translucent,
             onPointerDown: (event) {
               if (!widget.interactionEnabled) return;
-              if (!_pointerShouldNudgeFocus(
+              if (!_pointerShouldRecoverInputFocus(
                 event,
                 hasFlutterFocus: _webFocusNode.hasFocus,
-                editorReportsFocused: _editorReportsFocused,
+                monacoReportsFocused: _monacoReportsFocused,
               )) {
                 return;
               }
               _webFocusNode.requestFocus();
-              unawaited(_controller!.ensureEditorFocus(attempts: 1));
+              unawaited(
+                _controller!.ensureEditorFocus(
+                  attempts: 1,
+                  intent: MonacoFocusIntent.user,
+                ),
+              );
             },
             child: _controller!.webViewWidget,
           ),
