@@ -7,6 +7,8 @@ import 'dart:io';
 import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../fakes/fake_platform_webview_controller.dart';
+
 void main() {
   // `cat` echoes stdin to stdout, which makes it a perfect loopback "server"
   // for exercising framing, the transport pump, and process lifecycle.
@@ -167,6 +169,55 @@ void main() {
         ),
         throwsA(isA<ProcessException>()),
       );
+    });
+  });
+
+  group('LspServerProcess with connectLanguageServer', () {
+    test('a server that exits at startup fails the connect at once with its '
+        'exit code and stderr', () async {
+      if (!hasCat) return markTestSkipped('requires a POSIX sh binary');
+      final webView = FakePlatformWebViewController()
+        // The page never answers a connect whose server died.
+        ..autoRespond = false;
+      final controller = await MonacoController.createForTesting(
+        webViewController: webView,
+      );
+      addTearDown(controller.dispose);
+      final server = await LspServerProcess.start('sh', [
+        '-c',
+        'echo "error: unknown argument --stdoi" >&2; exit 2',
+      ], onStderr: (_) {});
+
+      final stopwatch = Stopwatch()..start();
+      final error = await controller
+          .connectLanguageServer(
+            id: 'broken',
+            transport: server.transport,
+            initializationTimeout: const Duration(seconds: 30),
+          )
+          .then<Object?>(
+            (_) => fail('connect unexpectedly succeeded'),
+            onError: (Object e) => e,
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => fail('connect waited for its 30s timeout'),
+          );
+
+      expect(stopwatch.elapsed, lessThan(const Duration(seconds: 10)));
+      expect(
+        error,
+        isA<ProcessException>()
+            .having((e) => e.errorCode, 'errorCode', 2)
+            .having(
+              (e) => e.message,
+              'message',
+              contains('unknown argument --stdoi'),
+            ),
+      );
+      expect(controller.languageServerConnection('broken'), isNull);
+      // The failed connect released the transport: stop() already ran.
+      expect(server.isStopped, isTrue);
     });
   });
 }
