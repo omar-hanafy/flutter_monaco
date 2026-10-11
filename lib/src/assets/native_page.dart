@@ -95,6 +95,31 @@ NativeMonacoPage buildVirtualHostMonacoPage({
   return NativeMonacoPage(html: html, url: url);
 }
 
+/// Whether an https page would be refused connections to some of
+/// [connectSources] (`MonacoPageConfig.allowedConnectSources`).
+///
+/// The virtual host page is a secure context, and browsers block insecure
+/// `ws:` and `http:` connections from it as mixed content - except to
+/// loopback hosts, which they treat as potentially trustworthy. The 3.x
+/// Windows page was loaded from `file:`, where no such check applies, so a
+/// language server at `ws://192.168.1.5:3000` worked there.
+bool connectSourcesNeedInsecurePage(List<String> connectSources) {
+  final insecureHost = RegExp(r'^(?:ws|http)://(\[[^\]]*\]|[^/:]+)');
+  for (final raw in connectSources) {
+    final source = raw.trim().toLowerCase();
+    if (source == 'ws:' || source == 'http:') return true;
+    final match = insecureHost.firstMatch(source);
+    if (match != null && !_isLoopbackHost(match.group(1)!)) return true;
+  }
+  return false;
+}
+
+bool _isLoopbackHost(String host) =>
+    host == 'localhost' ||
+    host.endsWith('.localhost') ||
+    host == '[::1]' ||
+    RegExp(r'^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$').hasMatch(host);
+
 /// The page a native WebView loads from disk at [htmlFilePath], next to the
 /// extracted `min/` and `bridge/` directories.
 ///

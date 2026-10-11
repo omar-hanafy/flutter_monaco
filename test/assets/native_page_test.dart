@@ -65,6 +65,41 @@ void main() {
     });
   });
 
+  group('connectSourcesNeedInsecurePage', () {
+    test('insecure endpoints off loopback need a non-secure page', () {
+      for (final sources in [
+        ['ws://192.168.1.5:3000'],
+        ['http://lsp.example.com/schema'],
+        ['wss://ok.example', 'WS://LAN-HOST:9000'],
+        ['ws:'],
+        ['http:'],
+        ['ws://*:3000'],
+      ]) {
+        expect(
+          connectSourcesNeedInsecurePage(sources),
+          isTrue,
+          reason: '$sources',
+        );
+      }
+    });
+
+    test('secure and loopback endpoints work from an https page', () {
+      for (final sources in [
+        <String>[],
+        ['wss://lsp.example.com', 'https://schemas.example'],
+        ['ws://127.0.0.1:3000', 'ws://localhost:3000', 'ws://[::1]:3000'],
+        ['ws://dev.localhost:8080', 'http://127.0.0.2/x'],
+        ['wss:', 'https:', '*', 'lsp.example.com'],
+      ]) {
+        expect(
+          connectSourcesNeedInsecurePage(sources),
+          isFalse,
+          reason: '$sources',
+        );
+      }
+    });
+  });
+
   group('buildFileMonacoPage', () {
     test('Android and Apple pages reference assets relative to the page', () {
       final page = buildFileMonacoPage(

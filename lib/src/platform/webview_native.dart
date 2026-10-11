@@ -86,16 +86,20 @@ abstract class WebViewController implements PlatformWebViewController {
   /// - macOS/iOS/Android reference the assets relative to the page, which
   ///   sits next to them.
   /// - Windows uses absolute `file://` asset URLs; it loads from disk only
-  ///   when its virtual host is unavailable (see [WindowsWebViewController]).
+  ///   when its virtual host cannot be used (see [WindowsWebViewController]).
+  ///   That page gets its own `monaco_<key>.file.html` name: the virtual
+  ///   host page for the same configuration is `monaco_<key>.html`, and a
+  ///   WebView reloading one must never be served the other.
   ///
   /// Returns the absolute path to the generated HTML file.
   Future<String> _ensureHtmlFile(
     MonacoPageConfig page, {
     bool isWindows = false,
   }) async {
-    final htmlFilePath = await monacoIndexHtmlPath(
-      cacheKey: page.stableCacheKey(),
-    );
+    final pagePath = await monacoIndexHtmlPath(cacheKey: page.stableCacheKey());
+    final htmlFilePath = isWindows
+        ? '${p.withoutExtension(pagePath)}.file.html'
+        : pagePath;
     final built = buildFileMonacoPage(
       htmlFilePath: htmlFilePath,
       monacoVersion: MonacoAssets.monacoVersion,

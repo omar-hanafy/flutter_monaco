@@ -4,7 +4,9 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_monaco/src/assets/content_hash.dart';
+import 'package:flutter_monaco/src/assets/html_builder.dart';
 import 'package:flutter_monaco/src/assets/monaco_assets.dart';
+import 'package:flutter_monaco/src/assets/native_page.dart';
 import 'package:flutter_monaco/src/common/monaco_page_config.dart';
 import 'package:flutter_monaco/src/platform/webview_native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -73,6 +75,21 @@ class _FakeWebview extends Fake implements ww.WebviewController {
   @override
   Future<void> loadUrl(String url) async {
     loadedUrls.add(url);
+    _loadsChanged.add(null);
+  }
+
+  final _loadsChanged = StreamController<void>.broadcast();
+
+  /// Completes once [count] URLs have been loaded; the file:// fallback is
+  /// started without being awaited and does real file I/O first.
+  Future<void> loads(
+    int count, {
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    if (loadedUrls.length >= count) return;
+    await _loadsChanged.stream
+        .firstWhere((_) => loadedUrls.length >= count)
+        .timeout(timeout);
   }
 
   @override
@@ -104,6 +121,8 @@ void main() {
       p.join(versionDir(), 'monaco_${page.stableCacheKey()}.html');
   String pageOnDisk([MonacoPageConfig page = config]) =>
       File(pagePath(page)).readAsStringSync();
+  String filePagePath([MonacoPageConfig page = config]) =>
+      p.join(versionDir(), 'monaco_${page.stableCacheKey()}.file.html');
 
   void writeBridge(String core) {
     final bridge = Directory(p.join(versionDir(), 'bridge'))
@@ -119,6 +138,9 @@ void main() {
     supportDir = await Directory.systemTemp.createTemp('fm_windows_test_');
     PathProviderPlatform.instance = _FakePathProviderPlatform(supportDir);
     await MonacoAssets.clearCache();
+    // Extract first, as an app launch does, so bridge files a test writes
+    // into the cache are what the controller later reads.
+    await MonacoAssets.ensureReady();
     webview = _FakeWebview();
     controller = WindowsWebViewController.withController(webview);
     await controller.initialize();
@@ -197,10 +219,20 @@ void main() {
             .singleWhere((url) => url.contains('/bridge/core.js')),
       ).queryParameters['v']!;
 
+      String fingerprintOnDisk() => monacoBridgeFingerprint({
+        for (final name in monacoBridgeScripts)
+          name: () {
+            final file = File(p.join(versionDir(), 'bridge', name));
+            return file.existsSync() ? file.readAsBytesSync() : null;
+          }(),
+      });
+
       writeBridge('// core v1');
       await controller.load();
       final firstUrl = webview.loadedUrls.last;
       final firstBridge = bridgeQuery();
+      // The fingerprint is of the files the virtual host serves.
+      expect(firstBridge, fingerprintOnDisk());
 
       // Unchanged content keeps its URLs, so WebView2 may cache them.
       await controller.load();
@@ -213,6 +245,7 @@ void main() {
       writeBridge('// core v2');
       await controller.load();
       expect(bridgeQuery(), isNot(firstBridge));
+      expect(bridgeQuery(), fingerprintOnDisk());
       expect(webview.loadedUrls.last, isNot(firstUrl));
     });
 
@@ -234,9 +267,11 @@ void main() {
   });
 
   group('file:// fallback', () {
-    void expectFilePage(String url) {
-      expect(url, Uri.file(pagePath()).toString());
-      final html = pageOnDisk();
+    void expectFilePage(String url, [MonacoPageConfig page = config]) {
+      // Its own file: a reload of a virtual host page must never be served
+      // the file page, nor the reverse.
+      expect(url, Uri.file(filePagePath(page)).toString());
+      final html = File(filePagePath(page)).readAsStringSync();
       expect(
         scriptUrlsIn(html),
         contains(
@@ -247,10 +282,31 @@ void main() {
       expect(html, contains('__FM_WORKERS'));
     }
 
+    test('when the page must reach insecure endpoints off loopback', () async {
+      // An https page may not open ws:/http: connections (mixed content),
+      // so a LAN language server that worked from 3.x's file:// page keeps
+      // the file page.
+      const lan = MonacoPageConfig(
+        allowedConnectSources: ['ws://192.168.1.5:3000'],
+      );
+      await controller.load(page: lan);
+      expectFilePage(webview.loadedUrls.single, lan);
+      expect(webview.mappings, isEmpty);
+
+      // Loopback is exempt from mixed-content blocking.
+      const local = MonacoPageConfig(
+        allowedConnectSources: ['ws://127.0.0.1:3000', 'wss://lsp.example'],
+      );
+      await controller.load(page: local);
+      expect(webview.loadedUrls.last, startsWith('$origin/'));
+    });
+
     test('when the mapping throws', () async {
       webview.mappingError = PlatformException(code: 'invalid_args');
       await controller.load();
       expectFilePage(webview.loadedUrls.single);
+      // The virtual host page of the same configuration was never written.
+      expect(File(pagePath()).existsSync(), isFalse);
 
       // The failure is remembered: later loads go straight to files.
       webview.mappingError = null;
@@ -268,6 +324,7 @@ void main() {
       await webview.completeNavigation(
         error: ww.WebErrorStatus.hostNameNotResolved,
       );
+      await webview.loads(2);
       expect(webview.loadedUrls, hasLength(2));
       expectFilePage(webview.loadedUrls.last);
 
@@ -286,6 +343,11 @@ void main() {
       // Later navigations (the page's own) are not the controller's concern.
       await webview.completeNavigation(error: ww.WebErrorStatus.timeout);
 
+      // A fallback would be started without being awaited: give it time.
+      await expectLater(
+        webview.loads(3, timeout: const Duration(milliseconds: 500)),
+        throwsA(isA<TimeoutException>()),
+      );
       expect(webview.loadedUrls, hasLength(2));
       expect(webview.loadedUrls, everyElement(startsWith('$origin/')));
     });

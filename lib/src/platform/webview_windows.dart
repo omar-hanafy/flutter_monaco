@@ -36,7 +36,10 @@ part of 'webview_native.dart';
 /// Over https the workers are ordinary same-origin workers. When the virtual
 /// host cannot be used (the mapping call fails, or the first navigation to
 /// it fails), the page is loaded from disk as in 3.x, where the page's
-/// worker safety net runs the editor worker on the main thread.
+/// worker safety net runs the editor worker on the main thread. The page is
+/// also loaded from disk when [MonacoPageConfig.allowedConnectSources] names
+/// `ws:`/`http:` endpoints off loopback, which a secure https page may not
+/// reach (see [connectSourcesNeedInsecurePage]).
 ///
 /// See also:
 /// - [FlutterWebViewController] for Android/iOS/macOS implementation.
@@ -147,6 +150,16 @@ class WindowsWebViewController extends WebViewController {
     final htmlFilePath = await monacoIndexHtmlPath(
       cacheKey: page.stableCacheKey(),
     );
+    if (connectSourcesNeedInsecurePage(page.allowedConnectSources)) {
+      debugPrint(
+        '[WindowsWebViewController] allowedConnectSources lists ws:/http: '
+        'endpoints that are not on loopback, which an https page may not '
+        'reach; loading the editor from file:// as before. Use wss:/https: '
+        'to keep the editor on its virtual host.',
+      );
+      await _loadFromFiles(page);
+      return;
+    }
     // .../monaco_editor_cache/monaco-<version>/monaco_<key>.html
     final versionDirectory = p.dirname(htmlFilePath);
     if (!await _mapVirtualHost(p.dirname(versionDirectory))) {
@@ -205,6 +218,8 @@ class WindowsWebViewController extends WebViewController {
 
   /// Loads the page from disk, as 3.x did (absolute `file://` URLs).
   Future<void> _loadFromFiles(MonacoPageConfig page) async {
+    // No earlier virtual-host navigation may trigger a second fallback.
+    _stopNavigationWatch();
     final htmlFilePath = await _ensureHtmlFile(page, isWindows: true);
     await _controller.loadUrl(Uri.file(htmlFilePath).toString());
   }
