@@ -359,6 +359,69 @@ void main() {
     });
   });
 
+  group('MonacoController reload during the first boot', () {
+    late FakePlatformWebViewController webview;
+    late MonacoController controller;
+    late List<Object?> reloads;
+
+    setUp(() async {
+      webview = FakePlatformWebViewController()..autoRespond = false;
+      controller = await MonacoController.createForTesting(
+        webViewController: webview,
+        markReady: false,
+        runBoot: true,
+        bootInitialText: 'original text',
+      );
+      reloads = <Object?>[];
+      controller.onPageReloaded.listen(reloads.add, onError: reloads.add);
+      await pumpMicrotasks();
+      expect(webview.dispatchedMethods, contains('page.boot'));
+      // The page reloads before it answers the first page.boot, so that
+      // request can never be answered; recovery boots the new page.
+      webview.emitPageReady();
+      await pumpMicrotasks();
+    });
+
+    tearDown(() => controller.dispose());
+
+    Map<String, Object?> lastBoot() =>
+        webview.dispatched.lastWhere((call) => call['method'] == 'page.boot');
+
+    test('becomes ready once the re-booted page reports ready', () async {
+      expect(
+        webview.dispatchedMethods.where((m) => m == 'page.boot'),
+        hasLength(2),
+      );
+      final boot = lastBoot();
+      expect(
+        (boot['params']! as Map<String, Object?>)['text'],
+        'original text',
+      );
+      webview.respondTo(boot['id']! as String);
+      webview.emitLifecycle('ready');
+
+      await controller.whenReady;
+      await pumpMicrotasks();
+      expect(controller.isReady, isTrue);
+      expect(reloads, [null]);
+
+      webview.autoRespond = true;
+      await controller.updateOptions(const EditorOptions(fontSize: 14));
+      expect(webview.dispatchedMethods.last, 'editor.updateOptions');
+    });
+
+    test('fails whenReady when the re-booted page fails', () async {
+      webview.respondTo(lastBoot()['id']! as String);
+      webview.emitLifecycle('fatal', error: {'message': 'boot failed'});
+
+      await expectLater(
+        controller.whenReady,
+        throwsA(isA<MonacoJavaScriptError>()),
+      );
+      expect(controller.isReady, isFalse);
+    });
+  });
+
   group('MonacoController reload without a boot payload', () {
     test(
       'a synthetic double-ready on a markReady controller is inert',

@@ -386,6 +386,48 @@ void main() {
     });
   });
 
+  group('MonacoDiffController reload during the first boot', () {
+    Future<void> pumpMicrotasks([int rounds = 8]) async {
+      for (var i = 0; i < rounds; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+    }
+
+    test('becomes ready once the re-booted page reports ready', () async {
+      final webview = FakePlatformWebViewController()..autoRespond = false;
+      final controller = await MonacoDiffController.createForTesting(
+        webViewController: webview,
+        runBoot: true,
+        bootOriginal: 'old',
+        bootModified: 'new',
+      );
+      addTearDown(controller.dispose);
+      await pumpMicrotasks();
+      expect(webview.dispatchedMethods, contains('page.boot'));
+
+      // The page reloads before it answers the first page.boot.
+      webview.emitPageReady();
+      await pumpMicrotasks();
+      final boots = webview.dispatched
+          .where((call) => call['method'] == 'page.boot')
+          .toList();
+      expect(boots, hasLength(2));
+      final params = boots.last['params']! as Map<String, Object?>;
+      expect(params['original'], 'old');
+      expect(params['modified'], 'new');
+      webview.respondTo(boots.last['id']! as String);
+      webview.emitLifecycle('ready');
+
+      await controller.whenReady;
+      await pumpMicrotasks();
+      expect(controller.isReady, isTrue);
+
+      webview.autoRespond = true;
+      await controller.setTexts(original: 'a', modified: 'b');
+      expect(webview.dispatchedMethods.last, 'diff.setTexts');
+    });
+  });
+
   testWidgets('MonacoDiffController fails queued commands when a re-boot '
       'misses the boot deadline', (tester) async {
     final webview = FakePlatformWebViewController();

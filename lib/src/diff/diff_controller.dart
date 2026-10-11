@@ -251,7 +251,14 @@ class MonacoDiffController {
             'theme': bootTheme.id,
           };
           _bootPayload = bootPayload;
-          await _protocol.invoke('page.boot', bootPayload, timeout: null);
+          try {
+            await _protocol.invoke('page.boot', bootPayload, timeout: null);
+          } on MonacoPageReloadedError {
+            // The page reloaded before answering. Page-reload recovery
+            // re-boots the new page with this payload, and that page's
+            // ready lifecycle completes editorReady below; a fatal or
+            // skewed reload fails it instead.
+          }
           await _protocol.editorReady;
         }().timeout(
           readyTimeout,
