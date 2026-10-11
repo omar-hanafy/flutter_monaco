@@ -305,3 +305,85 @@ test('document.applyEdits on an inactive pinned document is undoable', async () 
   assert.equal(model.getValue(), 'abc');
 });
 
+// ---- executeAction ----
+
+/** Collects unhandled rejections raised while [body] runs. */
+async function collectUnhandledRejections(body) {
+  const seen = [];
+  const listener = (reason) => seen.push(reason);
+  process.on('unhandledRejection', listener);
+  try {
+    await body();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  } finally {
+    process.off('unhandledRejection', listener);
+  }
+  return seen;
+}
+
+test('executeAction rejects an unknown id instead of reporting success', async () => {
+  const page = bootEditorPage();
+  let response;
+  const rejections = await collectUnhandledRejections(async () => {
+    response = await dispatch(page, 'editor.executeAction', {
+      actionId: 'no.such.command',
+      args: null,
+    });
+  });
+  assert.equal(response.ok, false, 'an unknown id must fail');
+  assert.match(response.error.message, /no\.such\.command/);
+  assert.deepEqual(
+    rejections.map(String),
+    [],
+    'the command-service rejection must not leak as unhandled',
+  );
+});
+
+test('executeAction awaits a registered command and surfaces its failure', async () => {
+  const page = bootEditorPage();
+  let ranWith;
+  page.sandbox.__testCommands = {
+    'my.command': (args) => {
+      ranWith = args;
+    },
+    'my.failing': () => {
+      throw new Error('boom from command');
+    },
+  };
+
+  const ok = await dispatch(page, 'editor.executeAction', {
+    actionId: 'my.command',
+    args: { n: 1 },
+  });
+  assert.equal(ok.ok, true);
+  assert.equal(ok.value, true);
+  assert.deepEqual(ranWith, { n: 1 });
+
+  const failed = await dispatch(page, 'editor.executeAction', {
+    actionId: 'my.failing',
+    args: null,
+  });
+  assert.equal(failed.ok, false);
+  assert.equal(failed.error.message, 'boom from command');
+});
+
+test('executeAction keeps editor commands and trigger handlers working', async () => {
+  const page = bootEditorPage();
+  const service = page.editor._commandService;
+  const executeCommand = service.executeCommand;
+  for (const actionId of ['undo', 'cursorDown', 'type']) {
+    const response = await dispatch(page, 'editor.executeAction', {
+      actionId,
+      args: actionId === 'type' ? { text: 'x' } : null,
+    });
+    assert.equal(response.ok, true, actionId);
+    assert.equal(response.value, true, actionId);
+  }
+  assert.deepEqual(page.sandbox.__triggered, ['undo', 'cursorDown', 'type']);
+  assert.equal(
+    service.executeCommand,
+    executeCommand,
+    'the command service must be left exactly as it was',
+  );
+});
+

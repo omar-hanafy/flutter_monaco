@@ -168,8 +168,43 @@ window.__FMB.editorApi = function (ctx) {
                       return Promise.resolve(action.run(args))
                         .then(function () { return true; });
                     }
-                    ed.trigger('flutter-bridge', actionId, args);
-                    return true;
+                    // Not an editor action: trigger() handles its built-in
+                    // handlers (type, paste, ...) and editor commands
+                    // itself, and otherwise falls through to the command
+                    // service - whose promise it DROPS, so an unknown id
+                    // ("command '...' not found") or a failing command
+                    // used to report success here and leak an unhandled
+                    // rejection. Capture that promise for this id during
+                    // the synchronous trigger and settle the response on
+                    // it. _commandService is the editor's injected
+                    // ICommandService (verified against Monaco 0.57.0).
+                    const service = ed._commandService;
+                    if (!service || typeof service.executeCommand !== 'function') {
+                      ed.trigger('flutter-bridge', actionId, args);
+                      return true;
+                    }
+                    const original = service.executeCommand;
+                    const hadOwn = Object.prototype.hasOwnProperty.call(
+                      service, 'executeCommand');
+                    let pending = null;
+                    service.executeCommand = function (id) {
+                      const result = original.apply(this, arguments);
+                      if (pending === null && id === actionId) {
+                        pending = Promise.resolve(result);
+                      }
+                      return result;
+                    };
+                    try {
+                      ed.trigger('flutter-bridge', actionId, args);
+                    } finally {
+                      if (hadOwn) {
+                        service.executeCommand = original;
+                      } else {
+                        delete service.executeCommand;
+                      }
+                    }
+                    if (pending === null) return true;
+                    return pending.then(function () { return true; });
                   },
 
                   // Selection
