@@ -13,6 +13,13 @@ void main() {
     expect(report.errors, isEmpty, reason: report.errors.join('\n'));
   });
 
+  test('the plugin license is compared without bundled third-party ones', () {
+    const own = 'MIT License\n\nCopyright Owner\n';
+    final separator = '-' * 80;
+    expect(packageOwnLicense('$own$separator\nmonaco-editor\n\nMIT\n'), own);
+    expect(packageOwnLicense(own), own);
+  });
+
   test('evaluation validation catches duplicate and incomplete coverage', () {
     final errors = validateEvaluationData(
       <String, Object?>{
