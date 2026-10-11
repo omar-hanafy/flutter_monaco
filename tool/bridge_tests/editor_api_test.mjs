@@ -478,3 +478,33 @@ test('the legacy findMatches helper honors whole word like the command', () => {
   );
 });
 
+test('replaceMatches replaces every match, beyond 9999', async () => {
+  const page = bootEditorPage();
+  page.bootModel.setValue('a '.repeat(12000));
+  const response = await dispatch(page, 'document.replaceMatches', {
+    uri: null,
+    query: 'a',
+    replacement: 'b',
+    isRegex: false,
+    matchCase: true,
+    wholeWord: false,
+  });
+  assert.equal(response.ok, true);
+  assert.equal(response.value, 12000);
+  assert.equal(page.bootModel.getValue(), 'b '.repeat(12000));
+});
+
+test('findMatches still honors an explicit limit', async () => {
+  const page = bootEditorPage();
+  page.bootModel.setValue('a '.repeat(50));
+  const response = await dispatch(page, 'document.findMatches', {
+    uri: null,
+    query: 'a',
+    isRegex: false,
+    matchCase: true,
+    wholeWord: false,
+    limit: 5,
+  });
+  assert.equal(response.value.length, 5);
+});
+

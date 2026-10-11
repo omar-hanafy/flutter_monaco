@@ -45,6 +45,10 @@ window.__FMB.editorApi = function (ctx) {
                   model.pushEditOperations([], edits, () => null);
                   model.pushStackElement();
                 };
+                // Replace-all must see every match: Monaco's findMatches
+                // stops at its limit argument (999 when omitted), and the
+                // old 9999 cap silently left later matches unreplaced.
+                const ALL_MATCHES = Number.MAX_SAFE_INTEGER;
                 // Find with Monaco's own semantics. Whole word is Monaco's
                 // wordSeparators argument - the editor's wordSeparators
                 // option, exactly what the find widget passes - not a
@@ -316,7 +320,7 @@ window.__FMB.editorApi = function (ctx) {
                   replaceMatches: (q, repl, options) => {
                     const m = E().getModel();
                     if (!m) return 0;
-                    const matches = findModelMatches(m, q, options, null, 9999);
+                    const matches = findModelMatches(m, q, options, null, ALL_MATCHES);
                     const edits = matches.map(mm => ({ range: mm.range, text: repl }));
                     applyUndoableEdits(m, edits);
                     return edits.length;
@@ -537,7 +541,7 @@ window.__FMB.editorApi = function (ctx) {
                     const model = resolveModel(p.uri);
                     const matches = findMatchesIn(model, p.query,
                       { isRegex: p.isRegex, matchCase: p.matchCase, wholeWord: p.wholeWord,
-                        searchOnlyEditableRange: p.searchOnlyEditableRange }, 9999);
+                        searchOnlyEditableRange: p.searchOnlyEditableRange }, ALL_MATCHES);
                     const edits = matches.map((mm) => ({ range: mm.range, text: p.replacement }));
                     applyUndoableEdits(model, edits);
                     return edits.length;
