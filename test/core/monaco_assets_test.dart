@@ -7,6 +7,7 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 
 import '../helpers/bridge_sources.dart';
 import '../helpers/generate_index_html.dart';
+import '../helpers/page_scripts.dart';
 
 class _FakePathProviderPlatform extends PathProviderPlatform {
   _FakePathProviderPlatform(this.baseDir);
@@ -268,21 +269,29 @@ void main() {
       },
     );
 
-    test(
-      'apple worker shim emits escaped newlines inside JS string literals',
-      () {
-        final html = generateIndexHtml('min/vs', isIosOrMacOS: true);
-
-        // The escape must reach JavaScript as the two characters backslash-n.
-        expect(html, contains(r'''};\n" +'''));
-        expect(html, contains(r"""';\n" +"""));
-        // A raw newline inside the JS string literal is a SyntaxError that
-        // silently disables MonacoEnvironment (workers fall back to the main
-        // thread), which is exactly what shipped between 1.0.0 and 1.7.0.
-        expect(html, isNot(contains('\' };\n" +')));
-        expect(html, isNot(contains('\';\n" +')));
-      },
-    );
+    test('every inline script of every page flavor parses', () async {
+      // A SyntaxError in an inline script silently disables everything that
+      // script sets up - a raw newline inside a JS string literal did exactly
+      // that to the Apple worker shim between 1.0.0 and 1.7.0.
+      final pages = [
+        generateIndexHtml('min/vs'),
+        generateIndexHtml('min/vs', isIosOrMacOS: true),
+        generateIndexHtml(r'file:///C:/monaco/min/vs', isWindows: true),
+        generateIndexHtml(
+          'https://flutter-monaco.example/monaco-0.57.0/min/vs',
+          isWindows: true,
+          bridgeBasePath: 'https://flutter-monaco.example/monaco-0.57.0/bridge',
+        ),
+        generateIndexHtml(
+          'https://example.com/assets/monaco/min/vs',
+          isWeb: true,
+          messageToken: 'token',
+        ),
+      ];
+      for (final html in pages) {
+        expect(await jsSyntaxErrors(inlineScriptsIn(html)), isEmpty);
+      }
+    }, skip: nodeUnavailableReason);
 
     test('native html does not opt into web scroll containment', () {
       for (final html in [

@@ -4,6 +4,7 @@ import 'package:flutter_monaco/src/assets/html_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/csp.dart';
+import '../helpers/page_scripts.dart';
 
 String _build({
   String? customCss,
@@ -158,6 +159,170 @@ void main() {
         contains('window.flutterMonacoToken = ${jsonEncode(token)};'),
       );
       expect(html, isNot(contains("window.flutterMonacoToken = 'tok';")));
+    });
+  });
+
+  group('asset paths reach the page intact', () {
+    // Uri.file leaves an apostrophe unescaped, so a Windows profile such as
+    // O'Brien, or an app named "Bob's Editor", puts one in every asset URL.
+    // Pasted into a single-quoted JavaScript literal it ended the string:
+    // the require config became a SyntaxError and the editor never loaded.
+    const windowsDir =
+        r"C:\Users\O'Brien\AppData\Roaming\Bob's Tools\Bob's Editor"
+        r'\monaco_editor_cache\monaco-0.57.0';
+    final cases = <String, ({String vsPath, String bridgeBase, bool isWeb})>{
+      'Windows file page': (
+        vsPath: Uri.file('$windowsDir\\min\\vs', windows: true).toString(),
+        bridgeBase: Uri.file('$windowsDir\\bridge', windows: true).toString(),
+        isWeb: false,
+      ),
+      'web page': (
+        vsPath: "https://app.example/Bob's/assets/monaco/min/vs",
+        bridgeBase: "https://app.example/Bob's/assets/monaco/bridge",
+        isWeb: true,
+      ),
+      'path that tries to close the script element': (
+        vsPath: 'file:///C:/x/</script><script>alert(1)//"\'/min/vs',
+        bridgeBase: 'file:///C:/x/bridge',
+        isWeb: false,
+      ),
+    };
+
+    cases.forEach((name, paths) {
+      String build() => buildMonacoIndexHtml(
+        vsPath: paths.vsPath,
+        bridgeBase: paths.bridgeBase,
+        monacoVersion: '0.57.0',
+        isWindows: !paths.isWeb,
+        isWeb: paths.isWeb,
+        messageToken: paths.isWeb ? 'token' : null,
+      );
+
+      test('$name: every inline script parses', () async {
+        final html = build();
+        expect(html, contains('var require'));
+        expect(await jsSyntaxErrors(inlineScriptsIn(html)), isEmpty);
+      }, skip: nodeUnavailableReason);
+
+      test('$name: Monaco is configured with the exact vs path', () async {
+        final requireScript = inlineScriptsIn(build())
+            .singleWhere((script) => script.contains('var require'));
+        expect(
+          await evaluateInNode(requireScript, 'require.paths.vs'),
+          paths.vsPath,
+        );
+      }, skip: nodeUnavailableReason);
+
+      test('$name: script elements load the exact asset URLs', () {
+        final urls = scriptUrlsIn(build());
+        expect(urls, contains('${paths.vsPath}/loader.js'));
+        for (final script in monacoBridgeScripts) {
+          expect(urls, contains('${paths.bridgeBase}/$script'));
+        }
+      });
+    });
+  });
+
+  group('allowedConnectSources', () {
+    test('character references cannot smuggle a directive into the CSP', () {
+      // The attribute decodes &#32; to a space and &#59; to ";", so this
+      // entry used to widen connect-src to * and append frame-src *.
+      expect(
+        () =>
+            sanitizeConnectSources(['wss://a.example&#32*&#59frame-src&#32*']),
+        throwsArgumentError,
+      );
+    });
+
+    test('only CSP source expressions are accepted', () {
+      for (final invalid in [
+        'wss://a.example&amp;',
+        'wss://a.example/#fragment',
+        'wss://a.example/?query=1',
+        'ws://a.example,ws://b.example',
+        r'ws://a\b',
+        'wss://a.example/%ZZ',
+        'wss://a.example:80a',
+        "'self'",
+        'wss://',
+      ]) {
+        expect(
+          () => sanitizeConnectSources([invalid]),
+          throwsArgumentError,
+          reason: 'should reject: $invalid',
+        );
+      }
+    });
+
+    test('valid scheme and host sources are kept verbatim', () {
+      const valid = [
+        '*',
+        'https:',
+        'wss:',
+        'ws://127.0.0.1:3000',
+        'wss://lsp.example.com',
+        'wss://*.example.com',
+        'https://example.com:*',
+        'https://example.com/lsp/',
+        'https://example.com/a%20b',
+        'lsp.example.com',
+        'ws://[::1]:8080',
+      ];
+      expect(sanitizeConnectSources(valid), valid);
+
+      final csp = PageCsp.fromHtml(
+        buildMonacoIndexHtml(
+          vsPath: 'min/vs',
+          bridgeBase: 'bridge',
+          monacoVersion: '0.57.0',
+          allowedConnectSources: valid,
+        ),
+      );
+      expect(csp.directives['connect-src'], containsAllInOrder(valid));
+    });
+  });
+
+  group('generated pages', () {
+    final windowsFileBase = Uri.file(
+      r"C:\Users\O'Brien\cache\monaco-0.57.0",
+      windows: true,
+    ).toString();
+    final pages = <String, String>{
+      'Android': buildMonacoIndexHtml(
+        vsPath: 'min/vs',
+        bridgeBase: 'bridge',
+        monacoVersion: '0.57.0',
+      ),
+      'Apple': buildMonacoIndexHtml(
+        vsPath: 'min/vs',
+        bridgeBase: 'bridge',
+        monacoVersion: '0.57.0',
+        isIosOrMacOS: true,
+      ),
+      'Windows file fallback': buildMonacoIndexHtml(
+        vsPath: '$windowsFileBase/min/vs',
+        bridgeBase: '$windowsFileBase/bridge',
+        monacoVersion: '0.57.0',
+        isWindows: true,
+      ),
+    };
+
+    test('no page keeps the dead worker shims', () {
+      // editor.main.js replaces MonacoEnvironment wholesale while it loads,
+      // and vs/base/worker/workerMain.js does not exist in Monaco 0.57.
+      for (final html in [
+        ...pages.values,
+        _build(
+          isWeb: true,
+          vsPath: 'https://app.example/assets/monaco/min/vs',
+          bridgeBase: 'https://app.example/assets/monaco/bridge',
+        ),
+      ]) {
+        expect(html, isNot(contains('getWorkerUrl')));
+        expect(html, isNot(contains('workerMain.js')));
+        expect(html, isNot(contains('baseUrl')));
+        expect(html, isNot(contains('MonacoEnvironment = {')));
+      }
     });
   });
 }

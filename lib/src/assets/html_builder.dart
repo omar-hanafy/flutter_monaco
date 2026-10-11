@@ -1,8 +1,25 @@
 import 'dart:convert';
 
-/// Characters that would let a source expression escape the policy attribute
-/// or smuggle in an additional directive.
-final RegExp _unsafeCspSourceChars = RegExp(r'''[\s;'"<>]''');
+/// A CSP scheme-source, e.g. `wss:` or `https:`.
+final RegExp _cspSchemeSource = RegExp(r'^[A-Za-z][A-Za-z0-9+.\-]*:$');
+
+/// A CSP host-source: `[scheme "://"] host [":" port] [path]`, where host is
+/// `*`, an optionally `*.`-prefixed DNS name or IPv4 address, or a bracketed
+/// IPv6 literal, port is digits or `*`, and the path holds only URL path
+/// characters.
+///
+/// An allow-list of the CSP source-expression grammar (CSP3 section 2.3.1)
+/// rather than a deny-list of dangerous characters: every character outside
+/// it is refused, so nothing that HTML decodes inside the policy attribute
+/// (`&#59;` is `;`, `&#32;` a space) and nothing that ends a source expression
+/// (whitespace, `;`, `,`, quotes) can reach the policy. The path deliberately
+/// omits `&`, `'`, `;` and `,`, which the grammar would otherwise allow.
+final RegExp _cspHostSource = RegExp(
+  r'^(?:[A-Za-z][A-Za-z0-9+.\-]*://)?'
+  r'(?:\*|(?:\*\.)?[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)*\.?|\[[0-9A-Fa-f:.]+\])'
+  r'(?::(?:[0-9]+|\*))?'
+  r'(?:/(?:[A-Za-z0-9\-._~!$()*+=:@]|%[0-9A-Fa-f]{2})*)*$',
+);
 
 /// Whether [source] may be spliced into the page's CSP.
 ///
@@ -10,14 +27,15 @@ final RegExp _unsafeCspSourceChars = RegExp(r'''[\s;'"<>]''');
 /// expression that reaches the policy - both caller-supplied
 /// ([sanitizeConnectSources]) and derived from asset URLs ([_cspAssetOrigins]).
 bool _isSafeCspSource(String source) =>
-    source.isNotEmpty && !_unsafeCspSourceChars.hasMatch(source);
+    _cspSchemeSource.hasMatch(source) || _cspHostSource.hasMatch(source);
 
 /// Validates extra CSP `connect-src` source expressions.
 ///
 /// Returns the non-empty entries, ready to append to the `connect-src`
-/// directive. Throws [ArgumentError] for entries that could break out of the
-/// policy attribute or smuggle in additional directives (whitespace, quotes,
-/// `;`, `<`, `>`).
+/// directive. Throws [ArgumentError] for any entry that is not a single CSP
+/// scheme-source or host-source (see [_cspHostSource]): whitespace, quotes,
+/// `;`, `,`, `&`, `#`, `<` and `>` can never reach the policy attribute, so
+/// no entry can widen another directive or smuggle in a new one.
 List<String> sanitizeConnectSources(List<String> sources) {
   final cleaned = <String>[];
   for (final raw in sources) {
@@ -27,8 +45,9 @@ List<String> sanitizeConnectSources(List<String> sources) {
       throw ArgumentError.value(
         raw,
         'allowedConnectSources',
-        'Each entry must be a single CSP source expression without '
-            'whitespace, quotes, or ";" (e.g. "wss://lsp.example.com")',
+        'Each entry must be a single CSP source expression: a scheme such '
+            'as "wss:", or a host source such as "wss://lsp.example.com" or '
+            '"ws://127.0.0.1:3000"',
       );
     }
     cleaned.add(source);
@@ -38,18 +57,19 @@ List<String> sanitizeConnectSources(List<String> sources) {
 
 /// CSP host-sources for every origin the generated page fetches from.
 ///
-/// The policy must never depend on `'self'`. This document is always
+/// The policy must never depend on `'self'`. This document is usually
 /// delivered over a local scheme - a `blob:` URL on web (see
-/// `webview_web.dart`) and a `file:` URL on native (see
-/// `webview_native.dart`) - and `'self'` is not dependable there: Firefox
-/// does not resolve it to the creating document's origin inside a `blob:`
-/// document, so every same-origin fetch the page makes (`loader.js`, the
-/// bridge scripts, `editor.main.css`, the workers) is blocked while Chrome
-/// allows it. Native has always handled this by naming `file:` in every
-/// directive; web names the origins it actually references.
+/// `webview_web.dart`) and a `file:` URL on Android, Apple platforms and the
+/// Windows fallback (see `webview_native.dart`) - and `'self'` is not
+/// dependable there: Firefox does not resolve it to the creating document's
+/// origin inside a `blob:` document, so every same-origin fetch the page
+/// makes (`loader.js`, the bridge scripts, `editor.main.css`, the workers) is
+/// blocked while Chrome allows it. File-served pages name `file:` in every
+/// directive; pages with http(s) assets (web, and the WebView2 virtual host
+/// on Windows) name the origins they actually reference.
 ///
-/// Only absolute http(s) URLs carry an origin, so native's relative and
-/// `file:` asset paths contribute nothing and leave the policy unchanged.
+/// Only absolute http(s) URLs carry an origin, so relative and `file:` asset
+/// paths contribute nothing and leave the policy unchanged.
 /// [Uri.origin] rather than `authority` is deliberate: it is
 /// `scheme://host[:port]` with no userinfo, which is the only form valid as a
 /// CSP host-source - `authority` would emit `https://user:pass@host`, an
@@ -57,15 +77,46 @@ List<String> sanitizeConnectSources(List<String> sources) {
 List<String> _cspAssetOrigins(List<String> assetUrls) {
   final origins = <String>{};
   for (final url in assetUrls) {
-    final uri = Uri.tryParse(url);
-    if (uri == null) continue;
-    if (uri.scheme != 'http' && uri.scheme != 'https') continue;
-    if (uri.host.isEmpty) continue;
-    final origin = uri.origin;
+    if (!_isHttpUrl(url)) continue;
+    final origin = Uri.parse(url).origin;
     if (_isSafeCspSource(origin)) origins.add(origin);
   }
   return origins.toList()..sort();
 }
+
+/// Whether [url] is an absolute http(s) URL with a host.
+bool _isHttpUrl(String url) {
+  final uri = Uri.tryParse(url);
+  return uri != null &&
+      (uri.scheme == 'http' || uri.scheme == 'https') &&
+      uri.host.isNotEmpty;
+}
+
+/// Encodes [value] as a JavaScript string literal that is safe inside an
+/// inline `<script>` element.
+///
+/// Asset paths come from the file system (a Windows profile such as
+/// `C:\Users\O'Brien`, an app named "Bob's Editor") or from the web page's
+/// base URL, so they may hold any character a quoted literal or the HTML
+/// parser treats specially. JSON string syntax is valid JavaScript; `<` is
+/// escaped so a value can never form `</script>` or `<!--`, and the two
+/// Unicode line terminators so older engines accept the literal.
+String _jsString(String value) =>
+    jsonEncode(value)
+        .replaceAll('<', r'\u003c')
+        .replaceAll('\u2028', r'\u2028')
+        .replaceAll('\u2029', r'\u2029');
+
+/// Escapes [value] for use inside a double-quoted HTML attribute.
+///
+/// `&` must be escaped too: the parser decodes character references in
+/// attribute values, so an unescaped `&#59;` in the CSP `content` would reach
+/// the policy as `;`.
+String _htmlAttribute(String value) => value
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
 
 /// Neutralizes `</` sequences so injected CSS can never terminate its
 /// `<style>` element early (an embedded `</style>` would promote the rest
@@ -94,8 +145,9 @@ const List<String> monacoBridgeScripts = [
 /// bridge logic lives in real JavaScript files under `assets/monaco/bridge/`
 /// (see upcoming/v3.md Section 6.7). [bridgeBase] is the URL prefix for those
 /// files, without a trailing slash: relative (`bridge`) on Android/iOS/macOS,
-/// an absolute `file://` directory URL on Windows, and a resolved asset URL
-/// on web.
+/// `https://<virtual host>/monaco-<version>/bridge` on Windows (an absolute
+/// `file://` directory URL when the virtual host is unavailable), and a
+/// resolved asset URL on web.
 ///
 /// [monacoVersion] is stamped into `window.__FM_PAGE` for the protocol
 /// handshake.
@@ -160,17 +212,18 @@ String buildMonacoIndexHtml({
       '''
 <script>
   window.__FM_PAGE = {
-    platform: ${jsonEncode(platform)},
-    vsPath: ${jsonEncode(vsPath)},
-    monacoVersion: ${jsonEncode(monacoVersion)},
-    token: ${messageToken == null ? 'null' : jsonEncode(messageToken)}
+    platform: ${_jsString(platform)},
+    vsPath: ${_jsString(vsPath)},
+    monacoVersion: ${_jsString(monacoVersion)},
+    token: ${messageToken == null ? 'null' : _jsString(messageToken)}
   };
 </script>
 ''';
 
-  // Platform-specific initialization scripts (channel shims + worker shims).
-  // VERBATIM PORT from 2.3.0 generateIndexHtml; these must run before any
-  // external script loads, so they stay inline in the head.
+  // Channel shims. They must run before any external script loads, so they
+  // stay inline in the head. No page sets MonacoEnvironment: editor.main.js
+  // assigns its own (a getWorker covering every worker label) while it
+  // loads, replacing anything set earlier.
   String platformScript;
 
   if (isWeb) {
@@ -178,19 +231,12 @@ String buildMonacoIndexHtml({
         '''
 <script>
   console.log('[Web Init] Setting up for iframe mode');
-  self.MonacoEnvironment = {
-    baseUrl: '$vsPath/../',
-    getWorkerUrl: function(moduleId, label) {
-      var workerSrc = "self.MonacoEnvironment = { baseUrl: '$vsPath/../' }; importScripts('$vsPath/base/worker/workerMain.js');";
-      return URL.createObjectURL(new Blob([workerSrc], { type: 'application/javascript' }));
-    }
-  };
   window.flutterChannel = {
     postMessage: function(msg) {
       window.parent.postMessage(msg, '*');
     }
   };
-  window.flutterMonacoToken = ${jsonEncode(messageToken ?? '')};
+  window.flutterMonacoToken = ${_jsString(messageToken ?? '')};
   window.flutterMonacoPostMessage = function(message) {
     var token = window.flutterMonacoToken;
     if (typeof message !== 'string') {
@@ -231,53 +277,9 @@ String buildMonacoIndexHtml({
   console.log('[Windows Init] flutterChannel created successfully');
 </script>
 ''';
-  } else if (isIosOrMacOS) {
-    // iOS and macOS need blob worker shim for WKWebView + file:// protocol
-    platformScript =
-        '''
-<script>
-  (function () {
-    console.log('[Init] Setting up worker shim for WKWebView');
-    const vsRel = '$vsPath'; // e.g., "min/vs"
-    let absVs;
-    try { absVs = new URL(vsRel, window.location.href).toString(); }
-    catch (_) { absVs = vsRel; }
-
-    // Ensure baseUrl points to the ".../min/" folder (not ".../min/vs")
-    const idx = absVs.lastIndexOf('/vs');
-    const baseUrl = idx >= 0 ? absVs.substring(0, idx + 1) : absVs; // e.g., ".../min/"
-
-    // Set baseUrl so Monaco can resolve URLs before workers start
-    self.MonacoEnvironment = {
-      baseUrl: baseUrl,
-      getWorkerUrl: function (moduleId, label) {
-        // Include the label for better worker resolution and debugging.
-        // This template is a cooked Dart string: the newline escapes must be
-        // written as \\n so JavaScript receives "\\n" and not a raw newline,
-        // which is a SyntaxError inside a JS string literal and would kill
-        // this whole script block (workers then fall back to the main thread).
-        const src =
-          "self.MonacoEnvironment = { baseUrl: '" + baseUrl + "' };\\n" +
-          "self.monacoLabel = '" + label + "';\\n" +
-          "importScripts('" + absVs + "/base/worker/workerMain.js');\\n";
-        return URL.createObjectURL(new Blob([src], { type: 'application/javascript' }));
-      }
-    };
-    console.log('[Init] Worker shim configured. baseUrl=' + baseUrl);
-  })();
-</script>
-''';
   } else {
-    // Android and other platforms: just set baseUrl
-    final baseUrl = vsPath.replaceAll('/vs', '/');
-    platformScript =
-        '''
-<script>
-  // Linux/Other: Set base URL for worker resolution
-  console.log('[Init] Setting Monaco base URL');
-  self.MonacoEnvironment = { baseUrl: '$baseUrl' };
-</script>
-''';
+    // Android, iOS and macOS: webview_flutter injects flutterChannel.
+    platformScript = '';
   }
 
   final bridgeScriptNames = [
@@ -286,7 +288,10 @@ String buildMonacoIndexHtml({
     monacoBridgeScripts.last,
   ];
   final bridgeScriptTags = bridgeScriptNames
-      .map((name) => '    <script src="$bridgeBase/$name"></script>')
+      .map(
+        (name) =>
+            '    <script src="${_htmlAttribute('$bridgeBase/$name')}"></script>',
+      )
       .join('\n');
 
   return '''
@@ -298,7 +303,7 @@ String buildMonacoIndexHtml({
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="$contentSecurityPolicy"
+      content="${_htmlAttribute(contentSecurityPolicy)}"
     />
     <!-- NOTE: connect-src intentionally limits in-page requests to this
          page's own asset origins and blob:. Opt into remote endpoints (e.g.
@@ -349,15 +354,15 @@ String buildMonacoIndexHtml({
     <div id="editor-container"></div>
 
     <script>
-      var require = { paths: { vs: '$vsPath' } };
-      console.log('[Monaco HTML] Require config set. VS_PATH is: ' + '$vsPath');
+      var require = { paths: { vs: ${_jsString(vsPath)} } };
+      console.log('[Monaco HTML] Require config set. VS_PATH is: ' + require.paths.vs);
     </script>
 
     ${isWeb ? '''
     <script>
       // Web: Load loader.js dynamically to ensure proper timing in blob URL context
       var loaderScript = document.createElement('script');
-      loaderScript.src = '$vsPath/loader.js';
+      loaderScript.src = ${_jsString('$vsPath/loader.js')};
       loaderScript.onload = function() {
         console.log('[Monaco HTML] loader.js dynamically loaded.');
         window._monacoLoaderReady = true;
@@ -382,7 +387,7 @@ String buildMonacoIndexHtml({
       document.head.appendChild(loaderScript);
     </script>
     ''' : '''
-    <script src="$vsPath/loader.js"
+    <script src="${_htmlAttribute('$vsPath/loader.js')}"
             onload="console.log('[Monaco HTML] loader.js successfully loaded.')"
             onerror="console.error('[Monaco HTML] FATAL: loader.js FAILED TO LOAD.' + (window.__fmCspDetail ? window.__fmCspDetail() : ''))"
     ></script>
