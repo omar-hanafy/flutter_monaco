@@ -140,7 +140,7 @@ Future<void> refreshMonacoBridgeAssets({
 /// exactly [bytes] is left untouched. Returns whether the file was written.
 Future<bool> writeFileAtomically(String path, List<int> bytes) async {
   final target = File(path);
-  if (await target.exists() && listEquals(await target.readAsBytes(), bytes)) {
+  if (target.existsSync() && listEquals(await target.readAsBytes(), bytes)) {
     return false;
   }
   await target.parent.create(recursive: true);
@@ -179,7 +179,7 @@ String _uniqueSuffix() =>
 
 Future<void> _deleteQuietly(FileSystemEntity entity) async {
   try {
-    if (await entity.exists()) await entity.delete(recursive: true);
+    if (entity.existsSync()) await entity.delete(recursive: true);
   } catch (_) {
     // Best effort: a leftover is cleaned up by a later run.
   }
@@ -193,8 +193,8 @@ Future<bool> _isCompleteExtraction(
   final loader = File(p.join(targetDir, 'min', 'vs', 'loader.js'));
   final sentinel = File(p.join(targetDir, '.monaco_complete'));
   try {
-    return await loader.exists() &&
-        await sentinel.exists() &&
+    return loader.existsSync() &&
+        sentinel.existsSync() &&
         (await sentinel.readAsString()).trim() == monacoVersion;
   } on FileSystemException {
     return false;
@@ -212,7 +212,7 @@ String _retiredPrefix(String targetDir) => '${p.basename(targetDir)}.retired-';
 /// run (an hour old; a live extraction finishes in seconds).
 Future<void> _removeAbandonedSiblings(String targetDir) async {
   final parent = Directory(p.dirname(targetDir));
-  if (!await parent.exists()) return;
+  if (!parent.existsSync()) return;
   final staging = _stagingPrefix(targetDir);
   final retired = _retiredPrefix(targetDir);
   final cutoff = DateTime.now().subtract(const Duration(hours: 1));
@@ -222,7 +222,7 @@ Future<void> _removeAbandonedSiblings(String targetDir) async {
       final name = p.basename(entity.path);
       if (name.startsWith(retired) ||
           (name.startsWith(staging) &&
-              (await entity.stat()).modified.isBefore(cutoff))) {
+              entity.statSync().modified.isBefore(cutoff))) {
         await _deleteQuietly(entity);
       }
     }
@@ -322,7 +322,7 @@ Future<void> clearMonacoAssetCache({
     monacoVersion: monacoVersion,
   );
   final directory = Directory(targetDir);
-  if (!await directory.exists()) return;
+  if (!directory.existsSync()) return;
 
   final retired = Directory(
     p.join(
@@ -440,7 +440,7 @@ Future<void> _installExtraction(
       if (attempt >= 8) rethrow;
     }
     if (await _isCompleteExtraction(targetDir, monacoVersion)) return;
-    if (await Directory(targetDir).exists()) {
+    if (Directory(targetDir).existsSync()) {
       final retired = p.join(
         p.dirname(targetDir),
         '${_retiredPrefix(targetDir)}${_uniqueSuffix()}',

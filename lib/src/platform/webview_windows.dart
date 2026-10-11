@@ -12,8 +12,8 @@ part of 'webview_native.dart';
 /// native communication. However, the Monaco HTML defines a `window.flutterChannel`
 /// shim that forwards to this API, providing a consistent interface.
 ///
-/// Messages are received via the [webMessage] stream and dispatched to all
-/// registered channel handlers in [_channels].
+/// Messages are received via the [ww.WebviewController.webMessage] stream and
+/// dispatched to all registered channel handlers in [_channels].
 ///
 /// ### Result Parsing
 ///
@@ -49,7 +49,7 @@ class WindowsWebViewController extends WebViewController {
   /// Creates a new controller backed by `webview_flutter_windows` (WebView2).
   WindowsWebViewController() : this.withController(ww.WebviewController());
 
-  /// Creates a controller around an existing WebView2 [controller].
+  /// Creates a controller around an existing WebView2 controller.
   ///
   /// Tests pass a fake to observe the virtual host mapping and navigation.
   @visibleForTesting

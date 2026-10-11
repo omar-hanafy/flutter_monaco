@@ -30,7 +30,7 @@ class _FakeWebview extends Fake implements ww.WebviewController {
   final mappings = <(String, String, ww.WebviewHostResourceAccessKind)>[];
   final removedMappings = <String>[];
   final loadedUrls = <String>[];
-  Object? mappingError;
+  Exception? mappingError;
 
   final loadErrors = StreamController<ww.WebErrorStatus>.broadcast();
   final loadingStates = StreamController<ww.LoadingState>.broadcast();

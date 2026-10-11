@@ -102,7 +102,7 @@ void main() {
 
       // A WebView in another engine checks the sentinel and loads whatever
       // is there: mid-copy, the cache must hold nothing or a whole tree.
-      expect(Directory(target).existsSync() ? complete() : true, isTrue);
+      expect(!Directory(target).existsSync() || complete(), isTrue);
 
       source.release.complete();
       await extraction;
