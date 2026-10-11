@@ -14,13 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: stable
+          flutter-version: 3.47.7
       - name: Version channel check
         if: github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'dev')
         run: |
@@ -48,6 +49,10 @@ jobs:
         run: dart run tool/validate_ai_extensions.dart
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed .
+      - name: Check generated code is up to date
+        # Fails when a committed *.freezed.dart file no longer matches what
+        # build_runner would generate from lib/ (scoped by build.yaml).
+        run: dart run build_runner build --only-check
       - name: Analyze
         run: flutter analyze
       - name: Test
@@ -57,15 +62,36 @@ jobs:
           flutter test --platform chrome
           test/widgets/monaco_overlay_boundary_web_test.dart
 
+  test-lower-bounds:
+    name: Test lower bounds
+    # Resolves every dependency to the lowest version pubspec.yaml allows, so
+    # a constraint floor that no longer compiles or passes tests is caught
+    # before a consumer with an older lock file hits it.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+      - name: Resolve lowest allowed dependencies
+        run: flutter pub downgrade
+      - name: Analyze
+        run: flutter analyze
+      - name: Test
+        run: flutter test
+
   test-beta:
     name: Test on beta
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: beta
       - name: Install dependencies
@@ -82,7 +108,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Node.js
+        # Pin an LTS line so the job does not follow the runner image's
+        # preinstalled Node across image upgrades.
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
       - name: node --check every bridge script
         run: find assets/monaco/bridge -name '*.js' -print -exec node --check {} +
       - name: Execute the real bridge against the Monaco stub
@@ -93,16 +125,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: stable
+          flutter-version: 3.47.7
       - name: Install dependencies
         run: dart pub get
       - name: Add pub cache to PATH
         run: echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
       - name: Install pana
-        run: dart pub global activate pana 0.23.14
+        run: dart pub global activate pana 0.23.19
       - name: Run pana
         run: pana --exit-code-threshold 0 .
