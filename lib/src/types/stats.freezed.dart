@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'stats.dart';
@@ -9,6 +9,7 @@ part of 'stats.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -32,16 +33,21 @@ $MonacoLiveStatsCopyWith<MonacoLiveStats> get copyWith => _$MonacoLiveStatsCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoLiveStats&&(identical(other.lineCount, lineCount) || other.lineCount == lineCount)&&(identical(other.charCount, charCount) || other.charCount == charCount)&&(identical(other.selectedLines, selectedLines) || other.selectedLines == selectedLines)&&(identical(other.selectedCharacters, selectedCharacters) || other.selectedCharacters == selectedCharacters)&&(identical(other.caretCount, caretCount) || other.caretCount == caretCount)&&(identical(other.cursorPosition, cursorPosition) || other.cursorPosition == cursorPosition)&&(identical(other.language, language) || other.language == language));
+  final _this = this as MonacoLiveStats;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoLiveStats&&(identical(other.lineCount, _this.lineCount) || other.lineCount == _this.lineCount)&&(identical(other.charCount, _this.charCount) || other.charCount == _this.charCount)&&(identical(other.selectedLines, _this.selectedLines) || other.selectedLines == _this.selectedLines)&&(identical(other.selectedCharacters, _this.selectedCharacters) || other.selectedCharacters == _this.selectedCharacters)&&(identical(other.caretCount, _this.caretCount) || other.caretCount == _this.caretCount)&&(identical(other.cursorPosition, _this.cursorPosition) || other.cursorPosition == _this.cursorPosition)&&(identical(other.language, _this.language) || other.language == _this.language));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,lineCount,charCount,selectedLines,selectedCharacters,caretCount,cursorPosition,language);
+int get hashCode {
+  final _this = this as MonacoLiveStats;
+  return Object.hash(runtimeType,_this.lineCount,_this.charCount,_this.selectedLines,_this.selectedCharacters,_this.caretCount,_this.cursorPosition,_this.language);
+}
 
 @override
 String toString() {
-  return 'MonacoLiveStats(lineCount: $lineCount, charCount: $charCount, selectedLines: $selectedLines, selectedCharacters: $selectedCharacters, caretCount: $caretCount, cursorPosition: $cursorPosition, language: $language)';
+  final _this = this as MonacoLiveStats;
+  return 'MonacoLiveStats(lineCount: ${_this.lineCount}, charCount: ${_this.charCount}, selectedLines: ${_this.selectedLines}, selectedCharacters: ${_this.selectedCharacters}, caretCount: ${_this.caretCount}, cursorPosition: ${_this.cursorPosition}, language: ${_this.language})';
 }
 
 
@@ -70,7 +76,7 @@ class _$MonacoLiveStatsCopyWithImpl<$Res>
 /// Create a copy of MonacoLiveStats
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? lineCount = null,Object? charCount = null,Object? selectedLines = null,Object? selectedCharacters = null,Object? caretCount = null,Object? cursorPosition = freezed,Object? language = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(MonacoLiveStats(
 lineCount: null == lineCount ? _self.lineCount : lineCount // ignore: cast_nullable_to_non_nullable
 as int,charCount: null == charCount ? _self.charCount : charCount // ignore: cast_nullable_to_non_nullable
 as int,selectedLines: null == selectedLines ? _self.selectedLines : selectedLines // ignore: cast_nullable_to_non_nullable
@@ -253,16 +259,18 @@ _$MonacoLiveStatsCopyWith<_MonacoLiveStats> get copyWith => __$MonacoLiveStatsCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoLiveStats&&(identical(other.lineCount, lineCount) || other.lineCount == lineCount)&&(identical(other.charCount, charCount) || other.charCount == charCount)&&(identical(other.selectedLines, selectedLines) || other.selectedLines == selectedLines)&&(identical(other.selectedCharacters, selectedCharacters) || other.selectedCharacters == selectedCharacters)&&(identical(other.caretCount, caretCount) || other.caretCount == caretCount)&&(identical(other.cursorPosition, cursorPosition) || other.cursorPosition == cursorPosition)&&(identical(other.language, language) || other.language == language));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoLiveStats&&(identical(other.lineCount, lineCount) || other.lineCount == lineCount)&&(identical(other.charCount, charCount) || other.charCount == charCount)&&(identical(other.selectedLines, selectedLines) || other.selectedLines == selectedLines)&&(identical(other.selectedCharacters, selectedCharacters) || other.selectedCharacters == selectedCharacters)&&(identical(other.caretCount, caretCount) || other.caretCount == caretCount)&&(identical(other.cursorPosition, cursorPosition) || other.cursorPosition == cursorPosition)&&(identical(other.language, language) || other.language == language));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,lineCount,charCount,selectedLines,selectedCharacters,caretCount,cursorPosition,language);
+int get hashCode {
+    return Object.hash(runtimeType,lineCount,charCount,selectedLines,selectedCharacters,caretCount,cursorPosition,language);
+}
 
 @override
 String toString() {
-  return 'MonacoLiveStats(lineCount: $lineCount, charCount: $charCount, selectedLines: $selectedLines, selectedCharacters: $selectedCharacters, caretCount: $caretCount, cursorPosition: $cursorPosition, language: $language)';
+    return 'MonacoLiveStats(lineCount: $lineCount, charCount: $charCount, selectedLines: $selectedLines, selectedCharacters: $selectedCharacters, caretCount: $caretCount, cursorPosition: $cursorPosition, language: $language)';
 }
 
 
@@ -340,16 +348,21 @@ $EditorStateCopyWith<EditorState> get copyWith => _$EditorStateCopyWithImpl<Edit
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EditorState&&(identical(other.content, content) || other.content == content)&&(identical(other.selection, selection) || other.selection == selection)&&(identical(other.cursorPosition, cursorPosition) || other.cursorPosition == cursorPosition)&&(identical(other.lineCount, lineCount) || other.lineCount == lineCount)&&(identical(other.isDirty, isDirty) || other.isDirty == isDirty)&&(identical(other.language, language) || other.language == language)&&(identical(other.theme, theme) || other.theme == theme)&&(identical(other.stats, stats) || other.stats == stats));
+  final _this = this as EditorState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EditorState&&(identical(other.content, _this.content) || other.content == _this.content)&&(identical(other.selection, _this.selection) || other.selection == _this.selection)&&(identical(other.cursorPosition, _this.cursorPosition) || other.cursorPosition == _this.cursorPosition)&&(identical(other.lineCount, _this.lineCount) || other.lineCount == _this.lineCount)&&(identical(other.isDirty, _this.isDirty) || other.isDirty == _this.isDirty)&&(identical(other.language, _this.language) || other.language == _this.language)&&(identical(other.theme, _this.theme) || other.theme == _this.theme)&&(identical(other.stats, _this.stats) || other.stats == _this.stats));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,content,selection,cursorPosition,lineCount,isDirty,language,theme,stats);
+int get hashCode {
+  final _this = this as EditorState;
+  return Object.hash(runtimeType,_this.content,_this.selection,_this.cursorPosition,_this.lineCount,_this.isDirty,_this.language,_this.theme,_this.stats);
+}
 
 @override
 String toString() {
-  return 'EditorState(content: $content, selection: $selection, cursorPosition: $cursorPosition, lineCount: $lineCount, isDirty: $isDirty, language: $language, theme: $theme, stats: $stats)';
+  final _this = this as EditorState;
+  return 'EditorState(content: ${_this.content}, selection: ${_this.selection}, cursorPosition: ${_this.cursorPosition}, lineCount: ${_this.lineCount}, isDirty: ${_this.isDirty}, language: ${_this.language}, theme: ${_this.theme}, stats: ${_this.stats})';
 }
 
 
@@ -378,7 +391,7 @@ class _$EditorStateCopyWithImpl<$Res>
 /// Create a copy of EditorState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? content = null,Object? selection = freezed,Object? cursorPosition = freezed,Object? lineCount = null,Object? isDirty = null,Object? language = freezed,Object? theme = freezed,Object? stats = null,}) {
-  return _then(_self.copyWith(
+  return _then(EditorState(
 content: null == content ? _self.content : content // ignore: cast_nullable_to_non_nullable
 as String,selection: freezed == selection ? _self.selection : selection // ignore: cast_nullable_to_non_nullable
 as Range?,cursorPosition: freezed == cursorPosition ? _self.cursorPosition : cursorPosition // ignore: cast_nullable_to_non_nullable
@@ -585,16 +598,18 @@ _$EditorStateCopyWith<_EditorState> get copyWith => __$EditorStateCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EditorState&&(identical(other.content, content) || other.content == content)&&(identical(other.selection, selection) || other.selection == selection)&&(identical(other.cursorPosition, cursorPosition) || other.cursorPosition == cursorPosition)&&(identical(other.lineCount, lineCount) || other.lineCount == lineCount)&&(identical(other.isDirty, isDirty) || other.isDirty == isDirty)&&(identical(other.language, language) || other.language == language)&&(identical(other.theme, theme) || other.theme == theme)&&(identical(other.stats, stats) || other.stats == stats));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _EditorState&&(identical(other.content, content) || other.content == content)&&(identical(other.selection, selection) || other.selection == selection)&&(identical(other.cursorPosition, cursorPosition) || other.cursorPosition == cursorPosition)&&(identical(other.lineCount, lineCount) || other.lineCount == lineCount)&&(identical(other.isDirty, isDirty) || other.isDirty == isDirty)&&(identical(other.language, language) || other.language == language)&&(identical(other.theme, theme) || other.theme == theme)&&(identical(other.stats, stats) || other.stats == stats));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,content,selection,cursorPosition,lineCount,isDirty,language,theme,stats);
+int get hashCode {
+    return Object.hash(runtimeType,content,selection,cursorPosition,lineCount,isDirty,language,theme,stats);
+}
 
 @override
 String toString() {
-  return 'EditorState(content: $content, selection: $selection, cursorPosition: $cursorPosition, lineCount: $lineCount, isDirty: $isDirty, language: $language, theme: $theme, stats: $stats)';
+    return 'EditorState(content: $content, selection: $selection, cursorPosition: $cursorPosition, lineCount: $lineCount, isDirty: $isDirty, language: $language, theme: $theme, stats: $stats)';
 }
 
 

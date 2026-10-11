@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'markers.dart';
@@ -9,6 +9,7 @@ part of 'markers.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -32,16 +33,21 @@ $MarkerDataCopyWith<MarkerData> get copyWith => _$MarkerDataCopyWithImpl<MarkerD
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MarkerData&&(identical(other.range, range) || other.range == range)&&(identical(other.message, message) || other.message == message)&&(identical(other.severity, severity) || other.severity == severity)&&(identical(other.code, code) || other.code == code)&&(identical(other.source, source) || other.source == source)&&const DeepCollectionEquality().equals(other.tags, tags)&&const DeepCollectionEquality().equals(other.relatedInformation, relatedInformation));
+  final _this = this as MarkerData;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MarkerData&&(identical(other.range, _this.range) || other.range == _this.range)&&(identical(other.message, _this.message) || other.message == _this.message)&&(identical(other.severity, _this.severity) || other.severity == _this.severity)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.source, _this.source) || other.source == _this.source)&&const DeepCollectionEquality().equals(other.tags, _this.tags)&&const DeepCollectionEquality().equals(other.relatedInformation, _this.relatedInformation));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,range,message,severity,code,source,const DeepCollectionEquality().hash(tags),const DeepCollectionEquality().hash(relatedInformation));
+int get hashCode {
+  final _this = this as MarkerData;
+  return Object.hash(runtimeType,_this.range,_this.message,_this.severity,_this.code,_this.source,const DeepCollectionEquality().hash(_this.tags),const DeepCollectionEquality().hash(_this.relatedInformation));
+}
 
 @override
 String toString() {
-  return 'MarkerData(range: $range, message: $message, severity: $severity, code: $code, source: $source, tags: $tags, relatedInformation: $relatedInformation)';
+  final _this = this as MarkerData;
+  return 'MarkerData(range: ${_this.range}, message: ${_this.message}, severity: ${_this.severity}, code: ${_this.code}, source: ${_this.source}, tags: ${_this.tags}, relatedInformation: ${_this.relatedInformation})';
 }
 
 
@@ -70,7 +76,7 @@ class _$MarkerDataCopyWithImpl<$Res>
 /// Create a copy of MarkerData
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? range = null,Object? message = null,Object? severity = null,Object? code = freezed,Object? source = freezed,Object? tags = freezed,Object? relatedInformation = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(MarkerData(
 range: null == range ? _self.range : range // ignore: cast_nullable_to_non_nullable
 as Range,message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
 as String,severity: null == severity ? _self.severity : severity // ignore: cast_nullable_to_non_nullable
@@ -222,7 +228,7 @@ return $default(_that.range,_that.message,_that.severity,_that.code,_that.source
 
 
 class _MarkerData extends MarkerData {
-  const _MarkerData({required this.range, required this.message, this.severity = MarkerSeverity.info, this.code, this.source, final  List<String>? tags, final  List<RelatedInformation>? relatedInformation}): _tags = tags,_relatedInformation = relatedInformation,super._();
+  const _MarkerData({required this.range, required this.message, this.severity = MarkerSeverity.info, this.code, this.source,  List<String>? tags,  List<RelatedInformation>? relatedInformation}): _tags = tags,_relatedInformation = relatedInformation,super._();
   
 
 /// The range in the document where the marker should be displayed.
@@ -268,16 +274,18 @@ _$MarkerDataCopyWith<_MarkerData> get copyWith => __$MarkerDataCopyWithImpl<_Mar
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MarkerData&&(identical(other.range, range) || other.range == range)&&(identical(other.message, message) || other.message == message)&&(identical(other.severity, severity) || other.severity == severity)&&(identical(other.code, code) || other.code == code)&&(identical(other.source, source) || other.source == source)&&const DeepCollectionEquality().equals(other._tags, _tags)&&const DeepCollectionEquality().equals(other._relatedInformation, _relatedInformation));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MarkerData&&(identical(other.range, range) || other.range == range)&&(identical(other.message, message) || other.message == message)&&(identical(other.severity, severity) || other.severity == severity)&&(identical(other.code, code) || other.code == code)&&(identical(other.source, source) || other.source == source)&&const DeepCollectionEquality().equals(other.tags, _tags)&&const DeepCollectionEquality().equals(other.relatedInformation, _relatedInformation));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,range,message,severity,code,source,const DeepCollectionEquality().hash(_tags),const DeepCollectionEquality().hash(_relatedInformation));
+int get hashCode {
+    return Object.hash(runtimeType,range,message,severity,code,source,const DeepCollectionEquality().hash(_tags),const DeepCollectionEquality().hash(_relatedInformation));
+}
 
 @override
 String toString() {
-  return 'MarkerData(range: $range, message: $message, severity: $severity, code: $code, source: $source, tags: $tags, relatedInformation: $relatedInformation)';
+    return 'MarkerData(range: $range, message: $message, severity: $severity, code: $code, source: $source, tags: $tags, relatedInformation: $relatedInformation)';
 }
 
 
@@ -347,16 +355,21 @@ $RelatedInformationCopyWith<RelatedInformation> get copyWith => _$RelatedInforma
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RelatedInformation&&(identical(other.resource, resource) || other.resource == resource)&&(identical(other.range, range) || other.range == range)&&(identical(other.message, message) || other.message == message));
+  final _this = this as RelatedInformation;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RelatedInformation&&(identical(other.resource, _this.resource) || other.resource == _this.resource)&&(identical(other.range, _this.range) || other.range == _this.range)&&(identical(other.message, _this.message) || other.message == _this.message));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,resource,range,message);
+int get hashCode {
+  final _this = this as RelatedInformation;
+  return Object.hash(runtimeType,_this.resource,_this.range,_this.message);
+}
 
 @override
 String toString() {
-  return 'RelatedInformation(resource: $resource, range: $range, message: $message)';
+  final _this = this as RelatedInformation;
+  return 'RelatedInformation(resource: ${_this.resource}, range: ${_this.range}, message: ${_this.message})';
 }
 
 
@@ -385,7 +398,7 @@ class _$RelatedInformationCopyWithImpl<$Res>
 /// Create a copy of RelatedInformation
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? resource = null,Object? range = null,Object? message = null,}) {
-  return _then(_self.copyWith(
+  return _then(RelatedInformation(
 resource: null == resource ? _self.resource : resource // ignore: cast_nullable_to_non_nullable
 as Uri,range: null == range ? _self.range : range // ignore: cast_nullable_to_non_nullable
 as Range,message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
@@ -553,16 +566,18 @@ _$RelatedInformationCopyWith<_RelatedInformation> get copyWith => __$RelatedInfo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RelatedInformation&&(identical(other.resource, resource) || other.resource == resource)&&(identical(other.range, range) || other.range == range)&&(identical(other.message, message) || other.message == message));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RelatedInformation&&(identical(other.resource, resource) || other.resource == resource)&&(identical(other.range, range) || other.range == range)&&(identical(other.message, message) || other.message == message));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,resource,range,message);
+int get hashCode {
+    return Object.hash(runtimeType,resource,range,message);
+}
 
 @override
 String toString() {
-  return 'RelatedInformation(resource: $resource, range: $range, message: $message)';
+    return 'RelatedInformation(resource: $resource, range: $range, message: $message)';
 }
 
 

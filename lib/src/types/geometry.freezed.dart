@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'geometry.dart';
@@ -9,6 +9,7 @@ part of 'geometry.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -27,16 +28,21 @@ $PositionCopyWith<Position> get copyWith => _$PositionCopyWithImpl<Position>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Position&&(identical(other.line, line) || other.line == line)&&(identical(other.column, column) || other.column == column));
+  final _this = this as Position;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Position&&(identical(other.line, _this.line) || other.line == _this.line)&&(identical(other.column, _this.column) || other.column == _this.column));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,line,column);
+int get hashCode {
+  final _this = this as Position;
+  return Object.hash(runtimeType,_this.line,_this.column);
+}
 
 @override
 String toString() {
-  return 'Position(line: $line, column: $column)';
+  final _this = this as Position;
+  return 'Position(line: ${_this.line}, column: ${_this.column})';
 }
 
 
@@ -65,7 +71,7 @@ class _$PositionCopyWithImpl<$Res>
 /// Create a copy of Position
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? line = null,Object? column = null,}) {
-  return _then(_self.copyWith(
+  return _then(Position(
 line: null == line ? _self.line : line // ignore: cast_nullable_to_non_nullable
 as int,column: null == column ? _self.column : column // ignore: cast_nullable_to_non_nullable
 as int,
@@ -221,16 +227,18 @@ _$PositionCopyWith<_Position> get copyWith => __$PositionCopyWithImpl<_Position>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Position&&(identical(other.line, line) || other.line == line)&&(identical(other.column, column) || other.column == column));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Position&&(identical(other.line, line) || other.line == line)&&(identical(other.column, column) || other.column == column));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,line,column);
+int get hashCode {
+    return Object.hash(runtimeType,line,column);
+}
 
 @override
 String toString() {
-  return 'Position(line: $line, column: $column)';
+    return 'Position(line: $line, column: $column)';
 }
 
 
@@ -287,16 +295,21 @@ $RangeCopyWith<Range> get copyWith => _$RangeCopyWithImpl<Range>(this as Range, 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Range&&(identical(other.startLine, startLine) || other.startLine == startLine)&&(identical(other.startColumn, startColumn) || other.startColumn == startColumn)&&(identical(other.endLine, endLine) || other.endLine == endLine)&&(identical(other.endColumn, endColumn) || other.endColumn == endColumn));
+  final _this = this as Range;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Range&&(identical(other.startLine, _this.startLine) || other.startLine == _this.startLine)&&(identical(other.startColumn, _this.startColumn) || other.startColumn == _this.startColumn)&&(identical(other.endLine, _this.endLine) || other.endLine == _this.endLine)&&(identical(other.endColumn, _this.endColumn) || other.endColumn == _this.endColumn));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,startLine,startColumn,endLine,endColumn);
+int get hashCode {
+  final _this = this as Range;
+  return Object.hash(runtimeType,_this.startLine,_this.startColumn,_this.endLine,_this.endColumn);
+}
 
 @override
 String toString() {
-  return 'Range(startLine: $startLine, startColumn: $startColumn, endLine: $endLine, endColumn: $endColumn)';
+  final _this = this as Range;
+  return 'Range(startLine: ${_this.startLine}, startColumn: ${_this.startColumn}, endLine: ${_this.endLine}, endColumn: ${_this.endColumn})';
 }
 
 
@@ -325,7 +338,7 @@ class _$RangeCopyWithImpl<$Res>
 /// Create a copy of Range
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? startLine = null,Object? startColumn = null,Object? endLine = null,Object? endColumn = null,}) {
-  return _then(_self.copyWith(
+  return _then(Range(
 startLine: null == startLine ? _self.startLine : startLine // ignore: cast_nullable_to_non_nullable
 as int,startColumn: null == startColumn ? _self.startColumn : startColumn // ignore: cast_nullable_to_non_nullable
 as int,endLine: null == endLine ? _self.endLine : endLine // ignore: cast_nullable_to_non_nullable
@@ -487,16 +500,18 @@ _$RangeCopyWith<_Range> get copyWith => __$RangeCopyWithImpl<_Range>(this, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Range&&(identical(other.startLine, startLine) || other.startLine == startLine)&&(identical(other.startColumn, startColumn) || other.startColumn == startColumn)&&(identical(other.endLine, endLine) || other.endLine == endLine)&&(identical(other.endColumn, endColumn) || other.endColumn == endColumn));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Range&&(identical(other.startLine, startLine) || other.startLine == startLine)&&(identical(other.startColumn, startColumn) || other.startColumn == startColumn)&&(identical(other.endLine, endLine) || other.endLine == endLine)&&(identical(other.endColumn, endColumn) || other.endColumn == endColumn));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,startLine,startColumn,endLine,endColumn);
+int get hashCode {
+    return Object.hash(runtimeType,startLine,startColumn,endLine,endColumn);
+}
 
 @override
 String toString() {
-  return 'Range(startLine: $startLine, startColumn: $startColumn, endLine: $endLine, endColumn: $endColumn)';
+    return 'Range(startLine: $startLine, startColumn: $startColumn, endLine: $endLine, endColumn: $endColumn)';
 }
 
 

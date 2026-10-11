@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'theme_definition.dart';
@@ -9,6 +9,7 @@ part of 'theme_definition.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -31,16 +32,21 @@ $MonacoThemeDefinitionCopyWith<MonacoThemeDefinition> get copyWith => _$MonacoTh
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoThemeDefinition&&(identical(other.id, id) || other.id == id)&&(identical(other.base, base) || other.base == base)&&(identical(other.inherit, inherit) || other.inherit == inherit)&&const DeepCollectionEquality().equals(other.rules, rules)&&const DeepCollectionEquality().equals(other.colors, colors)&&const DeepCollectionEquality().equals(other.encodedTokensColors, encodedTokensColors));
+  final _this = this as MonacoThemeDefinition;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoThemeDefinition&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.base, _this.base) || other.base == _this.base)&&(identical(other.inherit, _this.inherit) || other.inherit == _this.inherit)&&const DeepCollectionEquality().equals(other.rules, _this.rules)&&const DeepCollectionEquality().equals(other.colors, _this.colors)&&const DeepCollectionEquality().equals(other.encodedTokensColors, _this.encodedTokensColors));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,base,inherit,const DeepCollectionEquality().hash(rules),const DeepCollectionEquality().hash(colors),const DeepCollectionEquality().hash(encodedTokensColors));
+int get hashCode {
+  final _this = this as MonacoThemeDefinition;
+  return Object.hash(runtimeType,_this.id,_this.base,_this.inherit,const DeepCollectionEquality().hash(_this.rules),const DeepCollectionEquality().hash(_this.colors),const DeepCollectionEquality().hash(_this.encodedTokensColors));
+}
 
 @override
 String toString() {
-  return 'MonacoThemeDefinition(id: $id, base: $base, inherit: $inherit, rules: $rules, colors: $colors, encodedTokensColors: $encodedTokensColors)';
+  final _this = this as MonacoThemeDefinition;
+  return 'MonacoThemeDefinition(id: ${_this.id}, base: ${_this.base}, inherit: ${_this.inherit}, rules: ${_this.rules}, colors: ${_this.colors}, encodedTokensColors: ${_this.encodedTokensColors})';
 }
 
 
@@ -69,7 +75,7 @@ class _$MonacoThemeDefinitionCopyWithImpl<$Res>
 /// Create a copy of MonacoThemeDefinition
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? base = null,Object? inherit = null,Object? rules = null,Object? colors = null,Object? encodedTokensColors = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(MonacoThemeDefinition(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,base: null == base ? _self.base : base // ignore: cast_nullable_to_non_nullable
 as MonacoBaseTheme,inherit: null == inherit ? _self.inherit : inherit // ignore: cast_nullable_to_non_nullable
@@ -211,7 +217,7 @@ return $default(_that.id,_that.base,_that.inherit,_that.rules,_that.colors,_that
 
 
 class _MonacoThemeDefinition extends MonacoThemeDefinition {
-  const _MonacoThemeDefinition({required this.id, required this.base, this.inherit = true, final  List<MonacoThemeRule> rules = const <MonacoThemeRule>[], final  Map<String, String> colors = const <String, String>{}, final  List<String>? encodedTokensColors}): _rules = rules,_colors = colors,_encodedTokensColors = encodedTokensColors,super._();
+  const _MonacoThemeDefinition({required this.id, required this.base, this.inherit = true,  List<MonacoThemeRule> rules = const <MonacoThemeRule>[],  Map<String, String> colors = const <String, String>{},  List<String>? encodedTokensColors}): _rules = rules,_colors = colors,_encodedTokensColors = encodedTokensColors,super._();
   
 
 /// Custom theme identifier passed to `monaco.editor.setTheme`.
@@ -260,16 +266,18 @@ _$MonacoThemeDefinitionCopyWith<_MonacoThemeDefinition> get copyWith => __$Monac
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoThemeDefinition&&(identical(other.id, id) || other.id == id)&&(identical(other.base, base) || other.base == base)&&(identical(other.inherit, inherit) || other.inherit == inherit)&&const DeepCollectionEquality().equals(other._rules, _rules)&&const DeepCollectionEquality().equals(other._colors, _colors)&&const DeepCollectionEquality().equals(other._encodedTokensColors, _encodedTokensColors));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoThemeDefinition&&(identical(other.id, id) || other.id == id)&&(identical(other.base, base) || other.base == base)&&(identical(other.inherit, inherit) || other.inherit == inherit)&&const DeepCollectionEquality().equals(other.rules, _rules)&&const DeepCollectionEquality().equals(other.colors, _colors)&&const DeepCollectionEquality().equals(other.encodedTokensColors, _encodedTokensColors));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,base,inherit,const DeepCollectionEquality().hash(_rules),const DeepCollectionEquality().hash(_colors),const DeepCollectionEquality().hash(_encodedTokensColors));
+int get hashCode {
+    return Object.hash(runtimeType,id,base,inherit,const DeepCollectionEquality().hash(_rules),const DeepCollectionEquality().hash(_colors),const DeepCollectionEquality().hash(_encodedTokensColors));
+}
 
 @override
 String toString() {
-  return 'MonacoThemeDefinition(id: $id, base: $base, inherit: $inherit, rules: $rules, colors: $colors, encodedTokensColors: $encodedTokensColors)';
+    return 'MonacoThemeDefinition(id: $id, base: $base, inherit: $inherit, rules: $rules, colors: $colors, encodedTokensColors: $encodedTokensColors)';
 }
 
 
@@ -330,16 +338,21 @@ $MonacoThemeRuleCopyWith<MonacoThemeRule> get copyWith => _$MonacoThemeRuleCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoThemeRule&&(identical(other.token, token) || other.token == token)&&(identical(other.foreground, foreground) || other.foreground == foreground)&&(identical(other.background, background) || other.background == background)&&(identical(other.fontStyle, fontStyle) || other.fontStyle == fontStyle));
+  final _this = this as MonacoThemeRule;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoThemeRule&&(identical(other.token, _this.token) || other.token == _this.token)&&(identical(other.foreground, _this.foreground) || other.foreground == _this.foreground)&&(identical(other.background, _this.background) || other.background == _this.background)&&(identical(other.fontStyle, _this.fontStyle) || other.fontStyle == _this.fontStyle));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,token,foreground,background,fontStyle);
+int get hashCode {
+  final _this = this as MonacoThemeRule;
+  return Object.hash(runtimeType,_this.token,_this.foreground,_this.background,_this.fontStyle);
+}
 
 @override
 String toString() {
-  return 'MonacoThemeRule(token: $token, foreground: $foreground, background: $background, fontStyle: $fontStyle)';
+  final _this = this as MonacoThemeRule;
+  return 'MonacoThemeRule(token: ${_this.token}, foreground: ${_this.foreground}, background: ${_this.background}, fontStyle: ${_this.fontStyle})';
 }
 
 
@@ -368,7 +381,7 @@ class _$MonacoThemeRuleCopyWithImpl<$Res>
 /// Create a copy of MonacoThemeRule
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? token = null,Object? foreground = freezed,Object? background = freezed,Object? fontStyle = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(MonacoThemeRule(
 token: null == token ? _self.token : token // ignore: cast_nullable_to_non_nullable
 as String,foreground: freezed == foreground ? _self.foreground : foreground // ignore: cast_nullable_to_non_nullable
 as String?,background: freezed == background ? _self.background : background // ignore: cast_nullable_to_non_nullable
@@ -530,16 +543,18 @@ _$MonacoThemeRuleCopyWith<_MonacoThemeRule> get copyWith => __$MonacoThemeRuleCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoThemeRule&&(identical(other.token, token) || other.token == token)&&(identical(other.foreground, foreground) || other.foreground == foreground)&&(identical(other.background, background) || other.background == background)&&(identical(other.fontStyle, fontStyle) || other.fontStyle == fontStyle));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoThemeRule&&(identical(other.token, token) || other.token == token)&&(identical(other.foreground, foreground) || other.foreground == foreground)&&(identical(other.background, background) || other.background == background)&&(identical(other.fontStyle, fontStyle) || other.fontStyle == fontStyle));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,token,foreground,background,fontStyle);
+int get hashCode {
+    return Object.hash(runtimeType,token,foreground,background,fontStyle);
+}
 
 @override
 String toString() {
-  return 'MonacoThemeRule(token: $token, foreground: $foreground, background: $background, fontStyle: $fontStyle)';
+    return 'MonacoThemeRule(token: $token, foreground: $foreground, background: $background, fontStyle: $fontStyle)';
 }
 
 

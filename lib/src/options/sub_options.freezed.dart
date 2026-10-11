@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'sub_options.dart';
@@ -9,6 +9,7 @@ part of 'sub_options.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -27,16 +28,21 @@ $MonacoPaddingCopyWith<MonacoPadding> get copyWith => _$MonacoPaddingCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoPadding&&(identical(other.top, top) || other.top == top)&&(identical(other.bottom, bottom) || other.bottom == bottom));
+  final _this = this as MonacoPadding;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoPadding&&(identical(other.top, _this.top) || other.top == _this.top)&&(identical(other.bottom, _this.bottom) || other.bottom == _this.bottom));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,top,bottom);
+int get hashCode {
+  final _this = this as MonacoPadding;
+  return Object.hash(runtimeType,_this.top,_this.bottom);
+}
 
 @override
 String toString() {
-  return 'MonacoPadding(top: $top, bottom: $bottom)';
+  final _this = this as MonacoPadding;
+  return 'MonacoPadding(top: ${_this.top}, bottom: ${_this.bottom})';
 }
 
 
@@ -65,7 +71,7 @@ class _$MonacoPaddingCopyWithImpl<$Res>
 /// Create a copy of MonacoPadding
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? top = freezed,Object? bottom = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(MonacoPadding(
 top: freezed == top ? _self.top : top // ignore: cast_nullable_to_non_nullable
 as int?,bottom: freezed == bottom ? _self.bottom : bottom // ignore: cast_nullable_to_non_nullable
 as int?,
@@ -221,16 +227,18 @@ _$MonacoPaddingCopyWith<_MonacoPadding> get copyWith => __$MonacoPaddingCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoPadding&&(identical(other.top, top) || other.top == top)&&(identical(other.bottom, bottom) || other.bottom == bottom));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoPadding&&(identical(other.top, top) || other.top == top)&&(identical(other.bottom, bottom) || other.bottom == bottom));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,top,bottom);
+int get hashCode {
+    return Object.hash(runtimeType,top,bottom);
+}
 
 @override
 String toString() {
-  return 'MonacoPadding(top: $top, bottom: $bottom)';
+    return 'MonacoPadding(top: $top, bottom: $bottom)';
 }
 
 
@@ -288,16 +296,21 @@ $MonacoMinimapOptionsCopyWith<MonacoMinimapOptions> get copyWith => _$MonacoMini
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoMinimapOptions&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.side, side) || other.side == side)&&(identical(other.renderCharacters, renderCharacters) || other.renderCharacters == renderCharacters)&&(identical(other.maxColumn, maxColumn) || other.maxColumn == maxColumn)&&(identical(other.scale, scale) || other.scale == scale));
+  final _this = this as MonacoMinimapOptions;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoMinimapOptions&&(identical(other.enabled, _this.enabled) || other.enabled == _this.enabled)&&(identical(other.side, _this.side) || other.side == _this.side)&&(identical(other.renderCharacters, _this.renderCharacters) || other.renderCharacters == _this.renderCharacters)&&(identical(other.maxColumn, _this.maxColumn) || other.maxColumn == _this.maxColumn)&&(identical(other.scale, _this.scale) || other.scale == _this.scale));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,enabled,side,renderCharacters,maxColumn,scale);
+int get hashCode {
+  final _this = this as MonacoMinimapOptions;
+  return Object.hash(runtimeType,_this.enabled,_this.side,_this.renderCharacters,_this.maxColumn,_this.scale);
+}
 
 @override
 String toString() {
-  return 'MonacoMinimapOptions(enabled: $enabled, side: $side, renderCharacters: $renderCharacters, maxColumn: $maxColumn, scale: $scale)';
+  final _this = this as MonacoMinimapOptions;
+  return 'MonacoMinimapOptions(enabled: ${_this.enabled}, side: ${_this.side}, renderCharacters: ${_this.renderCharacters}, maxColumn: ${_this.maxColumn}, scale: ${_this.scale})';
 }
 
 
@@ -326,7 +339,7 @@ class _$MonacoMinimapOptionsCopyWithImpl<$Res>
 /// Create a copy of MonacoMinimapOptions
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? enabled = freezed,Object? side = freezed,Object? renderCharacters = freezed,Object? maxColumn = freezed,Object? scale = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(MonacoMinimapOptions(
 enabled: freezed == enabled ? _self.enabled : enabled // ignore: cast_nullable_to_non_nullable
 as bool?,side: freezed == side ? _self.side : side // ignore: cast_nullable_to_non_nullable
 as MonacoMinimapSide?,renderCharacters: freezed == renderCharacters ? _self.renderCharacters : renderCharacters // ignore: cast_nullable_to_non_nullable
@@ -491,16 +504,18 @@ _$MonacoMinimapOptionsCopyWith<_MonacoMinimapOptions> get copyWith => __$MonacoM
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoMinimapOptions&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.side, side) || other.side == side)&&(identical(other.renderCharacters, renderCharacters) || other.renderCharacters == renderCharacters)&&(identical(other.maxColumn, maxColumn) || other.maxColumn == maxColumn)&&(identical(other.scale, scale) || other.scale == scale));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoMinimapOptions&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.side, side) || other.side == side)&&(identical(other.renderCharacters, renderCharacters) || other.renderCharacters == renderCharacters)&&(identical(other.maxColumn, maxColumn) || other.maxColumn == maxColumn)&&(identical(other.scale, scale) || other.scale == scale));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,enabled,side,renderCharacters,maxColumn,scale);
+int get hashCode {
+    return Object.hash(runtimeType,enabled,side,renderCharacters,maxColumn,scale);
+}
 
 @override
 String toString() {
-  return 'MonacoMinimapOptions(enabled: $enabled, side: $side, renderCharacters: $renderCharacters, maxColumn: $maxColumn, scale: $scale)';
+    return 'MonacoMinimapOptions(enabled: $enabled, side: $side, renderCharacters: $renderCharacters, maxColumn: $maxColumn, scale: $scale)';
 }
 
 
@@ -562,16 +577,21 @@ $MonacoScrollbarOptionsCopyWith<MonacoScrollbarOptions> get copyWith => _$Monaco
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoScrollbarOptions&&(identical(other.vertical, vertical) || other.vertical == vertical)&&(identical(other.horizontal, horizontal) || other.horizontal == horizontal)&&(identical(other.verticalScrollbarSize, verticalScrollbarSize) || other.verticalScrollbarSize == verticalScrollbarSize)&&(identical(other.horizontalScrollbarSize, horizontalScrollbarSize) || other.horizontalScrollbarSize == horizontalScrollbarSize)&&(identical(other.handleMouseWheel, handleMouseWheel) || other.handleMouseWheel == handleMouseWheel)&&(identical(other.useShadows, useShadows) || other.useShadows == useShadows));
+  final _this = this as MonacoScrollbarOptions;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoScrollbarOptions&&(identical(other.vertical, _this.vertical) || other.vertical == _this.vertical)&&(identical(other.horizontal, _this.horizontal) || other.horizontal == _this.horizontal)&&(identical(other.verticalScrollbarSize, _this.verticalScrollbarSize) || other.verticalScrollbarSize == _this.verticalScrollbarSize)&&(identical(other.horizontalScrollbarSize, _this.horizontalScrollbarSize) || other.horizontalScrollbarSize == _this.horizontalScrollbarSize)&&(identical(other.handleMouseWheel, _this.handleMouseWheel) || other.handleMouseWheel == _this.handleMouseWheel)&&(identical(other.useShadows, _this.useShadows) || other.useShadows == _this.useShadows));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,vertical,horizontal,verticalScrollbarSize,horizontalScrollbarSize,handleMouseWheel,useShadows);
+int get hashCode {
+  final _this = this as MonacoScrollbarOptions;
+  return Object.hash(runtimeType,_this.vertical,_this.horizontal,_this.verticalScrollbarSize,_this.horizontalScrollbarSize,_this.handleMouseWheel,_this.useShadows);
+}
 
 @override
 String toString() {
-  return 'MonacoScrollbarOptions(vertical: $vertical, horizontal: $horizontal, verticalScrollbarSize: $verticalScrollbarSize, horizontalScrollbarSize: $horizontalScrollbarSize, handleMouseWheel: $handleMouseWheel, useShadows: $useShadows)';
+  final _this = this as MonacoScrollbarOptions;
+  return 'MonacoScrollbarOptions(vertical: ${_this.vertical}, horizontal: ${_this.horizontal}, verticalScrollbarSize: ${_this.verticalScrollbarSize}, horizontalScrollbarSize: ${_this.horizontalScrollbarSize}, handleMouseWheel: ${_this.handleMouseWheel}, useShadows: ${_this.useShadows})';
 }
 
 
@@ -600,7 +620,7 @@ class _$MonacoScrollbarOptionsCopyWithImpl<$Res>
 /// Create a copy of MonacoScrollbarOptions
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? vertical = freezed,Object? horizontal = freezed,Object? verticalScrollbarSize = freezed,Object? horizontalScrollbarSize = freezed,Object? handleMouseWheel = freezed,Object? useShadows = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(MonacoScrollbarOptions(
 vertical: freezed == vertical ? _self.vertical : vertical // ignore: cast_nullable_to_non_nullable
 as MonacoScrollbarVisibility?,horizontal: freezed == horizontal ? _self.horizontal : horizontal // ignore: cast_nullable_to_non_nullable
 as MonacoScrollbarVisibility?,verticalScrollbarSize: freezed == verticalScrollbarSize ? _self.verticalScrollbarSize : verticalScrollbarSize // ignore: cast_nullable_to_non_nullable
@@ -768,16 +788,18 @@ _$MonacoScrollbarOptionsCopyWith<_MonacoScrollbarOptions> get copyWith => __$Mon
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoScrollbarOptions&&(identical(other.vertical, vertical) || other.vertical == vertical)&&(identical(other.horizontal, horizontal) || other.horizontal == horizontal)&&(identical(other.verticalScrollbarSize, verticalScrollbarSize) || other.verticalScrollbarSize == verticalScrollbarSize)&&(identical(other.horizontalScrollbarSize, horizontalScrollbarSize) || other.horizontalScrollbarSize == horizontalScrollbarSize)&&(identical(other.handleMouseWheel, handleMouseWheel) || other.handleMouseWheel == handleMouseWheel)&&(identical(other.useShadows, useShadows) || other.useShadows == useShadows));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoScrollbarOptions&&(identical(other.vertical, vertical) || other.vertical == vertical)&&(identical(other.horizontal, horizontal) || other.horizontal == horizontal)&&(identical(other.verticalScrollbarSize, verticalScrollbarSize) || other.verticalScrollbarSize == verticalScrollbarSize)&&(identical(other.horizontalScrollbarSize, horizontalScrollbarSize) || other.horizontalScrollbarSize == horizontalScrollbarSize)&&(identical(other.handleMouseWheel, handleMouseWheel) || other.handleMouseWheel == handleMouseWheel)&&(identical(other.useShadows, useShadows) || other.useShadows == useShadows));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,vertical,horizontal,verticalScrollbarSize,horizontalScrollbarSize,handleMouseWheel,useShadows);
+int get hashCode {
+    return Object.hash(runtimeType,vertical,horizontal,verticalScrollbarSize,horizontalScrollbarSize,handleMouseWheel,useShadows);
+}
 
 @override
 String toString() {
-  return 'MonacoScrollbarOptions(vertical: $vertical, horizontal: $horizontal, verticalScrollbarSize: $verticalScrollbarSize, horizontalScrollbarSize: $horizontalScrollbarSize, handleMouseWheel: $handleMouseWheel, useShadows: $useShadows)';
+    return 'MonacoScrollbarOptions(vertical: $vertical, horizontal: $horizontal, verticalScrollbarSize: $verticalScrollbarSize, horizontalScrollbarSize: $horizontalScrollbarSize, handleMouseWheel: $handleMouseWheel, useShadows: $useShadows)';
 }
 
 
@@ -836,16 +858,21 @@ $MonacoGuidesOptionsCopyWith<MonacoGuidesOptions> get copyWith => _$MonacoGuides
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoGuidesOptions&&(identical(other.bracketPairs, bracketPairs) || other.bracketPairs == bracketPairs)&&(identical(other.indentation, indentation) || other.indentation == indentation));
+  final _this = this as MonacoGuidesOptions;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoGuidesOptions&&(identical(other.bracketPairs, _this.bracketPairs) || other.bracketPairs == _this.bracketPairs)&&(identical(other.indentation, _this.indentation) || other.indentation == _this.indentation));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,bracketPairs,indentation);
+int get hashCode {
+  final _this = this as MonacoGuidesOptions;
+  return Object.hash(runtimeType,_this.bracketPairs,_this.indentation);
+}
 
 @override
 String toString() {
-  return 'MonacoGuidesOptions(bracketPairs: $bracketPairs, indentation: $indentation)';
+  final _this = this as MonacoGuidesOptions;
+  return 'MonacoGuidesOptions(bracketPairs: ${_this.bracketPairs}, indentation: ${_this.indentation})';
 }
 
 
@@ -874,7 +901,7 @@ class _$MonacoGuidesOptionsCopyWithImpl<$Res>
 /// Create a copy of MonacoGuidesOptions
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? bracketPairs = freezed,Object? indentation = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(MonacoGuidesOptions(
 bracketPairs: freezed == bracketPairs ? _self.bracketPairs : bracketPairs // ignore: cast_nullable_to_non_nullable
 as bool?,indentation: freezed == indentation ? _self.indentation : indentation // ignore: cast_nullable_to_non_nullable
 as bool?,
@@ -1030,16 +1057,18 @@ _$MonacoGuidesOptionsCopyWith<_MonacoGuidesOptions> get copyWith => __$MonacoGui
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoGuidesOptions&&(identical(other.bracketPairs, bracketPairs) || other.bracketPairs == bracketPairs)&&(identical(other.indentation, indentation) || other.indentation == indentation));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoGuidesOptions&&(identical(other.bracketPairs, bracketPairs) || other.bracketPairs == bracketPairs)&&(identical(other.indentation, indentation) || other.indentation == indentation));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,bracketPairs,indentation);
+int get hashCode {
+    return Object.hash(runtimeType,bracketPairs,indentation);
+}
 
 @override
 String toString() {
-  return 'MonacoGuidesOptions(bracketPairs: $bracketPairs, indentation: $indentation)';
+    return 'MonacoGuidesOptions(bracketPairs: $bracketPairs, indentation: $indentation)';
 }
 
 
@@ -1094,16 +1123,21 @@ $MonacoStickyScrollCopyWith<MonacoStickyScroll> get copyWith => _$MonacoStickySc
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoStickyScroll&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.maxLineCount, maxLineCount) || other.maxLineCount == maxLineCount));
+  final _this = this as MonacoStickyScroll;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoStickyScroll&&(identical(other.enabled, _this.enabled) || other.enabled == _this.enabled)&&(identical(other.maxLineCount, _this.maxLineCount) || other.maxLineCount == _this.maxLineCount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,enabled,maxLineCount);
+int get hashCode {
+  final _this = this as MonacoStickyScroll;
+  return Object.hash(runtimeType,_this.enabled,_this.maxLineCount);
+}
 
 @override
 String toString() {
-  return 'MonacoStickyScroll(enabled: $enabled, maxLineCount: $maxLineCount)';
+  final _this = this as MonacoStickyScroll;
+  return 'MonacoStickyScroll(enabled: ${_this.enabled}, maxLineCount: ${_this.maxLineCount})';
 }
 
 
@@ -1132,7 +1166,7 @@ class _$MonacoStickyScrollCopyWithImpl<$Res>
 /// Create a copy of MonacoStickyScroll
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? enabled = freezed,Object? maxLineCount = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(MonacoStickyScroll(
 enabled: freezed == enabled ? _self.enabled : enabled // ignore: cast_nullable_to_non_nullable
 as bool?,maxLineCount: freezed == maxLineCount ? _self.maxLineCount : maxLineCount // ignore: cast_nullable_to_non_nullable
 as int?,
@@ -1288,16 +1322,18 @@ _$MonacoStickyScrollCopyWith<_MonacoStickyScroll> get copyWith => __$MonacoStick
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoStickyScroll&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.maxLineCount, maxLineCount) || other.maxLineCount == maxLineCount));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoStickyScroll&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.maxLineCount, maxLineCount) || other.maxLineCount == maxLineCount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,enabled,maxLineCount);
+int get hashCode {
+    return Object.hash(runtimeType,enabled,maxLineCount);
+}
 
 @override
 String toString() {
-  return 'MonacoStickyScroll(enabled: $enabled, maxLineCount: $maxLineCount)';
+    return 'MonacoStickyScroll(enabled: $enabled, maxLineCount: $maxLineCount)';
 }
 
 

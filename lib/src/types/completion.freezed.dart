@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'completion.dart';
@@ -9,6 +9,7 @@ part of 'completion.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -35,16 +36,21 @@ $CompletionItemCopyWith<CompletionItem> get copyWith => _$CompletionItemCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CompletionItem&&(identical(other.label, label) || other.label == label)&&(identical(other.insertText, insertText) || other.insertText == insertText)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.detail, detail) || other.detail == detail)&&(identical(other.documentation, documentation) || other.documentation == documentation)&&(identical(other.sortText, sortText) || other.sortText == sortText)&&(identical(other.filterText, filterText) || other.filterText == filterText)&&(identical(other.range, range) || other.range == range)&&const DeepCollectionEquality().equals(other.commitCharacters, commitCharacters)&&const DeepCollectionEquality().equals(other.insertTextRules, insertTextRules));
+  final _this = this as CompletionItem;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CompletionItem&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.insertText, _this.insertText) || other.insertText == _this.insertText)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.detail, _this.detail) || other.detail == _this.detail)&&(identical(other.documentation, _this.documentation) || other.documentation == _this.documentation)&&(identical(other.sortText, _this.sortText) || other.sortText == _this.sortText)&&(identical(other.filterText, _this.filterText) || other.filterText == _this.filterText)&&(identical(other.range, _this.range) || other.range == _this.range)&&const DeepCollectionEquality().equals(other.commitCharacters, _this.commitCharacters)&&const DeepCollectionEquality().equals(other.insertTextRules, _this.insertTextRules));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,label,insertText,kind,detail,documentation,sortText,filterText,range,const DeepCollectionEquality().hash(commitCharacters),const DeepCollectionEquality().hash(insertTextRules));
+int get hashCode {
+  final _this = this as CompletionItem;
+  return Object.hash(runtimeType,_this.label,_this.insertText,_this.kind,_this.detail,_this.documentation,_this.sortText,_this.filterText,_this.range,const DeepCollectionEquality().hash(_this.commitCharacters),const DeepCollectionEquality().hash(_this.insertTextRules));
+}
 
 @override
 String toString() {
-  return 'CompletionItem(label: $label, insertText: $insertText, kind: $kind, detail: $detail, documentation: $documentation, sortText: $sortText, filterText: $filterText, range: $range, commitCharacters: $commitCharacters, insertTextRules: $insertTextRules)';
+  final _this = this as CompletionItem;
+  return 'CompletionItem(label: ${_this.label}, insertText: ${_this.insertText}, kind: ${_this.kind}, detail: ${_this.detail}, documentation: ${_this.documentation}, sortText: ${_this.sortText}, filterText: ${_this.filterText}, range: ${_this.range}, commitCharacters: ${_this.commitCharacters}, insertTextRules: ${_this.insertTextRules})';
 }
 
 
@@ -73,7 +79,7 @@ class _$CompletionItemCopyWithImpl<$Res>
 /// Create a copy of CompletionItem
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? label = null,Object? insertText = freezed,Object? kind = freezed,Object? detail = freezed,Object? documentation = freezed,Object? sortText = freezed,Object? filterText = freezed,Object? range = freezed,Object? commitCharacters = freezed,Object? insertTextRules = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(CompletionItem(
 label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,insertText: freezed == insertText ? _self.insertText : insertText // ignore: cast_nullable_to_non_nullable
 as String?,kind: freezed == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
@@ -231,7 +237,7 @@ return $default(_that.label,_that.insertText,_that.kind,_that.detail,_that.docum
 
 
 class _CompletionItem extends CompletionItem {
-  const _CompletionItem({required this.label, this.insertText, this.kind, this.detail, this.documentation, this.sortText, this.filterText, this.range, final  List<String>? commitCharacters, final  Set<InsertTextRule>? insertTextRules}): _commitCharacters = commitCharacters,_insertTextRules = insertTextRules,super._();
+  const _CompletionItem({required this.label, this.insertText, this.kind, this.detail, this.documentation, this.sortText, this.filterText, this.range,  List<String>? commitCharacters,  Set<InsertTextRule>? insertTextRules}): _commitCharacters = commitCharacters,_insertTextRules = insertTextRules,super._();
   
 
 /// The label of this completion item.
@@ -283,16 +289,18 @@ _$CompletionItemCopyWith<_CompletionItem> get copyWith => __$CompletionItemCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CompletionItem&&(identical(other.label, label) || other.label == label)&&(identical(other.insertText, insertText) || other.insertText == insertText)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.detail, detail) || other.detail == detail)&&(identical(other.documentation, documentation) || other.documentation == documentation)&&(identical(other.sortText, sortText) || other.sortText == sortText)&&(identical(other.filterText, filterText) || other.filterText == filterText)&&(identical(other.range, range) || other.range == range)&&const DeepCollectionEquality().equals(other._commitCharacters, _commitCharacters)&&const DeepCollectionEquality().equals(other._insertTextRules, _insertTextRules));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CompletionItem&&(identical(other.label, label) || other.label == label)&&(identical(other.insertText, insertText) || other.insertText == insertText)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.detail, detail) || other.detail == detail)&&(identical(other.documentation, documentation) || other.documentation == documentation)&&(identical(other.sortText, sortText) || other.sortText == sortText)&&(identical(other.filterText, filterText) || other.filterText == filterText)&&(identical(other.range, range) || other.range == range)&&const DeepCollectionEquality().equals(other.commitCharacters, _commitCharacters)&&const DeepCollectionEquality().equals(other.insertTextRules, _insertTextRules));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,label,insertText,kind,detail,documentation,sortText,filterText,range,const DeepCollectionEquality().hash(_commitCharacters),const DeepCollectionEquality().hash(_insertTextRules));
+int get hashCode {
+    return Object.hash(runtimeType,label,insertText,kind,detail,documentation,sortText,filterText,range,const DeepCollectionEquality().hash(_commitCharacters),const DeepCollectionEquality().hash(_insertTextRules));
+}
 
 @override
 String toString() {
-  return 'CompletionItem(label: $label, insertText: $insertText, kind: $kind, detail: $detail, documentation: $documentation, sortText: $sortText, filterText: $filterText, range: $range, commitCharacters: $commitCharacters, insertTextRules: $insertTextRules)';
+    return 'CompletionItem(label: $label, insertText: $insertText, kind: $kind, detail: $detail, documentation: $documentation, sortText: $sortText, filterText: $filterText, range: $range, commitCharacters: $commitCharacters, insertTextRules: $insertTextRules)';
 }
 
 
@@ -367,16 +375,21 @@ $CompletionListCopyWith<CompletionList> get copyWith => _$CompletionListCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CompletionList&&const DeepCollectionEquality().equals(other.suggestions, suggestions)&&(identical(other.isIncomplete, isIncomplete) || other.isIncomplete == isIncomplete));
+  final _this = this as CompletionList;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CompletionList&&const DeepCollectionEquality().equals(other.suggestions, _this.suggestions)&&(identical(other.isIncomplete, _this.isIncomplete) || other.isIncomplete == _this.isIncomplete));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(suggestions),isIncomplete);
+int get hashCode {
+  final _this = this as CompletionList;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.suggestions),_this.isIncomplete);
+}
 
 @override
 String toString() {
-  return 'CompletionList(suggestions: $suggestions, isIncomplete: $isIncomplete)';
+  final _this = this as CompletionList;
+  return 'CompletionList(suggestions: ${_this.suggestions}, isIncomplete: ${_this.isIncomplete})';
 }
 
 
@@ -405,7 +418,7 @@ class _$CompletionListCopyWithImpl<$Res>
 /// Create a copy of CompletionList
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? suggestions = null,Object? isIncomplete = null,}) {
-  return _then(_self.copyWith(
+  return _then(CompletionList(
 suggestions: null == suggestions ? _self.suggestions : suggestions // ignore: cast_nullable_to_non_nullable
 as List<CompletionItem>,isIncomplete: null == isIncomplete ? _self.isIncomplete : isIncomplete // ignore: cast_nullable_to_non_nullable
 as bool,
@@ -543,7 +556,7 @@ return $default(_that.suggestions,_that.isIncomplete);case _:
 
 
 class _CompletionList extends CompletionList {
-  const _CompletionList({required final  List<CompletionItem> suggestions, this.isIncomplete = false}): _suggestions = suggestions,super._();
+  const _CompletionList({required  List<CompletionItem> suggestions, this.isIncomplete = false}): _suggestions = suggestions,super._();
   
 
 /// The list of completion suggestions.
@@ -568,16 +581,18 @@ _$CompletionListCopyWith<_CompletionList> get copyWith => __$CompletionListCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CompletionList&&const DeepCollectionEquality().equals(other._suggestions, _suggestions)&&(identical(other.isIncomplete, isIncomplete) || other.isIncomplete == isIncomplete));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CompletionList&&const DeepCollectionEquality().equals(other.suggestions, _suggestions)&&(identical(other.isIncomplete, isIncomplete) || other.isIncomplete == isIncomplete));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_suggestions),isIncomplete);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_suggestions),isIncomplete);
+}
 
 @override
 String toString() {
-  return 'CompletionList(suggestions: $suggestions, isIncomplete: $isIncomplete)';
+    return 'CompletionList(suggestions: $suggestions, isIncomplete: $isIncomplete)';
 }
 
 
@@ -639,16 +654,21 @@ $CompletionRequestCopyWith<CompletionRequest> get copyWith => _$CompletionReques
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CompletionRequest&&(identical(other.providerId, providerId) || other.providerId == providerId)&&(identical(other.requestId, requestId) || other.requestId == requestId)&&(identical(other.language, language) || other.language == language)&&(identical(other.uri, uri) || other.uri == uri)&&(identical(other.position, position) || other.position == position)&&(identical(other.defaultRange, defaultRange) || other.defaultRange == defaultRange)&&(identical(other.lineText, lineText) || other.lineText == lineText)&&(identical(other.triggerKind, triggerKind) || other.triggerKind == triggerKind)&&(identical(other.triggerCharacter, triggerCharacter) || other.triggerCharacter == triggerCharacter));
+  final _this = this as CompletionRequest;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CompletionRequest&&(identical(other.providerId, _this.providerId) || other.providerId == _this.providerId)&&(identical(other.requestId, _this.requestId) || other.requestId == _this.requestId)&&(identical(other.language, _this.language) || other.language == _this.language)&&(identical(other.uri, _this.uri) || other.uri == _this.uri)&&(identical(other.position, _this.position) || other.position == _this.position)&&(identical(other.defaultRange, _this.defaultRange) || other.defaultRange == _this.defaultRange)&&(identical(other.lineText, _this.lineText) || other.lineText == _this.lineText)&&(identical(other.triggerKind, _this.triggerKind) || other.triggerKind == _this.triggerKind)&&(identical(other.triggerCharacter, _this.triggerCharacter) || other.triggerCharacter == _this.triggerCharacter));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,providerId,requestId,language,uri,position,defaultRange,lineText,triggerKind,triggerCharacter);
+int get hashCode {
+  final _this = this as CompletionRequest;
+  return Object.hash(runtimeType,_this.providerId,_this.requestId,_this.language,_this.uri,_this.position,_this.defaultRange,_this.lineText,_this.triggerKind,_this.triggerCharacter);
+}
 
 @override
 String toString() {
-  return 'CompletionRequest(providerId: $providerId, requestId: $requestId, language: $language, uri: $uri, position: $position, defaultRange: $defaultRange, lineText: $lineText, triggerKind: $triggerKind, triggerCharacter: $triggerCharacter)';
+  final _this = this as CompletionRequest;
+  return 'CompletionRequest(providerId: ${_this.providerId}, requestId: ${_this.requestId}, language: ${_this.language}, uri: ${_this.uri}, position: ${_this.position}, defaultRange: ${_this.defaultRange}, lineText: ${_this.lineText}, triggerKind: ${_this.triggerKind}, triggerCharacter: ${_this.triggerCharacter})';
 }
 
 
@@ -677,7 +697,7 @@ class _$CompletionRequestCopyWithImpl<$Res>
 /// Create a copy of CompletionRequest
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? providerId = null,Object? requestId = null,Object? language = null,Object? uri = freezed,Object? position = null,Object? defaultRange = null,Object? lineText = freezed,Object? triggerKind = freezed,Object? triggerCharacter = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(CompletionRequest(
 providerId: null == providerId ? _self.providerId : providerId // ignore: cast_nullable_to_non_nullable
 as String,requestId: null == requestId ? _self.requestId : requestId // ignore: cast_nullable_to_non_nullable
 as String,language: null == language ? _self.language : language // ignore: cast_nullable_to_non_nullable
@@ -872,16 +892,18 @@ _$CompletionRequestCopyWith<_CompletionRequest> get copyWith => __$CompletionReq
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CompletionRequest&&(identical(other.providerId, providerId) || other.providerId == providerId)&&(identical(other.requestId, requestId) || other.requestId == requestId)&&(identical(other.language, language) || other.language == language)&&(identical(other.uri, uri) || other.uri == uri)&&(identical(other.position, position) || other.position == position)&&(identical(other.defaultRange, defaultRange) || other.defaultRange == defaultRange)&&(identical(other.lineText, lineText) || other.lineText == lineText)&&(identical(other.triggerKind, triggerKind) || other.triggerKind == triggerKind)&&(identical(other.triggerCharacter, triggerCharacter) || other.triggerCharacter == triggerCharacter));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CompletionRequest&&(identical(other.providerId, providerId) || other.providerId == providerId)&&(identical(other.requestId, requestId) || other.requestId == requestId)&&(identical(other.language, language) || other.language == language)&&(identical(other.uri, uri) || other.uri == uri)&&(identical(other.position, position) || other.position == position)&&(identical(other.defaultRange, defaultRange) || other.defaultRange == defaultRange)&&(identical(other.lineText, lineText) || other.lineText == lineText)&&(identical(other.triggerKind, triggerKind) || other.triggerKind == triggerKind)&&(identical(other.triggerCharacter, triggerCharacter) || other.triggerCharacter == triggerCharacter));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,providerId,requestId,language,uri,position,defaultRange,lineText,triggerKind,triggerCharacter);
+int get hashCode {
+    return Object.hash(runtimeType,providerId,requestId,language,uri,position,defaultRange,lineText,triggerKind,triggerCharacter);
+}
 
 @override
 String toString() {
-  return 'CompletionRequest(providerId: $providerId, requestId: $requestId, language: $language, uri: $uri, position: $position, defaultRange: $defaultRange, lineText: $lineText, triggerKind: $triggerKind, triggerCharacter: $triggerCharacter)';
+    return 'CompletionRequest(providerId: $providerId, requestId: $requestId, language: $language, uri: $uri, position: $position, defaultRange: $defaultRange, lineText: $lineText, triggerKind: $triggerKind, triggerCharacter: $triggerCharacter)';
 }
 
 

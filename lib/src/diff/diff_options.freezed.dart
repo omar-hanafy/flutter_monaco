@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'diff_options.dart';
@@ -9,6 +9,7 @@ part of 'diff_options.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -32,16 +33,21 @@ $MonacoDiffOptionsCopyWith<MonacoDiffOptions> get copyWith => _$MonacoDiffOption
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoDiffOptions&&(identical(other.renderSideBySide, renderSideBySide) || other.renderSideBySide == renderSideBySide)&&(identical(other.readOnly, readOnly) || other.readOnly == readOnly)&&(identical(other.originalEditable, originalEditable) || other.originalEditable == originalEditable)&&(identical(other.ignoreTrimWhitespace, ignoreTrimWhitespace) || other.ignoreTrimWhitespace == ignoreTrimWhitespace)&&(identical(other.renderMarginRevertIcon, renderMarginRevertIcon) || other.renderMarginRevertIcon == renderMarginRevertIcon)&&const DeepCollectionEquality().equals(other.extra, extra));
+  final _this = this as MonacoDiffOptions;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoDiffOptions&&(identical(other.renderSideBySide, _this.renderSideBySide) || other.renderSideBySide == _this.renderSideBySide)&&(identical(other.readOnly, _this.readOnly) || other.readOnly == _this.readOnly)&&(identical(other.originalEditable, _this.originalEditable) || other.originalEditable == _this.originalEditable)&&(identical(other.ignoreTrimWhitespace, _this.ignoreTrimWhitespace) || other.ignoreTrimWhitespace == _this.ignoreTrimWhitespace)&&(identical(other.renderMarginRevertIcon, _this.renderMarginRevertIcon) || other.renderMarginRevertIcon == _this.renderMarginRevertIcon)&&const DeepCollectionEquality().equals(other.extra, _this.extra));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,renderSideBySide,readOnly,originalEditable,ignoreTrimWhitespace,renderMarginRevertIcon,const DeepCollectionEquality().hash(extra));
+int get hashCode {
+  final _this = this as MonacoDiffOptions;
+  return Object.hash(runtimeType,_this.renderSideBySide,_this.readOnly,_this.originalEditable,_this.ignoreTrimWhitespace,_this.renderMarginRevertIcon,const DeepCollectionEquality().hash(_this.extra));
+}
 
 @override
 String toString() {
-  return 'MonacoDiffOptions(renderSideBySide: $renderSideBySide, readOnly: $readOnly, originalEditable: $originalEditable, ignoreTrimWhitespace: $ignoreTrimWhitespace, renderMarginRevertIcon: $renderMarginRevertIcon, extra: $extra)';
+  final _this = this as MonacoDiffOptions;
+  return 'MonacoDiffOptions(renderSideBySide: ${_this.renderSideBySide}, readOnly: ${_this.readOnly}, originalEditable: ${_this.originalEditable}, ignoreTrimWhitespace: ${_this.ignoreTrimWhitespace}, renderMarginRevertIcon: ${_this.renderMarginRevertIcon}, extra: ${_this.extra})';
 }
 
 
@@ -70,7 +76,7 @@ class _$MonacoDiffOptionsCopyWithImpl<$Res>
 /// Create a copy of MonacoDiffOptions
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? renderSideBySide = freezed,Object? readOnly = freezed,Object? originalEditable = freezed,Object? ignoreTrimWhitespace = freezed,Object? renderMarginRevertIcon = freezed,Object? extra = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(MonacoDiffOptions(
 renderSideBySide: freezed == renderSideBySide ? _self.renderSideBySide : renderSideBySide // ignore: cast_nullable_to_non_nullable
 as bool?,readOnly: freezed == readOnly ? _self.readOnly : readOnly // ignore: cast_nullable_to_non_nullable
 as bool?,originalEditable: freezed == originalEditable ? _self.originalEditable : originalEditable // ignore: cast_nullable_to_non_nullable
@@ -212,7 +218,7 @@ return $default(_that.renderSideBySide,_that.readOnly,_that.originalEditable,_th
 
 
 class _MonacoDiffOptions extends MonacoDiffOptions {
-  const _MonacoDiffOptions({this.renderSideBySide, this.readOnly, this.originalEditable, this.ignoreTrimWhitespace, this.renderMarginRevertIcon, final  Map<String, Object?>? extra}): _extra = extra,super._();
+  const _MonacoDiffOptions({this.renderSideBySide, this.readOnly, this.originalEditable, this.ignoreTrimWhitespace, this.renderMarginRevertIcon,  Map<String, Object?>? extra}): _extra = extra,super._();
   
 
 /// `true` renders original and modified side by side; `false` renders
@@ -248,16 +254,18 @@ _$MonacoDiffOptionsCopyWith<_MonacoDiffOptions> get copyWith => __$MonacoDiffOpt
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoDiffOptions&&(identical(other.renderSideBySide, renderSideBySide) || other.renderSideBySide == renderSideBySide)&&(identical(other.readOnly, readOnly) || other.readOnly == readOnly)&&(identical(other.originalEditable, originalEditable) || other.originalEditable == originalEditable)&&(identical(other.ignoreTrimWhitespace, ignoreTrimWhitespace) || other.ignoreTrimWhitespace == ignoreTrimWhitespace)&&(identical(other.renderMarginRevertIcon, renderMarginRevertIcon) || other.renderMarginRevertIcon == renderMarginRevertIcon)&&const DeepCollectionEquality().equals(other._extra, _extra));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoDiffOptions&&(identical(other.renderSideBySide, renderSideBySide) || other.renderSideBySide == renderSideBySide)&&(identical(other.readOnly, readOnly) || other.readOnly == readOnly)&&(identical(other.originalEditable, originalEditable) || other.originalEditable == originalEditable)&&(identical(other.ignoreTrimWhitespace, ignoreTrimWhitespace) || other.ignoreTrimWhitespace == ignoreTrimWhitespace)&&(identical(other.renderMarginRevertIcon, renderMarginRevertIcon) || other.renderMarginRevertIcon == renderMarginRevertIcon)&&const DeepCollectionEquality().equals(other.extra, _extra));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,renderSideBySide,readOnly,originalEditable,ignoreTrimWhitespace,renderMarginRevertIcon,const DeepCollectionEquality().hash(_extra));
+int get hashCode {
+    return Object.hash(runtimeType,renderSideBySide,readOnly,originalEditable,ignoreTrimWhitespace,renderMarginRevertIcon,const DeepCollectionEquality().hash(_extra));
+}
 
 @override
 String toString() {
-  return 'MonacoDiffOptions(renderSideBySide: $renderSideBySide, readOnly: $readOnly, originalEditable: $originalEditable, ignoreTrimWhitespace: $ignoreTrimWhitespace, renderMarginRevertIcon: $renderMarginRevertIcon, extra: $extra)';
+    return 'MonacoDiffOptions(renderSideBySide: $renderSideBySide, readOnly: $readOnly, originalEditable: $originalEditable, ignoreTrimWhitespace: $ignoreTrimWhitespace, renderMarginRevertIcon: $renderMarginRevertIcon, extra: $extra)';
 }
 
 
