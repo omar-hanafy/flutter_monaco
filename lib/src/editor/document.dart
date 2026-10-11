@@ -222,18 +222,32 @@ final class MonacoDocument {
   }
 
   /// Returns the word at [position], or `null` when there is none.
+  ///
+  /// Throws a [MonacoProtocolError] when the bridge answers with anything
+  /// other than a string or `null`.
   Future<String?> getWordAt(Position position) async {
     final result = await _invoke('document.getWordAt', {
       'uri': _uriParam,
       'position': {'lineNumber': position.line, 'column': position.column},
     });
-    return result is String ? result : null;
+    if (result == null || result is String) return result as String?;
+    throw MonacoProtocolError(
+      operation: 'document.getWordAt',
+      message: 'Expected a word string or null, got ${result.runtimeType}.',
+    );
   }
 
   /// Whether the document changed since the last [markSaved].
+  ///
+  /// Throws a [MonacoProtocolError] when the bridge answers with anything
+  /// other than a boolean.
   Future<bool> isDirty() async {
     final result = await _invoke('document.isDirty', {'uri': _uriParam});
-    return result == true;
+    if (result is bool) return result;
+    throw MonacoProtocolError(
+      operation: 'document.isDirty',
+      message: 'Expected a boolean dirty flag, got ${result.runtimeType}.',
+    );
   }
 
   /// Marks the current content as the saved baseline for [isDirty].

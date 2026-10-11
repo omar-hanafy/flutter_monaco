@@ -508,3 +508,28 @@ test('findMatches still honors an explicit limit', async () => {
   assert.equal(response.value.length, 5);
 });
 
+// ---- strict editor accessors ----
+
+test('scrollToEdge fails loudly without a model or editor', async () => {
+  const page = bootEditorPage();
+  page.editor.setModel(null);
+  const bottom = await dispatch(page, 'editor.scrollToEdge', { edge: 'bottom' });
+  assert.equal(bottom.ok, false, 'no model must be an error, not false');
+  assert.match(bottom.error.message, /no active model/);
+
+  page.sandbox.editor = null;
+  const top = await dispatch(page, 'editor.scrollToEdge', { edge: 'top' });
+  assert.equal(top.ok, false, 'no editor must be an error, not false');
+  assert.match(top.error.message, /not ready/);
+});
+
+test('getSelection and getCursor report a missing editor as not ready', async () => {
+  const page = bootEditorPage();
+  page.sandbox.editor = null;
+  for (const method of ['editor.getSelection', 'editor.getCursor']) {
+    const response = await dispatch(page, method);
+    assert.equal(response.ok, false, method);
+    assert.equal(response.error.message, 'Monaco editor is not ready.', method);
+  }
+});
+

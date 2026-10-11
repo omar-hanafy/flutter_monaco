@@ -244,7 +244,7 @@ window.__FMB.editorApi = function (ctx) {
 
                   // Selection
                   getSelection: () => {
-                    const s = E().getSelection();
+                    const s = requireEditor().getSelection();
                     return s ? {
                       startLineNumber: s.startLineNumber, startColumn: s.startColumn,
                       endLineNumber: s.endLineNumber, endColumn: s.endColumn
@@ -257,7 +257,7 @@ window.__FMB.editorApi = function (ctx) {
 
                   // Cursor
                   getCursorPosition: () => {
-                    const p = E().getPosition();
+                    const p = requireEditor().getPosition();
                     return p ? { lineNumber: p.lineNumber, column: p.column } : null;
                   },
                   setCursorPosition: (line, column) => {
@@ -624,15 +624,15 @@ window.__FMB.editorApi = function (ctx) {
                     return api.revealRange(range, !!p.center);
                   });
                   FM.register('editor.scrollToEdge', (p) => {
-                    const ed = E();
-                    if (!ed) return false;
+                    // Dart ignores this command's result, so a missing
+                    // editor or model must be an error, not false.
+                    const model = requireModel();
+                    const ed = requireEditor();
                     if (p.edge === 'top') {
                       ed.setScrollPosition({ scrollTop: 0, scrollLeft: 0 });
                       ed.setPosition({ lineNumber: 1, column: 1 });
                       ed.revealLineInCenterIfOutsideViewport(1);
                     } else {
-                      const model = ed.getModel();
-                      if (!model) return false;
                       const lineCount = model.getLineCount();
                       ed.revealLineInCenterIfOutsideViewport(lineCount);
                       ed.setPosition({ lineNumber: lineCount, column: 1 });
