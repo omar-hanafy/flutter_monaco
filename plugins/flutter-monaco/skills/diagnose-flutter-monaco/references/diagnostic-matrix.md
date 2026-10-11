@@ -8,6 +8,8 @@
 | Web readiness error says iframe detached | build lifecycle and painted platform view | controller mounted only after readiness or hidden with `Offstage` |
 | Native extraction repeatedly runs or fails | diagnostics path/version/file count, filesystem error | cache/sentinel/permissions |
 | Protocol version mismatch | `MonacoProtocolError`, handshake versions | stale page/bridge assets or inconsistent package code |
+| macOS boot times out after an empty WebView error | `macos/Runner/*.entitlements` | sandboxed app without `com.apple.security.network.client` |
+| Diff shows no changes; JSON, CSS, HTML, or TypeScript validation and completion are missing | platform, page origin, console errors about workers | Monaco background workers could not start |
 
 Do not delete caches until diagnostics prove corruption. Cache clearing can hide a lifecycle or versioning bug.
 
@@ -45,6 +47,8 @@ If nested navigators are involved, verify which navigator owns the route. A root
 ## LSP
 
 Distinguish transport open from LSP initialize success. Inspect CSP, server stderr, JSON-RPC framing, stable URIs, language selector, and state transitions. Never log credentials.
+
+From 4.0, a server that exits or drops during the handshake fails `connectLanguageServer` at once with the cause (for `LspServerProcess`, a `ProcessException` carrying the exit code and the last stderr lines) instead of the initialization timeout. A page reload ends every connection as `failed` with `MonacoPageReloadedError`. Since Monaco 0.56 (package 4.0), server markdown is untrusted: `command:` links render as plain text and inline HTML styling is stripped, which is expected behavior rather than a rendering bug.
 
 ## Scroll handoff
 

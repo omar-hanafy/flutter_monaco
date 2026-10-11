@@ -32,7 +32,7 @@ Read [references/diagnostic-matrix.md](references/diagnostic-matrix.md) and sele
 - A visible Flutter overlay above a Web iframe is not necessarily clickable. Classify it as route, static, or transient and use the matching package primitive.
 - Preserve the first typed `MonacoException`. Do not turn an asset, reload, or protocol error into an empty document/default value.
 - On page reload, the controller restores the boot editor and registered completions/actions, but the app must restore extra documents, post-boot configuration, and LSP connections.
-- Verify against the installed version. The 2.x focus and content APIs are not valid names in 3.x.
+- Verify against the installed version. The 2.x focus and content APIs are not valid names in 3.x or 4.x.
 - If credentials, a device, a server binary, or the failing route are unavailable, stop at the last proven boundary and name the missing input. Do not manufacture a root cause from a neighboring symptom.
 - If a proposed fix moves ownership to another layer or changes user-visible behavior, present that decision before implementing it.
 

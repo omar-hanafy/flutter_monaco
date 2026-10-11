@@ -5,11 +5,11 @@
       "id": "integrate-positive-selection",
       "skill": "integrate-flutter-monaco",
       "kind": "positive-selection",
-      "prompt": "Add flutter_monaco 3.x to our existing Flutter app so Android, iOS, macOS, Windows, and Web share one code editor screen.",
+      "prompt": "Add flutter_monaco 4.x to our existing Flutter app so Android, iOS, macOS, Windows, and Web share one code editor screen.",
       "expectations": [
         "Select the integration skill and inspect the app's supported platforms and installed package version.",
         "Plan controller ownership, document ownership, mount timing, and disposal before writing widget code.",
-        "Use current flutter_monaco 3.x APIs rather than inventing a wrapper around the WebView."
+        "Use current flutter_monaco 4.x APIs rather than inventing a wrapper around the WebView."
       ]
     },
     {

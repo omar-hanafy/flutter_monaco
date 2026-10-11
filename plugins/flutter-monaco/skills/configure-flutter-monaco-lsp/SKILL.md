@@ -1,6 +1,6 @@
 ---
 name: configure-flutter-monaco-lsp
-description: Configure or troubleshoot Language Server Protocol support in a flutter_monaco 3.x application using WebSocket, desktop stdio bridge, or custom transport. Use for connectLanguageServer, transport selection, CSP, stable document URIs, reconnect policy, and LSP lifecycle. Do not use for general editor integration or unrelated completion providers.
+description: Configure or troubleshoot Language Server Protocol support in a flutter_monaco 3.x or 4.x application using WebSocket, desktop stdio bridge, or custom transport. Use for connectLanguageServer, transport selection, CSP, stable document URIs, reconnect policy, and LSP lifecycle. Do not use for general editor integration or unrelated completion providers.
 ---
 
 # Configure Flutter Monaco LSP
@@ -11,7 +11,7 @@ Read [references/transport-guide.md](references/transport-guide.md) before imple
 
 ## Operating contract
 
-- **Audience:** Engineers adding or repairing LSP in a consuming Flutter app that already uses `flutter_monaco` 3.x.
+- **Audience:** Engineers adding or repairing LSP in a consuming Flutter app that already uses `flutter_monaco` 3.x or 4.x.
 - **Expected inputs:** The resolved package version, target platforms, server command or URL, protocol/framing, authentication model, workspace and document URI policy, and the owning app lifecycle.
 - **Realistic scenario:** A desktop build should spawn Pyright over stdio while the Web build reaches a WebSocket proxy, with both paths restoring stable documents after an editor-page reload.
 
@@ -25,7 +25,7 @@ Read [references/transport-guide.md](references/transport-guide.md) before imple
 3. Give every opened file a stable `file:///` URI. Confirm language ids and workspace paths match what the server expects.
 4. Configure CSP for WebSocket connections through `MonacoPageConfig.allowedConnectSources`. Do not add broad sources such as `*` when one origin is sufficient.
 5. Connect only after the editor can mount. Keep the returned `LanguageServerConnection`, observe its state, and define disconnect/reconnect behavior.
-6. Define page-reload recovery. Listen to `controller.onPageReloaded`, disconnect the stale registered connection, recreate app-owned documents from durable state, and reconnect; the controller cannot infer either layer and duplicate live ids are rejected.
+6. Define page-reload recovery. Listen to `controller.onPageReloaded`, recreate app-owned documents from durable state, and reconnect; the controller cannot infer either layer. From 4.0 the reload already ends every connection as `failed` with `MonacoPageReloadedError`, frees its id, and runs a bridged transport's `onClose`, so start a fresh `LspServerProcess`. On 3.x, disconnect the stale registered connection first, because duplicate live ids are rejected.
 7. Test an actual language feature and failure path. A successful socket alone does not prove initialization or document synchronization.
 
 ## Safety and decision points
@@ -36,6 +36,8 @@ Read [references/transport-guide.md](references/transport-guide.md) before imple
 - Automatic reconnect applies to WebSocket/custom transports, not a terminated local process. Respawn bridged processes in app code.
 - Multiple servers share Monaco's `lsp` marker owner. Prefer one server per editor unless their diagnostics are disjoint.
 - Disconnecting or disposing the controller must stop owned transports/processes.
+- From 4.0, when `connectLanguageServer` throws, a bridged transport's `onClose` has already completed. `LspServerProcess.stop` is idempotent, so a defensive second stop is safe.
+- Server markdown is untrusted from 4.0 (Monaco 0.56): hovers, completion documentation, and signature help render `command:` links as plain text and strip inline HTML styling; `http`, `https`, `mailto`, and `file` links still work.
 - Automatic transport reconnect does not restore a connection discarded by a full editor-page reload. Recreate the connection after documents are restored.
 - Raw `sendRequest`, `sendNotification`, and Monaco LSP internals are experimental and must be rechecked on engine upgrades.
 

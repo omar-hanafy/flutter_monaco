@@ -2,7 +2,7 @@
 
 Flutter Monaco publishes package-specific guidance for Claude Code and OpenAI Codex
 from the repository's `plugins/flutter-monaco/` directory. The extension helps an
-assistant use the real 3.x API, diagnose layered WebView failures, migrate 2.x code,
+assistant use the real 3.x and 4.x API, diagnose layered WebView failures, migrate 2.x code,
 and keep the Dart-to-JavaScript bridge synchronized.
 
 The extension is installed from GitHub, not by `dart pub add`. It is deliberately
@@ -131,8 +131,12 @@ submission.
 | ChatGPT web Work mode | Curated and workspace-shared plugin browser only; this repository release has not been submitted to the public directory |
 | Chat mode, Codex IDE integrations, and mobile | Plugins are not available on these surfaces |
 
-The package skills target Flutter Monaco 3.x after inspecting the app's resolved
-dependency. The migration skill covers the breaking 2.x to 3.x transition.
+The package skills target Flutter Monaco 3.x and 4.x after inspecting the app's
+resolved dependency. The migration skill covers the breaking 2.x to 3.x transition,
+which applies unchanged to a 4.x target. The 3.x to 4.0 upgrade keeps every editor
+API (it raises the toolchain floor and moves Material to `material_ui`), so it has
+no dedicated migration skill; the package README's "Migrating from 3.x to 4.0"
+section covers it.
 
 Start a new assistant session after install or update. Existing sessions can keep a
 cached plugin snapshot.
@@ -173,7 +177,7 @@ Claude eval pass until that command is available and actually runs.
 
 Authenticated behavior checks are opt-in and never run in CI. Claude requires a
 separate config directory containing a local marketplace installation of this plugin.
-The runner fails closed unless the plugin is enabled at version `3.4.3`, its cache is a
+The runner fails closed unless the plugin is enabled at version `4.0.0`, its cache is a
 byte-for-byte copy of this checkout, and its marketplace points to this checkout. It
 then loads only that isolated user configuration, the verified plugin, a fixed empty
 MCP set, nonpersistent sessions, disabled auto-memory, and disposable fixtures.
@@ -200,7 +204,7 @@ dart run tool/ai_extension_behavior_runner.dart \
 
 Codex requires a separate authenticated home so the runner cannot use or modify a
 maintainer's normal plugins. The runner fails closed unless the installed local
-plugin is enabled, is version `3.4.3`, and is a byte-for-byte copy of this checkout:
+plugin is enabled, is version `4.0.0`, and is a byte-for-byte copy of this checkout:
 
 ```bash
 eval_codex_home="$(mktemp -d)"

@@ -1,6 +1,6 @@
 ---
 name: migrate-flutter-monaco-v2-to-v3
-description: Migrate an application from flutter_monaco 2.x to 3.x using the complete API and lifecycle map, or migrate 1.7.1 after its toolchain and Windows prerequisites are verified. Use when pubspec or source still uses legacy content methods, model APIs, full-state options, old focus/events, old readiness, or page configuration. Do not use when the app is already fully on 3.x or when upgrading the bundled Monaco engine inside this package.
+description: Migrate an application from flutter_monaco 2.x to 3.x using the complete API and lifecycle map, or migrate 1.7.1 after its toolchain and Windows prerequisites are verified. Use when pubspec or source still uses legacy content methods, model APIs, full-state options, old focus/events, old readiness, or page configuration. Do not use when the app is already fully on 3.x or 4.x or when upgrading the bundled Monaco engine inside this package.
 ---
 
 # Migrate Flutter Monaco v2 to v3
@@ -18,13 +18,13 @@ Use [fixtures/cases.json](fixtures/cases.json) to test normal migration, persist
 
 ## Supported paths
 
-- Migrate any released 2.x version directly to the intended 3.x version. For a pre-2.3.0 source, inspect intervening 2.x additions before applying the 2.3.0 symbol map.
+- Migrate any released 2.x version directly to the intended 3.x or 4.x version. 4.x keeps the 3.x API, so this map applies unchanged; a 4.x target adds only the prerequisites in the package README's "Migrating from 3.x to 4.0" section (Flutter 3.47.7 and Dart 3.13.5, `material_ui`, iOS 15 and macOS 12). For a pre-2.3.0 source, inspect intervening 2.x additions before applying the 2.3.0 symbol map.
 - Migrate exactly 1.7.1 directly to 3.x only after proving Dart 3.12+, Flutter 3.44+, and the `webview_windows` to `webview_flutter_windows` replacement are acceptable. Normal root-barrel consumers use the same source map; local forks, `package:flutter_monaco/src/...` imports, and `PlatformWebViewController` test doubles require a separate internal-contract audit.
-- Treat an already-3.x application as a no-op for this skill and route remaining work to integration or diagnosis.
+- Treat an application already on 3.x or 4.x as a no-op for this skill and route remaining work to integration or diagnosis.
 
 ## Unsupported paths
 
-- Do not apply this map to 0.x, 1.0.0 through 1.7.0, unknown 1.x/local forks, 4.x or newer sources, or a downgrade from a newer major. Inspect the actual release history and select a separately supported path first.
+- Do not apply this map to 0.x, 1.0.0 through 1.7.0, unknown 1.x/local forks, 5.x or newer sources, or a downgrade from a newer major. Inspect the actual release history and select a separately supported path first.
 - Do not infer an intermediate migration for a version that was not released or documented.
 
 ## Workflow
@@ -32,7 +32,7 @@ Use [fixtures/cases.json](fixtures/cases.json) to test normal migration, persist
 1. Establish the baseline. Run the app's analyzer/tests and save the exact existing failures. Do not discard local changes.
 2. Confirm the source falls under a supported path. For 1.7.1, complete the SDK/platform/backend prerequisite audit before any source rewrite.
 3. Inventory legacy usage with every `rg` review queue in the reference. Include generated adapters, tests, persisted JSON, and custom wrappers. Trace controller aliases so qualified stream searches do not miss renamed variables.
-4. Update the dependency to the intended 3.x range and resolve packages.
+4. Update the dependency to the intended 3.x or 4.x range and resolve packages.
 5. Migrate lifecycle and ownership first: `create` readiness, `initialText`, `MonacoPageConfig`, mounting on Web, and disposal.
 6. Migrate content/models to `MonacoDocument`, then options/types, actions, decorations/markers/completions, focus, events, and view state.
 7. Audit behavior that still compiles: sparse option reads and updates, changed boot defaults, typed errors instead of defaults, JavaScript conversion failures, strict public parsers, typed stats/state, open typed ids, scroll boundary policy, asset diagnostics, stable document URIs, and persisted JSON.

@@ -63,11 +63,11 @@
     {
       "id": "future-version-stop",
       "kind": "unsupported-version",
-      "sourceVersion": "4.0.0",
+      "sourceVersion": "5.0.0",
       "targetVersion": "3.4.2",
-      "input": "dependencies:\n  flutter_monaco: ^4.0.0\n\nawait controller.workspace.openDocument(uri);",
+      "input": "dependencies:\n  flutter_monaco: ^5.0.0\n\nawait controller.workspace.openDocument(uri);",
       "expectedDisposition": "stop",
-      "expectedOutput": "Stop before editing. The v2-to-v3 map cannot safely downgrade or interpret a future 4.x API. Inspect the exact installed 4.x package and its release documentation, then choose a supported target and migration path with the maintainer.",
+      "expectedOutput": "Stop before editing. The v2-to-v3 map cannot safely downgrade or interpret a future 5.x API. Inspect the exact installed 5.x package and its release documentation, then choose a supported target and migration path with the maintainer.",
       "expectedEvidence": [
         "The source major is newer than both this migration skill and its 3.4.2 target.",
         "Applying a historical v2-to-v3 symbol map to an unknown future API could destroy valid source or persisted state."

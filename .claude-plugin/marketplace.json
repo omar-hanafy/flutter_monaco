@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "flutter-monaco",
-      "version": "3.4.3",
+      "version": "4.0.0",
       "source": "./plugins/flutter-monaco",
       "description": "Package-specific skills and a read-only bridge reviewer for flutter_monaco."
     }

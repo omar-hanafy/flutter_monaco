@@ -65,7 +65,7 @@ class ShowcaseMetadata {
 
   static const fallback = ShowcaseMetadata(
     packageName: _packageName,
-    version: '3.1.0',
+    version: '4.0.0',
     description:
         "Integrate Monaco Editor (VS Code's editor) in Flutter apps with "
         'syntax highlighting, themes, IntelliSense, and a full Dart API.',
@@ -84,8 +84,8 @@ class ShowcaseMetadata {
       ShowcasePlatform(id: 'windows', label: 'Windows'),
       ShowcasePlatform(id: 'web', label: 'Web'),
     ],
-    sdkConstraint: '>=3.12.0 <4.0.0',
-    flutterConstraint: '>=3.44.0',
+    sdkConstraint: '^3.13.5',
+    flutterConstraint: '>=3.47.7',
   );
 
   final String packageName;
