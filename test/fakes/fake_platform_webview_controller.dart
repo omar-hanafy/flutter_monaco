@@ -350,12 +350,7 @@ class FakePlatformWebViewController implements PlatformWebViewController {
   void emitLifecycle(String name, {Map<String, Object?>? error}) {
     tryEmitToChannel(
       'flutterChannel',
-      jsonEncode({
-        'v': 3,
-        'kind': 'lifecycle',
-        'name': name,
-        'error': ?error,
-      }),
+      jsonEncode({'v': 3, 'kind': 'lifecycle', 'name': name, 'error': ?error}),
     );
   }
 

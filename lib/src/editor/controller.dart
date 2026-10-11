@@ -338,8 +338,8 @@ class MonacoController {
           ),
         );
 
-        _readyCompletedOk = true;
         if (!_onReady.isCompleted) {
+          _readyCompletedOk = true;
           _onReady.complete();
         }
       } catch (e, st) {
@@ -1465,6 +1465,17 @@ class MonacoController {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+    // Settle readiness now: the boot may be parked in a page load that only
+    // gives up at its deadline (web waits for the iframe to attach), and
+    // whenReady and every command queued behind it must not wait that long.
+    if (!_onReady.isCompleted) {
+      _onReady.future.ignore();
+      _onReady.completeError(
+        const MonacoDisposedError(
+          message: 'MonacoController disposed before the editor became ready.',
+        ),
+      );
+    }
     // Commands waiting for a page-reload recovery must not wait forever.
     final gate = _recoveryGate;
     if (gate != null && !gate.isCompleted) {

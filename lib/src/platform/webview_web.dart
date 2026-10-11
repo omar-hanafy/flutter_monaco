@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_monaco/src/assets/html_builder.dart';
 import 'package:flutter_monaco/src/assets/monaco_assets.dart';
+import 'package:flutter_monaco/src/common/exceptions.dart';
 import 'package:flutter_monaco/src/common/monaco_page_config.dart';
 import 'package:flutter_monaco/src/platform/platform_webview.dart';
 import 'package:flutter_monaco/src/platform/web_asset_resolver.dart';
@@ -468,9 +469,16 @@ class WebViewController implements PlatformWebViewController {
     return null;
   }
 
+  /// The error a [load] interrupted by [dispose] ends with.
+  static const _disposedDuringLoad = MonacoDisposedError(
+    message: 'WebViewController disposed while the Monaco page was loading.',
+    operation: 'load',
+  );
+
   @override
   Future<void> load({MonacoPageConfig page = const MonacoPageConfig()}) async {
     debugPrint('[WebViewController] Loading Monaco in iframe');
+    if (_disposed) throw _disposedDuringLoad;
     await _waitForIframeAttachment();
 
     final vsPath = _monacoVsAssetUrl();
@@ -478,6 +486,9 @@ class WebViewController implements PlatformWebViewController {
     Object? lastError;
     const maxLoadAttempts = 2;
     for (var attempt = 1; attempt <= maxLoadAttempts; attempt++) {
+      // Every await below can span a dispose: bail out before creating a
+      // blob URL that dispose (which already ran) would never revoke.
+      if (_disposed) throw _disposedDuringLoad;
       _isReady = false;
       _readyCompleter = Completer<void>();
 
@@ -505,6 +516,7 @@ class WebViewController implements PlatformWebViewController {
         // resolve.
         return;
       } catch (e) {
+        if (_disposed) throw _disposedDuringLoad;
         // A ready timeout while the iframe is outside the DOM is not a
         // transient load failure: a detached iframe never loads its src at
         // all, so retrying would only burn another silent 20s. This is a
@@ -541,7 +553,7 @@ class WebViewController implements PlatformWebViewController {
     if (iframe == null || iframe.isConnected) return;
 
     const maxFrames = 120;
-    for (var i = 0; i < maxFrames && !iframe.isConnected; i++) {
+    for (var i = 0; i < maxFrames && !iframe.isConnected && !_disposed; i++) {
       await Future<void>.delayed(const Duration(milliseconds: 16));
     }
   }
@@ -562,6 +574,11 @@ class WebViewController implements PlatformWebViewController {
     }
     _channels.clear();
     _cachedWidget = null;
+    // A load() waiting for the page shell must end now, not at its timeout.
+    if (!_readyCompleter.isCompleted) {
+      _readyCompleter.future.ignore();
+      _readyCompleter.completeError(_disposedDuringLoad);
+    }
     _detachParentBindings();
     _iframe?.remove();
     _iframe = null;

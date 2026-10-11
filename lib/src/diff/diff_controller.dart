@@ -248,8 +248,8 @@ class MonacoDiffController {
             operation: 'boot',
           ),
         );
-        _readyCompletedOk = true;
         if (!_onReady.isCompleted) {
+          _readyCompletedOk = true;
           _onReady.complete();
         }
       } catch (e, st) {
@@ -494,6 +494,18 @@ class MonacoDiffController {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+    // Settle readiness now: the boot may be parked in a page load that only
+    // gives up at its deadline (web waits for the iframe to attach), and
+    // whenReady and every command queued behind it must not wait that long.
+    if (!_onReady.isCompleted) {
+      _onReady.future.ignore();
+      _onReady.completeError(
+        const MonacoDisposedError(
+          message:
+              'MonacoDiffController disposed before the editor became ready.',
+        ),
+      );
+    }
     final gate = _recoveryGate;
     if (gate != null && !gate.isCompleted) {
       gate.completeError(
