@@ -57,10 +57,11 @@ jobs:
         run: flutter analyze
       - name: Test
         run: flutter test
-      - name: Test Web overlay pre-layout safety
+      - name: Test Web-only behavior in Chrome
         run: >-
           flutter test --platform chrome
           test/widgets/monaco_overlay_boundary_web_test.dart
+          test/platform/webview_web_dispose_test.dart
 
   test-lower-bounds:
     name: Test lower bounds
@@ -119,6 +120,30 @@ jobs:
         run: find assets/monaco/bridge -name '*.js' -print -exec node --check {} +
       - name: Execute the real bridge against the Monaco stub
         run: node --test tool/bridge_tests/*_test.mjs
+
+  browser-hosting:
+    name: Native page hosting in Chrome
+    # Boots the real bundled Monaco and bridge in headless Chrome, the
+    # Chromium engine behind WebView2, in the pages the native hosts serve:
+    # the Windows virtual host, and file:// pages whose workers can or cannot
+    # load scripts. Not a required check.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: dart pub get
+      - name: Boot Monaco in headless Chrome
+        run: node --test tool/browser_tests/*_test.mjs
 
   pana:
     name: Pana
