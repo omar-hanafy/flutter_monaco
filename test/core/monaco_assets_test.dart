@@ -2,11 +2,11 @@ import 'dart:io';
 
 import 'package:flutter_monaco/src/assets/monaco_assets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../helpers/generate_index_html.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 
 import '../helpers/bridge_sources.dart';
+import '../helpers/generate_index_html.dart';
 
 class _FakePathProviderPlatform extends PathProviderPlatform {
   _FakePathProviderPlatform(this.baseDir);

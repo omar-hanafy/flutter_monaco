@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_monaco/src/widgets/monaco_status_bar.dart';
 import 'package:flutter_monaco/src/widgets/scroll_handoff_driver.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A widget that renders a Monaco diff editor (original vs modified).
 ///

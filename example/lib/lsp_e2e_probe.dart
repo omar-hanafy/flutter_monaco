@@ -13,8 +13,8 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:material_ui/material_ui.dart';
 
 const String _pyrightBin = String.fromEnvironment(
   'PYRIGHT_BIN',

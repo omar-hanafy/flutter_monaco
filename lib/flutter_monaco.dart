@@ -57,6 +57,8 @@
 /// - [Issue Tracker](https://github.com/omar-hanafy/flutter_monaco/issues)
 library;
 
+export 'src/assets/asset_diagnostics.dart' show MonacoAssetDiagnostics;
+export 'src/assets/monaco_assets.dart' show MonacoAssets;
 // Core exports
 export 'src/common/defaults.dart' show MonacoDefaults, MonacoFontStacks;
 export 'src/common/exceptions.dart'
@@ -67,15 +69,13 @@ export 'src/common/exceptions.dart'
         MonacoPageReloadedError,
         MonacoProtocolError,
         MonacoTimeoutError;
-export 'src/assets/asset_diagnostics.dart' show MonacoAssetDiagnostics;
-export 'src/assets/monaco_assets.dart' show MonacoAssets;
-export 'src/editor/controller.dart' show MonacoController;
 export 'src/common/monaco_page_config.dart'
     show MonacoCapabilities, MonacoPageConfig;
 export 'src/diff/diff_controller.dart' show MonacoDiffController;
 export 'src/diff/diff_options.dart' show MonacoDiffOptions;
 export 'src/editor/completions.dart'
     show CompletionProvider, MonacoCompletionRegistration;
+export 'src/editor/controller.dart' show MonacoController;
 export 'src/editor/custom_actions.dart' show MonacoActionRegistration;
 export 'src/editor/decorations.dart' show MonacoDecorationSet;
 export 'src/editor/document.dart' show MonacoDocument;
@@ -89,7 +89,6 @@ export 'src/editor/events.dart'
         MonacoUnknownEvent;
 export 'src/editor/focus_coordinator.dart' show MonacoFocusIntent;
 export 'src/editor/view_state.dart' show MonacoViewState;
-
 // LSP exports
 export 'src/lsp/lsp_connection.dart' show LanguageServerConnection;
 export 'src/lsp/lsp_server_process.dart' show LspServerProcess;
@@ -104,7 +103,6 @@ export 'src/lsp/lsp_transport.dart'
         LspWebSocketTransport;
 export 'src/lsp/lsp_types.dart'
     show LspConnectionState, LspConnectionStatus, LspReconnectPolicy;
-
 // Options exports
 export 'src/options/action.dart' show MonacoAction;
 export 'src/options/editor_options.dart' show EditorOptions;
@@ -133,7 +131,6 @@ export 'src/options/sub_options.dart'
 export 'src/options/theme.dart' show MonacoTheme;
 export 'src/options/theme_definition.dart'
     show MonacoThemeDefinition, MonacoThemeRule;
-
 // Type exports
 export 'src/types/completion.dart'
     show
@@ -161,13 +158,12 @@ export 'src/types/scroll_handoff.dart'
 export 'src/types/stats.dart' show EditorState, MonacoLiveStats;
 export 'src/types/text.dart'
     show EditOperation, FindMatch, FindOptions, MonacoTextChange;
-
 // Widget exports
 export 'src/widgets/monaco_diff_editor.dart' show MonacoDiffEditor;
+export 'src/widgets/monaco_editor_theme.dart'
+    show MonacoEditorTheme, MonacoEditorThemeData;
 export 'src/widgets/monaco_editor_view.dart' show MonacoEditor;
 export 'src/widgets/monaco_focus_guard.dart' show MonacoFocusGuard;
 export 'src/widgets/monaco_overlay_boundary.dart' show MonacoOverlayBoundary;
 export 'src/widgets/monaco_route_observer.dart' show MonacoRouteObserver;
 export 'src/widgets/monaco_scaffold.dart' show MonacoScaffold;
-export 'src/widgets/monaco_editor_theme.dart'
-    show MonacoEditorTheme, MonacoEditorThemeData;

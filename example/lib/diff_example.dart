@@ -3,8 +3,8 @@
 //
 // Run with: flutter run -d macos -t lib/diff_example.dart
 
-import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:material_ui/material_ui.dart';
 
 const _originalDart = '''
 class Greeter {

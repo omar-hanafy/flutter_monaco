@@ -5,13 +5,13 @@ import 'dart:js_interop_unsafe';
 import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_monaco/src/assets/html_builder.dart';
 import 'package:flutter_monaco/src/assets/monaco_assets.dart';
 import 'package:flutter_monaco/src/common/monaco_page_config.dart';
 import 'package:flutter_monaco/src/platform/platform_webview.dart';
-import 'package:flutter_monaco/src/platform/web_interaction_coordinator.dart';
 import 'package:flutter_monaco/src/platform/web_asset_resolver.dart';
+import 'package:flutter_monaco/src/platform/web_interaction_coordinator.dart';
 import 'package:web/web.dart' as web;
 
 /// Resolves the bundled Monaco `vs/` directory URL on Flutter Web.

@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_monaco/src/widgets/monaco_status_bar.dart';
 import 'package:flutter_monaco/src/widgets/scroll_handoff_driver.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// An enumeration representing the connection state of the Monaco Editor.
 enum _ConnectionState {

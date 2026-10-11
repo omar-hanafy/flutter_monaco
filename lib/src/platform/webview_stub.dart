@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
-import 'package:flutter_monaco/src/platform/platform_webview.dart';
 import 'package:flutter_monaco/src/common/monaco_page_config.dart';
+import 'package:flutter_monaco/src/platform/platform_webview.dart';
 
 /// Fallback stub implementation for unsupported platforms.
 ///

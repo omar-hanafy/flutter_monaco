@@ -37,7 +37,7 @@ String sampleFor(
 
 final Map<MonacoLanguage, String> _samples = {
   MonacoLanguage.dart: r'''
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
 
 void main() => runApp(const DemoApp());
