@@ -48,9 +48,10 @@ Flutter 3.47 moved Material out of the SDK into the `material_ui` package, and f
   - `replaceMatches` replaces every match; it stopped at 9,999.
   - `getTheme()` returns the current theme (the boot theme, then the latest `setTheme` or `updateOptions` theme) instead of always `null`.
   - Marker tags (`unnecessary`, `deprecated`) render, and hovering a marker with related information no longer fails.
-  - Disconnecting an LSP connection while its WebSocket or custom transport is still connecting no longer leaves a live client and transport in the page.
+  - Disconnecting an LSP connection while its WebSocket or custom transport is still connecting settles the connect at once and no longer leaves a live client and transport in the page, even when the transport never connects.
 - **Lifecycle and widgets**
   - Commands issued while the editor recovers from a page reload wait for the recovered editor and run in order, instead of failing with "Unknown method" JavaScript errors. If recovery fails or misses `readyTimeout`, they fail with `MonacoPageReloadedError`. `isReady` is `false` while the editor recovers.
+  - A page reload during the first boot no longer leaves a `MonacoController` or `MonacoDiffController` unusable while `onPageReloaded` reports success: `whenReady` completes once the re-booted editor is ready.
   - `MonacoDiffEditor` re-applies its texts, options, theme, diff options, and scroll handoff after a page reload, and reports a failed recovery to `onError`.
   - Disposing a `MonacoController` or `MonacoDiffController` before it is ready completes `whenReady` and queued commands at once with `MonacoDisposedError`, instead of after the boot timeout. On Web the pending load stops without leaking blob URLs.
   - `MonacoFocusGuard` no longer raises uncaught errors on app resume or route pop after a failed boot, and no longer overrides interaction changes the app makes while a route covers the editor.
@@ -62,7 +63,7 @@ Flutter 3.47 moved Material out of the SDK into the `material_ui` package, and f
   - A WebView that cannot start workers from a `file://` page no longer leaves Monaco waiting on them: the diff is computed on the main thread, and the built-in language services return no result at once instead of hanging. `window.__FM_WORKERS.mode` reports which mode the page runs in. Android, iOS, and macOS keep their real workers.
   - The editor loads when the app's data path contains an apostrophe, for example a Windows user named O'Brien or an app named "Bob's Editor".
   - Two page configurations whose `customCss` differs only in non-ASCII characters no longer share one generated page.
-  - Asset extraction, bridge updates, and `MonacoAssets.clearCache()` are atomic. Editors or windows starting together no longer see a partially written asset tree, an invalid tree is replaced only once its replacement is complete, and an `ensureReady` during `clearCache` re-extracts instead of returning a tree that is being deleted. On Windows, installing the tree retries while antivirus scanners or the search indexer briefly hold its files open.
+  - Asset extraction, bridge updates, and `MonacoAssets.clearCache()` are atomic. Editors or windows starting together no longer see a partially written asset tree, an invalid tree is replaced only once its replacement is complete, and an `ensureReady` during `clearCache` re-extracts instead of returning a tree that is being deleted. On Windows, installing the tree retries while antivirus scanners or the search indexer briefly hold its files open, and a clear that cannot remove every file no longer leaves a tree the next `ensureReady` accepts.
 
 ## [3.4.3] - 2026-08-06
 

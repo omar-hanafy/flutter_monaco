@@ -104,6 +104,12 @@ NativeMonacoPage buildVirtualHostMonacoPage({
 /// Windows page was loaded from `file:`, where no such check applies, so a
 /// language server at `ws://192.168.1.5:3000` worked there, including
 /// through a bare `*` source.
+///
+/// Loopback endpoints stay on the virtual host because WebView2 ships
+/// Chromium's Local Network Access checks disabled (WebView2Announcements
+/// issue 126). If a runtime enables them, connections from the https page
+/// to loopback or local network hosts need that permission, which a
+/// `file:` page does not.
 bool connectSourcesNeedInsecurePage(List<String> connectSources) {
   final insecureHost = RegExp(r'^(?:ws|http)://(\[[^\]]*\]|[^/:]+)');
   for (final raw in connectSources) {
