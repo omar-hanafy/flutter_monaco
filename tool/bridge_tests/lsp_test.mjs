@@ -80,6 +80,26 @@ test('a disconnect during transport construction leaves no live client', async (
   assert.deepEqual([...sandbox.flutterMonaco.lsp.listConnections()], []);
 });
 
+test('a custom transport connects and is released once on disconnect', async () => {
+  const { page, sandbox, log } = bootLspPage();
+  sandbox.flutterMonacoLspTransports = {
+    later: () =>
+      new Promise((resolve) => setTimeout(() => resolve(countingTransport(log)), 5)),
+  };
+
+  const connect = await dispatch(page, 'lsp.connect', {
+    id: 'c',
+    transport: { kind: 'custom', factoryName: 'later', config: {} },
+  });
+  assert.equal(connect.ok, true);
+  assert.deepEqual([...sandbox.flutterMonaco.lsp.listConnections()], ['c']);
+  assert.equal(log.transportsDisposed, 0, 'a live transport is kept');
+
+  await dispatch(page, 'lsp.disconnect', { id: 'c' });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(log.transportsDisposed, 1, 'released exactly once');
+});
+
 test('a disconnect settles a connect whose transport never resolves', async () => {
   const { page, sandbox, log } = bootLspPage();
   sandbox.flutterMonacoLspTransports = {
