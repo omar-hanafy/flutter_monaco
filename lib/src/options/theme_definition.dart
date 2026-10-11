@@ -41,8 +41,8 @@ sealed class MonacoThemeDefinition with _$MonacoThemeDefinition {
 
   /// Creates a definition from JSON produced by [toJson].
   ///
-  /// Requires a non-empty `id` and a valid built-in `base` id; throws
-  /// [FormatException] otherwise. Raw Monaco `IStandaloneThemeData`
+  /// Requires a non-empty `id`, a valid built-in `base` id, and string
+  /// `colors` values; throws [FormatException] otherwise. Raw Monaco `IStandaloneThemeData`
   /// payloads (which don't carry the registration id) should be loaded via
   /// [MonacoThemeDefinition.fromMonacoThemeData].
   factory MonacoThemeDefinition.fromJson(Map<String, dynamic> json) {
@@ -95,10 +95,19 @@ sealed class MonacoThemeDefinition with _$MonacoThemeDefinition {
         'MonacoThemeDefinition.fromJson: "colors" must be a map',
       );
     }
+    // Monaco paints an unparsable color red without reporting anything, so
+    // a non-string value (including `null`) is rejected here instead of
+    // being stringified into "null" or a bare digit string.
     final colors = rawColors is Map
-        ? rawColors.map(
-            (key, value) => MapEntry(key.toString(), value.toString()),
-          )
+        ? rawColors.map((key, value) {
+            if (value is! String) {
+              throw FormatException(
+                'MonacoThemeDefinition.fromJson: "colors" value for '
+                '"$key" must be a string, got $value',
+              );
+            }
+            return MapEntry(key.toString(), value);
+          })
         : const <String, String>{};
 
     final rawEncoded = json['encodedTokensColors'];
