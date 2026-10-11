@@ -156,3 +156,38 @@ test('editors created by page code (a diff editor pair) are ignored', async () =
     };
   });
 });
+
+test('getTheme reports the boot theme, setTheme, and updateOptions', async () => {
+  const page = await bootFullPage({ theme: 'vs-dark' });
+  assert.equal(
+    page.sandbox.monaco.editor.getTheme,
+    undefined,
+    'the stub must match Monaco 0.57, which has no getTheme',
+  );
+
+  const boot = await dispatch(page, 'editor.getTheme');
+  assert.equal(boot.ok, true);
+  assert.equal(boot.value, 'vs-dark');
+
+  await dispatch(page, 'editor.setTheme', { theme: 'hc-black' });
+  assert.equal((await dispatch(page, 'editor.getTheme')).value, 'hc-black');
+
+  await dispatch(page, 'editor.updateOptions', { options: { theme: 'vs' } });
+  assert.equal((await dispatch(page, 'editor.getTheme')).value, 'vs');
+
+  await dispatch(page, 'editor.updateOptions', { options: { fontSize: 20 } });
+  assert.equal(
+    (await dispatch(page, 'editor.getTheme')).value,
+    'vs',
+    'options without a theme keep the current theme',
+  );
+
+  const state = await dispatch(page, 'editor.getState');
+  assert.equal(state.ok, true);
+  assert.equal(state.value.theme, 'vs');
+});
+
+test('getTheme falls back to the default vs theme when boot named none', async () => {
+  const page = await bootFullPage({ theme: undefined });
+  assert.equal((await dispatch(page, 'editor.getTheme')).value, 'vs');
+});

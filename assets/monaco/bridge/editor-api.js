@@ -45,6 +45,14 @@ window.__FMB.editorApi = function (ctx) {
                   model.pushEditOperations([], edits, () => null);
                   model.pushStackElement();
                 };
+                // Monaco has no public theme getter (monaco.editor.getTheme
+                // does not exist in 0.57), so the bridge tracks the theme it
+                // applied: the boot theme (boot.js creates the editor with
+                // page.boot's theme, default 'vs'), then every setTheme and
+                // updateOptions({theme}). A theme set behind the bridge's
+                // back (page.eval) is not observed.
+                const DEFAULT_THEME = 'vs';
+                let currentTheme = (window.__FM_BOOT && window.__FM_BOOT.theme) || DEFAULT_THEME;
                 // Replace-all must see every match: Monaco's findMatches
                 // stops at its limit argument (999 when omitted), and the
                 // old 9999 cap silently left later matches unreplaced.
@@ -163,24 +171,22 @@ window.__FMB.editorApi = function (ctx) {
                       throw new Error('Theme id must be a non-empty string.');
                     }
                     monaco.editor.setTheme(theme);
+                    currentTheme = theme;
                     return true;
                   },
-                  getTheme: () => {
-                    if (!window.monaco || !monaco.editor ||
-                        typeof monaco.editor.getTheme !== 'function') {
-                      return null;
-                    }
-                    const theme = monaco.editor.getTheme();
-                    if (!theme) return null;
-                    if (typeof theme === 'string') return theme;
-                    return theme.themeName || theme.id || null;
-                  },
+                  getTheme: () => currentTheme,
                   setLanguage: (lang) => {
                     monaco.editor.setModelLanguage(requireModel(), lang);
                     return true;
                   },
                   updateOptions: (opts) => {
                     requireEditor().updateOptions(opts);
+                    // The standalone editor forwards a string theme option
+                    // to the global theme service (an empty one selects
+                    // the default theme).
+                    if (opts && typeof opts.theme === 'string') {
+                      currentTheme = opts.theme || DEFAULT_THEME;
+                    }
                     return true;
                   },
                   executeAction: (actionId, args) => {
