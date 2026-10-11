@@ -135,10 +135,16 @@ test('a disconnect during initialize disposes the client and transport', async (
   });
   await new Promise((resolve) => setTimeout(resolve, 5));
   await dispatch(page, 'lsp.disconnect', { id: 'b' });
-  resolveInit();
+  // Monaco's client never settles `initialized` once its transport is
+  // closed, so the connect call must settle on the disconnect alone.
+  assert.equal(typeof resolveInit, 'function');
 
-  const connect = await connecting;
-  assert.equal(connect.ok, false);
+  const connect = await Promise.race([
+    connecting,
+    new Promise((resolve) => setTimeout(() => resolve({ ok: 'hung' }), 500)),
+  ]);
+  assert.equal(connect.ok, false, 'connect must fail, not hang');
+  assert.match(connect.error.message, /disposed during initialization/);
   assert.equal(log.clients, 1);
   assert.equal(log.storesDisposed, 1, 'the client providers are disposed');
   assert.equal(log.transportsDisposed, 1);

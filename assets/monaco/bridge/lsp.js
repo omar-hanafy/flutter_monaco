@@ -252,6 +252,11 @@ window.__FMB.lsp = function (ctx) {
                   function disposeEntry(entry) {
                     if (entry.disposed) return;
                     entry.disposed = true;
+                    if (entry.abandon) {
+                      entry.abandon(new Error(
+                        'LSP connection "' + entry.id +
+                        '" was disposed during initialization.'));
+                    }
                     releaseResources(entry);
                     connections.delete(entry.id);
                     if (connections.size === 0) {
@@ -299,7 +304,17 @@ window.__FMB.lsp = function (ctx) {
                         bridged: null,
                         stateWatch: null,
                         disposed: false,
+                        abandon: null,
                       };
+                      // Rejected by disposeEntry. Monaco's LSP client never
+                      // settles `initialized` once its transport is closed,
+                      // so a disconnect during the handshake would otherwise
+                      // leave this call - and Dart's pending lsp.connect
+                      // request - waiting forever.
+                      const abandoned = new Promise((_, reject) => {
+                        entry.abandon = reject;
+                      });
+                      abandoned.catch(() => {});
                       // Register synchronously (before any await) so bridged
                       // server->client messages can be delivered while the
                       // initialize handshake is still in flight - the
@@ -325,7 +340,7 @@ window.__FMB.lsp = function (ctx) {
                         entry.client = new ClientClass(entry.transport);
                         registerBenignRefreshHandlers(entry);
                         watchTransportClose(entry);
-                        await entry.client.initialized;
+                        await Promise.race([entry.client.initialized, abandoned]);
                         throwIfAbandoned(entry);
                         postStatus(id, 'open', null);
                         return true;
