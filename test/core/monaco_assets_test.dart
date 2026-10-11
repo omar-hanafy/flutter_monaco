@@ -79,6 +79,23 @@ void main() {
       expect(infoAfter.exists, false);
     });
 
+    test('ensureReady during clearCache re-extracts', () async {
+      await MonacoAssets.ensureReady();
+
+      // A second engine asks for the assets while the first clears them. It
+      // must not get the completed readiness of the tree being deleted.
+      final clearing = MonacoAssets.clearCache();
+      final ready = MonacoAssets.ensureReady();
+      await Future.wait([clearing, ready]);
+
+      final info = await MonacoAssets.assetInfo();
+      expect(info.exists, isTrue);
+      expect(
+        File(p.join(info.path, '.monaco_complete')).readAsStringSync(),
+        MonacoAssets.monacoVersion,
+      );
+    });
+
     test('generated html includes mobile viewport metadata', () {
       final html = generateIndexHtml('min/vs');
 

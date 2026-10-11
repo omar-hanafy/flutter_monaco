@@ -81,6 +81,10 @@ class MonacoAssets {
 
   static Completer<void>? _initCompleter;
 
+  /// Completes when the [clearCache] in progress (if any) has deleted the
+  /// tree; an [ensureReady] that starts meanwhile waits for it.
+  static Future<void>? _clearing;
+
   /// Ensures Monaco assets are extracted and ready for use on native
   /// platforms.
   ///
@@ -115,6 +119,10 @@ class MonacoAssets {
     final completer = _initCompleter = Completer<void>();
 
     try {
+      // Never extract over a deletion in progress: the deletion would
+      // remove what this call reports as ready.
+      final clearing = _clearing;
+      if (clearing != null) await clearing;
       await ensureMonacoAssetsReady(
         assetBaseDir: monacoAssetBaseDir,
         cacheSubDir: monacoCacheSubDir,
@@ -132,7 +140,8 @@ class MonacoAssets {
       );
       completer.complete();
     } catch (e, st) {
-      _initCompleter = null;
+      // A clearCache may already have replaced this completer.
+      if (identical(_initCompleter, completer)) _initCompleter = null;
       completer.completeError(e, st);
     }
 
@@ -217,30 +226,41 @@ class MonacoAssets {
   /// invalid after clearing. Dispose and recreate them after calling this
   /// method.
   static Future<void> clearCache() async {
-    // Let any in-flight ensureReady finish first: deleting the tree while
-    // extraction is mid-write leaves whichever finishes last inconsistent
-    // (a failure of that extraction is irrelevant to clearing).
+    // Readiness is reset BEFORE anything is deleted: an ensureReady that
+    // arrives while the tree is being removed must re-extract, not return
+    // the already-completed future of the tree being deleted. It waits for
+    // the deletion through _clearing.
+    final cleared = Completer<void>();
+    final previousClear = _clearing;
+    _clearing = cleared.future;
     final inFlight = _initCompleter;
-    if (inFlight != null && !inFlight.isCompleted) {
-      try {
-        await inFlight.future;
-      } catch (_) {}
-    }
-
-    // On web, only clear in-memory caches (no file system access)
-    if (kIsWeb) {
-      _initCompleter = null;
-      debugPrint('[MonacoAssets] Web cache cleared (in-memory only)');
-      return;
-    }
-
-    await clearMonacoAssetCache(
-      assetBaseDir: monacoAssetBaseDir,
-      cacheSubDir: monacoCacheSubDir,
-      monacoVersion: monacoVersion,
-    );
-
-    // Reset the init completer so ensureReady will re-extract.
     _initCompleter = null;
+
+    try {
+      if (previousClear != null) await previousClear;
+      // Let an in-flight extraction finish first: deleting the tree while
+      // it is mid-write leaves whichever finishes last inconsistent (a
+      // failure of that extraction is irrelevant to clearing).
+      if (inFlight != null && !inFlight.isCompleted) {
+        try {
+          await inFlight.future;
+        } catch (_) {}
+      }
+
+      // On web, only clear in-memory caches (no file system access)
+      if (kIsWeb) {
+        debugPrint('[MonacoAssets] Web cache cleared (in-memory only)');
+        return;
+      }
+
+      await clearMonacoAssetCache(
+        assetBaseDir: monacoAssetBaseDir,
+        cacheSubDir: monacoCacheSubDir,
+        monacoVersion: monacoVersion,
+      );
+    } finally {
+      if (identical(_clearing, cleared.future)) _clearing = null;
+      cleared.complete();
+    }
   }
 }
