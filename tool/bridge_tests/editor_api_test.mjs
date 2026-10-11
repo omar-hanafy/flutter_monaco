@@ -291,6 +291,32 @@ test('document.applyEdits is one undoable step after user typing', async () => {
   assert.equal(model.getValue(), 'XYZ-hello abc');
 });
 
+test('replaceMatches with no match adds no undo step', async () => {
+  const page = bootEditorPage();
+  const model = page.bootModel;
+  model.setValue('hello');
+  model.pushEditOperations(
+    [],
+    [{ range: range(1, 6, 1, 6), text: ' abc' }],
+    () => null,
+  );
+
+  const response = await dispatch(page, 'document.replaceMatches', {
+    uri: null,
+    query: 'zzz',
+    replacement: 'q',
+  });
+  assert.equal(response.ok, true);
+  assert.equal(response.value, 0);
+
+  model.undo();
+  assert.equal(
+    model.getValue(),
+    'hello',
+    'the next undo must revert the user typing, not an empty step',
+  );
+});
+
 test('document.applyEdits on an inactive pinned document is undoable', async () => {
   const page = bootEditorPage();
   await dispatch(page, 'docs.open', { text: 'abc', uri: 'file:///p.txt' });
@@ -375,6 +401,17 @@ test('executeAction rejects an unknown id instead of reporting success', async (
     [],
     'the command-service rejection must not leak as unhandled',
   );
+});
+
+test('executeAction reports a missing model instead of success', async () => {
+  const page = bootEditorPage();
+  page.editor.setModel(null);
+  const response = await dispatch(page, 'editor.executeAction', {
+    actionId: 'no.such.command',
+    args: null,
+  });
+  assert.equal(response.ok, false, 'nothing ran, so this must not succeed');
+  assert.match(response.error.message, /no active model/);
 });
 
 test('executeAction awaits a registered command and surfaces its failure', async () => {

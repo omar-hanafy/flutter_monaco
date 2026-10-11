@@ -46,6 +46,10 @@ window.__FMB.editorApi = function (ctx) {
                 // the edit does not touch, deleting the indentation the
                 // user just got from pressing Enter.
                 const applyUndoableEdits = (model, edits) => {
+                  // No edits, no undo step: an empty pushEditOperations
+                  // between two stack elements still records an element,
+                  // and the user's next undo would appear to do nothing.
+                  if (!edits || edits.length === 0) return;
                   const ed = E();
                   const beforeCursorState =
                     ed && ed.getModel && ed.getModel() === model
@@ -254,6 +258,9 @@ window.__FMB.editorApi = function (ctx) {
                     // the synchronous trigger and settle the response on
                     // it. _commandService is the editor's injected
                     // ICommandService (verified against Monaco 0.57.0).
+                    // Without a model, Monaco's trigger() returns before
+                    // dispatching anything, so the id would silently "succeed".
+                    requireModel();
                     const service = ed._commandService;
                     if (!service || typeof service.executeCommand !== 'function') {
                       ed.trigger('flutter-bridge', actionId, args);
