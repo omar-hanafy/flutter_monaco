@@ -45,6 +45,31 @@ window.__FMB.editorApi = function (ctx) {
                   model.pushEditOperations([], edits, () => null);
                   model.pushStackElement();
                 };
+                // Find with Monaco's own semantics. Whole word is Monaco's
+                // wordSeparators argument - the editor's wordSeparators
+                // option, exactly what the find widget passes - not a
+                // \b...\b regex: \b never matches next to a non-word
+                // character ($x, @foo) and could not apply to regex
+                // queries at all.
+                const findModelMatches = (model, q, opts, searchScope, limit) => {
+                  let wordSeparators = null;
+                  if (opts && opts.wholeWord) {
+                    wordSeparators = requireEditor().getOption(
+                      monaco.editor.EditorOption.wordSeparators);
+                    if (typeof wordSeparators !== 'string') {
+                      throw new Error(
+                        'Monaco editor did not report its wordSeparators option.');
+                    }
+                  }
+                  return model.findMatches(
+                    String(q ?? ''),
+                    searchScope,
+                    !!(opts && opts.isRegex),
+                    !!(opts && opts.matchCase),
+                    wordSeparators,
+                    false,                // captureMatches
+                    limit);
+                };
 
                 window.flutterMonaco = {
 
@@ -283,52 +308,15 @@ window.__FMB.editorApi = function (ctx) {
                   findMatches: (q, options, limit) => {
                     const m = E().getModel();
                     if (!m) return [];
-                    const isRegex = !!(options && options.isRegex);
-                    const matchCase = !!(options && options.matchCase);
-                    const wholeWord = !!(options && options.wholeWord);
-
-                    let search = q ?? '';
-                    let useRegex = isRegex;
-                    if (wholeWord && !isRegex) {
-                      search = '\\b' + escapeRegExp(String(q ?? '')) + '\\b';
-                      useRegex = true;
-                    }
-
-                    const matches = m.findMatches(
-                      search,
-                      null,                 // searchScope: null = whole model (FIX: was 'false')
-                      useRegex,
-                      matchCase,
-                      null,
-                      false,                // captureMatches
-                      limit || 9999
-                    );
+                    // searchScope null = whole model.
+                    const matches = findModelMatches(m, q, options, null, limit || 9999);
                     return matches.map(mm => ({ range: mm.range, match: m.getValueInRange(mm.range) }));
                   },
 
                   replaceMatches: (q, repl, options) => {
                     const m = E().getModel();
                     if (!m) return 0;
-                    const isRegex = !!(options && options.isRegex);
-                    const matchCase = !!(options && options.matchCase);
-                    const wholeWord = !!(options && options.wholeWord);
-
-                    let search = q ?? '';
-                    let useRegex = isRegex;
-                    if (wholeWord && !isRegex) {
-                      search = '\\b' + escapeRegExp(String(q ?? '')) + '\\b';
-                      useRegex = true;
-                    }
-
-                    const matches = m.findMatches(
-                      search,
-                      null,                 // searchScope: null = whole model (FIX: was 'false')
-                      useRegex,
-                      matchCase,
-                      null,
-                      false,                // captureMatches
-                      9999
-                    );
+                    const matches = findModelMatches(m, q, options, null, 9999);
                     const edits = matches.map(mm => ({ range: mm.range, text: repl }));
                     applyUndoableEdits(m, edits);
                     return edits.length;
@@ -410,25 +398,11 @@ window.__FMB.editorApi = function (ctx) {
                   };
                   const modelLanguage = (model) =>
                     model.getLanguageId ? model.getLanguageId() : monaco.editor.getModelLanguage(model);
-                  const searchSpec = (q, opts) => {
-                    const isRegex = !!(opts && opts.isRegex);
-                    const wholeWord = !!(opts && opts.wholeWord);
-                    let search = q ?? '';
-                    let useRegex = isRegex;
-                    if (wholeWord && !isRegex) {
-                      search = '\\b' + escapeRegExp(String(q ?? '')) + '\\b';
-                      useRegex = true;
-                    }
-                    return { search, useRegex, matchCase: !!(opts && opts.matchCase) };
-                  };
-                  const findMatchesIn = (model, q, opts, limit) => {
-                    const s = searchSpec(q, opts);
+                  const findMatchesIn = (model, q, opts, limit) =>
                     // Second argument selects Monaco's searchOnlyEditableRange
                     // overload; false/null both mean "whole model".
-                    return model.findMatches(
-                      s.search, !!(opts && opts.searchOnlyEditableRange),
-                      s.useRegex, s.matchCase, null, false, limit || 9999);
-                  };
+                    findModelMatches(model, q, opts,
+                      !!(opts && opts.searchOnlyEditableRange), limit || 9999);
                   const markDirtyBaseline = (model) => {
                     if (model && model.uri) {
                       api._baselines.set(model.uri.toString(), model.getAlternativeVersionId());

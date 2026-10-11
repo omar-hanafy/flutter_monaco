@@ -387,3 +387,94 @@ test('executeAction keeps editor commands and trigger handlers working', async (
   );
 });
 
+// ---- find / replace ----
+
+function matchesOf(response) {
+  assert.equal(response.ok, true, response.error && response.error.message);
+  return response.value.map(
+    (m) => `${m.match}@${m.range.startLineNumber}:${m.range.startColumn}`,
+  );
+}
+
+test('whole-word search uses Monaco word separators for symbol queries', async () => {
+  const page = bootEditorPage();
+  page.bootModel.setValue('let $x = 1; $xy; @foo bar @food\nfoo foobar');
+  const find = (query) =>
+    dispatch(page, 'document.findMatches', {
+      uri: null,
+      query,
+      isRegex: false,
+      matchCase: true,
+      wholeWord: true,
+      limit: 1000,
+    });
+
+  assert.deepEqual(matchesOf(await find('$x')), ['$x@1:5']);
+  assert.deepEqual(matchesOf(await find('@foo')), ['@foo@1:18']);
+  assert.deepEqual(matchesOf(await find('foo')), ['foo@1:19', 'foo@2:1']);
+
+  const call = page.sandbox.__findCalls.at(-1);
+  assert.equal(call.searchString, 'foo', 'the query must reach Monaco unescaped');
+  assert.equal(call.isRegex, false);
+  assert.equal(typeof call.wordSeparators, 'string');
+});
+
+test('whole-word search applies to regex queries too', async () => {
+  const page = bootEditorPage();
+  page.bootModel.setValue('foo foobar fooo');
+  const response = await dispatch(page, 'document.findMatches', {
+    uri: null,
+    query: 'fo+',
+    isRegex: true,
+    matchCase: true,
+    wholeWord: true,
+    limit: 1000,
+  });
+  assert.deepEqual(matchesOf(response), ['foo@1:1', 'fooo@1:12']);
+});
+
+test('whole-word search follows the editor wordSeparators option', async () => {
+  const page = bootEditorPage();
+  page.sandbox.__wordSeparators = '-';
+  page.bootModel.setValue('a-b a.b');
+  const response = await dispatch(page, 'document.findMatches', {
+    uri: null,
+    query: 'b',
+    isRegex: false,
+    matchCase: true,
+    wholeWord: true,
+    limit: 1000,
+  });
+  assert.deepEqual(matchesOf(response), ['b@1:3']);
+  assert.equal(page.sandbox.__findCalls.at(-1).wordSeparators, '-');
+});
+
+test('whole-word replaceMatches replaces symbol-delimited words', async () => {
+  const page = bootEditorPage();
+  page.bootModel.setValue('let $x = $xy + $x;');
+  const response = await dispatch(page, 'document.replaceMatches', {
+    uri: null,
+    query: '$x',
+    replacement: '$y',
+    isRegex: false,
+    matchCase: true,
+    wholeWord: true,
+  });
+  assert.equal(response.ok, true);
+  assert.equal(response.value, 2);
+  assert.equal(page.bootModel.getValue(), 'let $y = $xy + $y;');
+});
+
+test('the legacy findMatches helper honors whole word like the command', () => {
+  const page = bootEditorPage();
+  page.bootModel.setValue('let $x = $xy;');
+  const matches = page.sandbox.flutterMonaco.findMatches('$x', {
+    wholeWord: true,
+    matchCase: true,
+  });
+  assert.deepEqual(
+    matches.map((m) => m.match),
+    ['$x'],
+  );
+});
+
