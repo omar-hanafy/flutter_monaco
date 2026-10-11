@@ -23,23 +23,24 @@ Future<void> precacheMonacoWebAssets() async {
       ui_web.assetManager.getAssetUrl('$monacoAssetBaseDir/min/vs'),
     );
 
-    // The hash-named bulk chunk (~3.6MB) is discovered from editor.main.js,
-    // so that fetch gates the chunk warms; the other static files warm
+    // The hash-named editor chunks (~4MB) are discovered by walking the AMD
+    // graph from editor.main.js; reading each module's text both warms it
+    // and reveals its dependencies. The other static files warm
     // concurrently.
     final concurrent = <Future<void>>[
       for (final file in monacoWarmupStaticFiles)
-        if (file != 'editor/editor.main.js') _fetchAndDiscard('$vsBase/$file'),
+        if (file != monacoWarmupEntryModule) _fetchAndDiscard('$vsBase/$file'),
     ];
 
-    final editorMainSource = await _fetchText('$vsBase/editor/editor.main.js');
-    if (editorMainSource != null) {
-      for (final chunk in extractMonacoWarmupChunks(editorMainSource)) {
-        concurrent.add(_fetchAndDiscard('$vsBase/$chunk'));
-      }
-    }
+    final modules = await discoverMonacoBootModules(
+      (path) => _fetchText('$vsBase/$path'),
+    );
 
     await Future.wait(concurrent);
-    debugPrint('[MonacoAssets] Web warmup finished for $vsBase');
+    debugPrint(
+      '[MonacoAssets] Web warmup finished for $vsBase '
+      '(${modules.length} modules)',
+    );
   } catch (e) {
     debugPrint('[MonacoAssets] Web warmup skipped: $e');
   }

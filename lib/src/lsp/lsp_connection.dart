@@ -109,7 +109,7 @@ class LanguageServerConnection {
   /// LSP traffic is fully handled by Monaco - do not replicate it here.
   ///
   /// This escape hatch relies on Monaco-internal plumbing (verified against
-  /// Monaco 0.55.1) and may throw a descriptive [MonacoJavaScriptError]
+  /// Monaco 0.57.0) and may throw a descriptive [MonacoJavaScriptError]
   /// on future Monaco upgrades. Throws [StateError] when the connection is
   /// not open.
   Future<Object?> sendRequest(

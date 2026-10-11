@@ -547,7 +547,7 @@ sealed class EditorOptions with _$EditorOptions {
       if (contextMenu != null) 'contextmenu': contextMenu,
       if (selectionHighlight != null) 'selectionHighlight': selectionHighlight,
       if (occurrencesHighlight != null)
-        // Monaco 0.55 expects 'off' | 'singleFile' | 'multiFile'.
+        // Monaco expects 'off' | 'singleFile' | 'multiFile'.
         'occurrencesHighlight': occurrencesHighlight! ? 'singleFile' : 'off',
       if (roundedSelection != null) 'roundedSelection': roundedSelection,
       if (folding != null) 'folding': folding,

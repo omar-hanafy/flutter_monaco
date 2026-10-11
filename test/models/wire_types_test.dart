@@ -14,7 +14,7 @@ void main() {
     const diagnostics = MonacoAssetDiagnostics(
       exists: true,
       path: '/cache/monaco',
-      monacoVersion: '0.55.1',
+      monacoVersion: '0.57.0',
       fileCount: 12,
       totalSizeBytes: 2 * 1024 * 1024,
       generatedHtmlCount: 3,
@@ -28,7 +28,7 @@ void main() {
       const same = MonacoAssetDiagnostics(
         exists: true,
         path: '/cache/monaco',
-        monacoVersion: '0.55.1',
+        monacoVersion: '0.57.0',
         fileCount: 12,
         totalSizeBytes: 2 * 1024 * 1024,
         generatedHtmlCount: 3,
@@ -36,7 +36,7 @@ void main() {
       const different = MonacoAssetDiagnostics(
         exists: false,
         path: '/cache/monaco',
-        monacoVersion: '0.55.1',
+        monacoVersion: '0.57.0',
       );
       expect(diagnostics, same);
       expect(diagnostics.hashCode, same.hashCode);
@@ -47,7 +47,7 @@ void main() {
       final text = '$diagnostics';
       expect(text, contains('exists: true'));
       expect(text, contains('/cache/monaco'));
-      expect(text, contains('0.55.1'));
+      expect(text, contains('0.57.0'));
       expect(text, contains('fileCount: 12'));
       expect(text, contains('generatedHtmlCount: 3'));
     });
@@ -106,11 +106,11 @@ void main() {
     test('fromHandshake maps capability flags', () {
       const handshake = MonacoHandshake(
         protocolVersion: 3,
-        monacoVersion: '0.55.1',
+        monacoVersion: '0.57.0',
         capabilities: {'lsp'},
       );
       final capabilities = MonacoCapabilities.fromHandshake(handshake);
-      expect(capabilities.monacoVersion, '0.55.1');
+      expect(capabilities.monacoVersion, '0.57.0');
       expect(capabilities.protocolVersion, 3);
       expect(capabilities.lsp, isTrue);
       expect(capabilities.diff, isFalse);

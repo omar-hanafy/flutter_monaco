@@ -15,7 +15,7 @@ String _build({
   return buildMonacoIndexHtml(
     vsPath: vsPath,
     bridgeBase: bridgeBase,
-    monacoVersion: '0.55.1',
+    monacoVersion: '0.57.0',
     isWeb: isWeb,
     messageToken: messageToken,
     customCss: customCss,

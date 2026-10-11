@@ -1,7 +1,7 @@
 // End-to-end LSP verification probe. NOT a demo - run by maintainers to
 // prove the full loop against a real language server:
 //
-//   real WebView -> Monaco 0.55 -> flutterMonaco.lsp bridge -> bridged
+//   real WebView -> Monaco 0.57 -> flutterMonaco.lsp bridge -> bridged
 //   transport -> LspServerProcess (pyright) -> publishDiagnostics -> markers
 //
 // Usage:

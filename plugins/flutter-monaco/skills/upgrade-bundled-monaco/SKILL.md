@@ -13,7 +13,7 @@ Read [references/engine-upgrade-checklist.md](references/engine-upgrade-checklis
 
 - **Audience:** `flutter_monaco` maintainers upgrading the Monaco Editor engine bundled in the package archive.
 - **Expected inputs:** Exact current and target Monaco versions, official release notes/artifact provenance, current asset and archive inventories, supported runtime platforms, and available LSP/runtime smoke infrastructure.
-- **Realistic scenario:** Replace bundled Monaco 0.55.1 with an exact newer npm release while preserving workers, dynamic chunks, cache invalidation, bridge commands, LSP behavior, licenses, and package size discipline.
+- **Realistic scenario:** Replace bundled Monaco 0.57.0 with an exact newer npm release while preserving workers, dynamic chunks, cache invalidation, bridge commands, LSP behavior, licenses, and package size discipline.
 
 ## Workflow
 

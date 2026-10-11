@@ -557,7 +557,7 @@ final connection = await controller.connectLanguageServer(
 - `connection.state` / `stateChanges` report `connecting → open → closed/failed`; `whenClosed` completes when the connection permanently ends.
 - Unexpected drops can auto-reconnect with `reconnectPolicy: LspReconnectPolicy.exponentialBackoff(...)` (WebSocket/custom transports only - a bridged server process must be respawned by your code).
 - `MonacoController.dispose()` tears down all connections and stops bridged server processes.
-- Experimental `connection.sendRequest` / `sendNotification` forward raw JSON-RPC for non-standard server extensions (e.g. `pyright/createConfigFile`). They rely on Monaco internals verified against 0.55.1 and may break on future Monaco upgrades.
+- Experimental `connection.sendRequest` / `sendNotification` forward raw JSON-RPC for non-standard server extensions (e.g. `pyright/createConfigFile`). They rely on Monaco internals verified against 0.57.0 and may break on future Monaco upgrades.
 
 ### Good to know
 
@@ -745,7 +745,7 @@ Closed sets stay enums: `CursorBlinking`, `CursorStyle`, `RenderWhitespace`, `Au
 final controller = await MonacoController.create();
 await controller.whenReady;
 print(controller.isReady);                      // true
-print(controller.capabilities.monacoVersion);   // '0.55.1'
+print(controller.capabilities.monacoVersion);   // '0.57.0'
 
 // Content and models: controller.document (see Documents section above)
 await controller.document.setText('const x = 42;');
@@ -1217,7 +1217,7 @@ The plugin uses a versioned cache system:
 
 - Monaco assets (~30MB) are bundled with the plugin in `assets/monaco/min/`
 - Assets are extracted once to the app's support directory
-- Assets are versioned (e.g., `monaco-0.55.1/`) for clean updates
+- Assets are versioned (e.g., `monaco-0.57.0/`) for clean updates
 - Multiple editors share the same asset installation
 - Thread-safe initialization with re-entrant protection
 

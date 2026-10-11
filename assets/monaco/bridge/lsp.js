@@ -5,7 +5,7 @@
 'use strict';
 window.__FMB = window.__FMB || {};
 
-// LSP bridge: bridged transport pump, the Monaco 0.55.1 client wrapper
+// LSP bridge: bridged transport pump, the Monaco 0.57.0 client wrapper
 // (adds the missing dispose()), benign refresh handlers. VERBATIM PORT.
 window.__FMB.lsp = function (ctx) {
   const { serialize, postMessageToFlutter } = ctx;
@@ -97,13 +97,13 @@ window.__FMB.lsp = function (ctx) {
                     };
                   }
 
-                  // Monaco 0.55.1's MonacoLspClient exposes no dispose() and
+                  // Monaco 0.57.0's MonacoLspClient exposes no dispose() and
                   // discards the feature DisposableStore it creates in its
                   // constructor, so a stock client can never unregister its
                   // providers. This wrapper captures the store and reaches
                   // into the private fields (_initPromise, _bridge,
                   // _capabilitiesRegistry, _connection) - all verified against
-                  // the 0.55.1 sources. Kept in this one block so future
+                  // the 0.57.0 sources. Kept in this one block so future
                   // Monaco upgrades have a single place to re-verify.
                   let FlutterLspClientClass = null;
                   function getClientClass() {
@@ -168,7 +168,7 @@ window.__FMB.lsp = function (ctx) {
                     }
                   }
 
-                  // Monaco 0.55.1's client leaves several optional
+                  // Monaco 0.57.0's client leaves several optional
                   // server->client requests unhandled and answers them with
                   // a method-not-found error. Some servers treat that error
                   // as fatal - pyright (vscode-languageserver) dies on the
@@ -345,7 +345,7 @@ window.__FMB.lsp = function (ctx) {
 
                     // EXPERIMENTAL escape hatch for non-standard server
                     // extensions. Depends on Monaco-internal channel plumbing
-                    // (verified against 0.55.1); may break on future Monaco
+                    // (verified against 0.57.0); may break on future Monaco
                     // upgrades, in which case it throws a descriptive error.
                     async sendRequest(id, method, params) {
                       const entry = connections.get(id);
