@@ -359,7 +359,7 @@ class MonacoProtocol {
         );
       }
       return true;
-    }());
+    }(), 'debug-only event sequence check');
     if (seq > _lastEventSeq) _lastEventSeq = seq;
   }
 

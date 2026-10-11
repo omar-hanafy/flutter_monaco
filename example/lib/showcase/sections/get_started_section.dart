@@ -122,7 +122,7 @@ class _Step extends StatelessWidget {
                 width: 34,
                 height: 34,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   gradient: accentGradient,
                   shape: BoxShape.circle,
                 ),

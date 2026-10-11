@@ -251,7 +251,7 @@ class _DiffCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.showcaseColors;
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(Radii.lg),

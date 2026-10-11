@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
@@ -342,9 +343,9 @@ MonacoEditor(
         schemaValidation: DiagnosticsSeverity.error,
         schemas: [
           JsonDiagnosticsSchema(
-            uri: Uri.parse("https://example.com/schema.json"),
-            fileMatch: ["*"],
-            schema: jsonDecode("""
+            uri: Uri.parse('https://example.com/schema.json'),
+            fileMatch: ['*'],
+            schema: jsonDecode('''
 {
   "\$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Example Schema",
@@ -428,7 +429,7 @@ MonacoEditor(
       "required": ["defaultTheme", "features"]
     }
     }
-} """),
+} ''') as Map<String, dynamic>,
           ),
         ],
       ),
@@ -504,13 +505,12 @@ MonacoEditor(
       output += 'Lines: $lineCount | Words: $wordCount\n';
     } else {
       final printRegex = RegExp(r"""print\(['\"](.+?)['\"]\)""");
-      final matches = printRegex.allMatches(code);
-      if (matches.isNotEmpty) {
-        for (final match in matches) {
-          output += '> ${match.group(1)}\n';
-        }
+      final buffer = StringBuffer(output);
+      for (final match in printRegex.allMatches(code)) {
+        buffer.write('> ${match.group(1)}\n');
       }
-      output += '\nExecution complete (simulated)';
+      buffer.write('\nExecution complete (simulated)');
+      output = buffer.toString();
     }
 
     setState(() => _output = output);
@@ -754,7 +754,7 @@ MonacoEditor(
     );
     if (!mounted || theme == null) return;
     setState(() => _currentTheme = theme);
-    _controller?.setTheme(theme);
+    unawaited(_controller?.setTheme(theme));
   }
 
   PopupMenuItem<MonacoTheme> _buildThemeMenuItem(

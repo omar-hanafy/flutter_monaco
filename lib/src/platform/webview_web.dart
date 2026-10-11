@@ -103,7 +103,8 @@ String _monacoBridgeAssetUrl() {
 /// See also:
 /// - `buildMonacoIndexHtml` (html_builder.dart) for HTML generation with
 ///   web-specific worker shims.
-/// - [native.dart] for native platform implementations.
+/// - `webview_native.dart` and `webview_windows.dart` for the native
+///   platform implementations.
 class WebViewController implements PlatformWebViewController {
   /// Monotonic per-controller counter mixed into [_viewId].
   ///

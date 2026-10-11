@@ -3,6 +3,10 @@
 // Each enum value exposes an `id` that is the exact wire string the Monaco
 // editor expects for the corresponding option.
 
+/// @docImport 'package:flutter_monaco/src/types/json_diagnostics.dart';
+/// @docImport 'package:flutter_monaco/src/types/markers.dart';
+library;
+
 /// Controls how lines are wrapped in the editor.
 enum MonacoWordWrap {
   /// Lines never wrap.

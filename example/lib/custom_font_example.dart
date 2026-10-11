@@ -146,7 +146,7 @@ const features = {
           theme: MonacoTheme.vsDark,
           language: MonacoLanguage.javascript,
         ),
-        page: MonacoPageConfig(
+        page: const MonacoPageConfig(
           customCss:
               '''
           @font-face {

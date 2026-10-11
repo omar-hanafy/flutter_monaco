@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -406,11 +408,13 @@ void main() {
       webview.respondTo(boot['id']! as String);
       // The reloaded page never posts ready or fatal.
       Object? queuedError;
-      controller.document.getText().then<void>(
-        (_) {},
-        onError: (Object e) {
-          queuedError = e;
-        },
+      unawaited(
+        controller.document.getText().then<void>(
+          (_) {},
+          onError: (Object e) {
+            queuedError = e;
+          },
+        ),
       );
 
       await tester.pump(const Duration(seconds: 2));

@@ -7,7 +7,7 @@ import '../fakes/fake_platform_webview_controller.dart';
 
 Future<List<String>> _loadActionValues() async {
   final file = File('lib/src/options/action.dart');
-  if (!await file.exists()) {
+  if (!file.existsSync()) {
     throw StateError('action.dart not found');
   }
   final contents = await file.readAsString();

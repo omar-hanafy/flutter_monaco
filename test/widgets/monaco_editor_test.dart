@@ -1877,7 +1877,7 @@ void main() {
 
         final backgroundCalls = bundle.webview.dispatched
             .where((d) => d['method'] == 'page.setBackground')
-            .map((d) => ((d['params']! as Map)['color']).toString())
+            .map((d) => (d['params']! as Map)['color'].toString())
             .toList();
         expect(
           backgroundCalls,

@@ -39,12 +39,10 @@ void main() {
     // run() calls back into Dart over the request channel.
     final actionRan = Completer<void>();
     final action = await controller.addAction(
-      MonacoActionDescriptor(
-        id: const MonacoAction('probe.save'),
+      const MonacoActionDescriptor(
+        id: MonacoAction('probe.save'),
         label: 'Probe Save',
-        keybindings: const [
-          MonacoKeybinding(key: MonacoKey.keyS, ctrlCmd: true),
-        ],
+        keybindings: [MonacoKeybinding(key: MonacoKey.keyS, ctrlCmd: true)],
       ),
       () async {
         if (!actionRan.isCompleted) actionRan.complete();

@@ -329,7 +329,7 @@ class _MonacoExamplePageState extends State<MonacoExamplePage> {
             heroTag: 'focus',
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(
+                MaterialPageRoute<void>(
                   builder: (context) => const FocusTestExample(),
                 ),
               );
@@ -343,7 +343,7 @@ class _MonacoExamplePageState extends State<MonacoExamplePage> {
             heroTag: 'multi',
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(
+                MaterialPageRoute<void>(
                   builder: (context) => const MultiEditorExample(),
                 ),
               );
@@ -358,7 +358,7 @@ class _MonacoExamplePageState extends State<MonacoExamplePage> {
             heroTag: 'font',
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(
+                MaterialPageRoute<void>(
                   builder: (context) => const CustomFontExample(),
                 ),
               );
@@ -374,7 +374,7 @@ class _MonacoExamplePageState extends State<MonacoExamplePage> {
             onPressed: () async {
               final content = await _controller?.document.getText();
               if (content != null && context.mounted) {
-                showDialog(
+                showDialog<void>(
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Editor Content'),

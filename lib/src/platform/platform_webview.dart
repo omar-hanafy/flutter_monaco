@@ -1,3 +1,8 @@
+/// @docImport 'package:flutter_monaco/src/editor/controller.dart';
+/// @docImport 'package:flutter_monaco/src/platform/webview_native.dart';
+/// @docImport 'package:flutter_monaco/src/platform/webview_windows.dart';
+library;
+
 import 'dart:async';
 import 'dart:convert';
 

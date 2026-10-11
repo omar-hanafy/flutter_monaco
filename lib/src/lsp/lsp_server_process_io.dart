@@ -29,8 +29,8 @@ import 'package:flutter_monaco/src/lsp/lsp_transport.dart';
 /// ### Lifecycle
 ///
 /// - The server's stdout is decoded with LSP `Content-Length` framing and
-///   streamed to the editor; stderr lines go to [onStderr] (default:
-///   `debugPrint`).
+///   streamed to the editor; stderr lines go to the `onStderr` callback of
+///   [start] (default: `debugPrint`).
 /// - When the connection is disconnected or the controller is disposed, the
 ///   transport's `onClose` runs [stop] automatically.
 /// - If the process dies on its own, the message stream ends and the

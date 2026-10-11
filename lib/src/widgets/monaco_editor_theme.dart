@@ -1,3 +1,6 @@
+/// @docImport 'package:flutter_monaco/src/widgets/monaco_editor_view.dart';
+library;
+
 import 'package:material_ui/material_ui.dart';
 
 /// Inherited styling for [MonacoEditor]'s built-in Flutter chrome.

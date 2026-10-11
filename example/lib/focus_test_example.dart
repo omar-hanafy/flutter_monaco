@@ -92,7 +92,7 @@ class _FocusTestExampleState extends State<FocusTestExample> {
       // MonacoScaffold wraps this in a MonacoOverlayBoundary on Web.
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          showDialog(
+          showDialog<void>(
             context: context,
             builder: (context) {
               String dialogText = '';

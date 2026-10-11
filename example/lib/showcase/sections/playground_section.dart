@@ -76,7 +76,7 @@ class _EditorCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.showcaseColors;
     final monaco = controller.monaco;
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(Radii.lg),

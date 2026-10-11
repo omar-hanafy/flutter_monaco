@@ -159,6 +159,8 @@ class FakePlatformWebViewController implements PlatformWebViewController {
     }
     final error = setBackgroundColorError;
     if (error != null) {
+      // Tests inject arbitrary thrown objects, as a platform plugin may.
+      // ignore: only_throw_errors
       throw error;
     }
     executed.add('SET_BACKGROUND_COLOR:$color');

@@ -77,6 +77,9 @@ class LanguageServerConnection {
       StreamController<LspConnectionState>.broadcast();
   final Completer<void> _closedCompleter = Completer<void>();
 
+  // Owned and cancelled by MonacoLspManager (_finalize), which starts the
+  // pump.
+  // ignore: cancel_subscriptions
   StreamSubscription<Map<String, Object?>>? _pumpSubscription;
 
   /// The connect/reconnect attempt currently waiting on the handshake;
@@ -169,7 +172,7 @@ class LanguageServerConnection {
 ///
 /// Not exported from the package; use `MonacoController.connectLanguageServer`.
 class MonacoLspManager {
-  /// Creates a manager wired to [protocol] events.
+  /// Creates a manager wired to the events of a [MonacoProtocol].
   MonacoLspManager({required this._protocol}) {
     _eventsSubscription = _protocol.events.listen(_onProtocolEvent);
     _reloadSubscription = _protocol.pageReloads.listen(_onPageReloaded);
@@ -369,6 +372,9 @@ class MonacoLspManager {
     _ConnectAttempt attempt,
   ) {
     final abortError = attempt.error;
+    // Rethrow the abort cause unchanged: a MonacoException or whatever the
+    // transport's stream reported, which need not be an Exception or Error.
+    // ignore: only_throw_errors
     if (abortError != null) throw abortError;
     if (_disposed) throw _disposedDuringConnect();
     if (connection._finalized || connection._userDisconnected) {

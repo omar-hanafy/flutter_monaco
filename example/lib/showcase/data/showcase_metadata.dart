@@ -361,7 +361,7 @@ ShowcaseMetadata parsePubDevPackage(
 }
 
 ShowcaseMetadata _metadataFromPubspecMap(
-  Map pubspec, {
+  Map<dynamic, dynamic> pubspec, {
   required ShowcaseMetadata base,
 }) {
   final packageName = _string(pubspec['name']) ?? base.packageName;

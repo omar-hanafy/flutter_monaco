@@ -187,7 +187,7 @@ final class MonacoDocument {
       );
     }
     return matches
-        .whereType<Map>()
+        .whereType<Map<Object?, Object?>>()
         .map((match) => FindMatch.fromJson(Map<String, dynamic>.from(match)))
         .toList();
   }

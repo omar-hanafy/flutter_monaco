@@ -36,9 +36,9 @@ class SiteFooter extends StatelessWidget {
           ('License', metadata.licenseUrl),
         ],
       ),
-      _LinkColumn(
+      const _LinkColumn(
         title: 'More',
-        links: const [
+        links: [
           ('Other projects', Links.portfolio),
           ('Buy me a coffee', Links.buyMeACoffee),
         ],

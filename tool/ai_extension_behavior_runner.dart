@@ -1161,10 +1161,7 @@ Future<List<Map<String, Object?>>> _captureUntrackedArtifacts(
       'git ls-files --others failed in ${fixture.path}: ${result.stderr}',
     );
   }
-  final output = utf8.decode(
-    (result.stdout! as List<int>),
-    allowMalformed: true,
-  );
+  final output = utf8.decode(result.stdout! as List<int>, allowMalformed: true);
   final paths = output.split('\u0000').where((path) => path.isNotEmpty).toList()
     ..sort();
   final artifacts = <Map<String, Object?>>[];

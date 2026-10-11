@@ -826,8 +826,10 @@ void main() {
         },
       );
       var settled = false;
-      final future = connect(transport)
-        ..then((_) {}, onError: (_) {}).whenComplete(() => settled = true);
+      final future = connect(transport);
+      unawaited(
+        future.then((_) {}, onError: (_) {}).whenComplete(() => settled = true),
+      );
       await pumpMicrotasks();
       expect(onCloseCalls, 1);
       expect(settled, isFalse, reason: 'connect waits for onClose');

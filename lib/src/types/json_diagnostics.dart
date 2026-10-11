@@ -1,3 +1,6 @@
+/// @docImport 'package:flutter_monaco/src/editor/controller.dart';
+library;
+
 import 'package:flutter_monaco/src/options/option_enums.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 

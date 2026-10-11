@@ -1,3 +1,6 @@
+/// @docImport 'package:flutter_monaco/src/editor/controller.dart';
+library;
+
 import 'package:flutter_monaco/src/options/language.dart';
 import 'package:flutter_monaco/src/options/option_enums.dart';
 import 'package:flutter_monaco/src/options/sub_options.dart';

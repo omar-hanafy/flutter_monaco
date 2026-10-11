@@ -160,6 +160,7 @@ void main() {
         ],
         'scroll': {'top': 10},
       });
+      // Non-const for the same reason.
       // ignore: prefer_const_constructors
       final b = MonacoViewState.fromJson({
         'cursorState': [
@@ -351,7 +352,8 @@ void main() {
         isEmpty,
       );
       expect(
-        () => DecorationOptions.fromJson(const {'options': {}}),
+        () =>
+            DecorationOptions.fromJson(const {'options': <String, Object?>{}}),
         throwsFormatException,
       );
     });

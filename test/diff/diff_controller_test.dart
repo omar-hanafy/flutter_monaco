@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -364,9 +366,11 @@ void main() {
       await pumpMicrotasks();
       expect(reloadErrors.single, isA<MonacoJavaScriptError>());
       expect(controller.isReady, isFalse);
-      expect(webview.dispatchedMethods.where((m) => m.startsWith('diff.')), [
+      expect(
+        webview.dispatchedMethods.where((m) => m.startsWith('diff.')),
         // Nothing reached the page that has no diff editor.
-      ]);
+        <String>[],
+      );
     });
 
     test('dispose during recovery fails queued commands with '
@@ -401,11 +405,13 @@ void main() {
     );
     webview.respondTo(boot['id']! as String);
     Object? queuedError;
-    controller.getModifiedText().then<void>(
-      (_) {},
-      onError: (Object e) {
-        queuedError = e;
-      },
+    unawaited(
+      controller.getModifiedText().then<void>(
+        (_) {},
+        onError: (Object e) {
+          queuedError = e;
+        },
+      ),
     );
 
     await tester.pump(const Duration(seconds: 2));

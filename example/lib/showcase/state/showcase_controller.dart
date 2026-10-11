@@ -227,12 +227,10 @@ class ShowcaseController extends ChangeNotifier {
       // Dart-defined editor action with a real keybinding (new in 3.0). It
       // also shows up in the editor's context menu and command palette.
       await controller.addAction(
-        MonacoActionDescriptor(
-          id: const MonacoAction('showcase.save'),
+        const MonacoActionDescriptor(
+          id: MonacoAction('showcase.save'),
           label: 'Save (showcase demo)',
-          keybindings: const [
-            MonacoKeybinding(key: MonacoKey.keyS, ctrlCmd: true),
-          ],
+          keybindings: [MonacoKeybinding(key: MonacoKey.keyS, ctrlCmd: true)],
           contextMenuGroupId: 'navigation',
           contextMenuOrder: 1,
         ),

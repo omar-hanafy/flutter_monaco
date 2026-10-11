@@ -66,7 +66,7 @@ void main() {
     test('integral doubles keep their value', () {
       expect(
         Position.fromJson(const {'lineNumber': 7.0, 'column': 3.0}),
-        (const Position(line: 7, column: 3)),
+        const Position(line: 7, column: 3),
       );
       expect(EditorOptions.fromJson(const {'tabSize': 2.0}).tabSize, 2);
       expect(

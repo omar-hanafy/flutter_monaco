@@ -12,7 +12,8 @@ part 'theme_definition.freezed.dart';
 /// Mirrors the Monaco editor theme schema while keeping the surface
 /// idiomatic for Dart callers: an enum [base], strongly-typed [rules], and a
 /// Monaco token-color [colors] map. Use [toMonacoThemeData] when forwarding
-/// to the JS bridge and [toJson]/[fromJson] for app-level persistence (the
+/// to the JS bridge and [toJson]/[MonacoThemeDefinition.fromJson] for
+/// app-level persistence (the
 /// JSON shape includes [id] so loaded themes round-trip cleanly).
 @freezed
 sealed class MonacoThemeDefinition with _$MonacoThemeDefinition {
@@ -130,7 +131,7 @@ sealed class MonacoThemeDefinition with _$MonacoThemeDefinition {
     return MonacoThemeDefinition(
       id: id,
       base: base,
-      inherit: rawInherit is bool ? rawInherit : true,
+      inherit: rawInherit is! bool || rawInherit,
       rules: rules,
       colors: colors,
       encodedTokensColors: encodedTokensColors,
@@ -152,7 +153,8 @@ sealed class MonacoThemeDefinition with _$MonacoThemeDefinition {
 
   /// Serializes this theme for app persistence.
   ///
-  /// The shape includes [id] so [fromJson] can rebuild a complete
+  /// The shape includes [id] so [MonacoThemeDefinition.fromJson] can rebuild
+  /// a complete
   /// definition. Use [toMonacoThemeData] when forwarding to the JS bridge.
   Map<String, dynamic> toJson() {
     return {'id': id, ...toMonacoThemeData()};

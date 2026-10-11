@@ -1,0 +1,36 @@
+# test/analysis_options.yaml - low-noise override for tests.
+# The analyzer applies the NEAREST options file up the tree, so this governs
+# everything under test/ while lib/ keeps the strict root rules.
+# Works with every dart-lints root template: disabling a rule that the root never
+# enabled is a harmless no-op, so this file needs no per-project editing.
+# NOTE: bug-catching rules (unawaited_futures & friends) intentionally stay ON -
+# an unawaited future in a test is a real bug that makes the test lie.
+
+include: ../analysis_options.yaml
+
+linter:
+  rules:
+    # docs & API-shape rules have no business in tests
+    public_member_api_docs: false
+    comment_references: false
+    prefer_asserts_with_message: false
+    avoid_positional_boolean_parameters: false
+    avoid_equals_and_hash_code_on_mutable_classes: false
+    avoid_classes_with_only_static_members: false
+    # print-debugging in tests is fine
+    avoid_print: false
+    # widget-test const nagging is pure noise
+    prefer_const_constructors: false
+    prefer_const_literals_to_create_immutables: false
+    # explicit arguments in tests are a feature, not a smell
+    avoid_redundant_argument_values: false
+    # subscriptions in tests are torn down by the framework / addTearDown
+    cancel_subscriptions: false
+    # stricter-tier rules that hurt test readability (no-ops unless enabled in root)
+    discarded_futures: false
+    prefer_final_locals: false
+    prefer_final_in_for_each: false
+    avoid_dynamic_calls: false
+    unnecessary_lambdas: false
+    avoid_catches_without_on_clauses: false
+    cascade_invocations: false

@@ -52,7 +52,6 @@ class _ProbeAppState extends State<ProbeApp> {
   }
 
   void _log(String message) {
-    // ignore: avoid_print
     print('PROBE: $message');
     if (mounted) setState(() => _status = message);
   }
@@ -137,7 +136,6 @@ class _ProbeAppState extends State<ProbeApp> {
   }
 
   void _finish(bool pass, String detail) {
-    // ignore: avoid_print
     print('PROBE_RESULT: ${pass ? 'PASS' : 'FAIL'} - $detail');
     exit(pass ? 0 : 1);
   }
