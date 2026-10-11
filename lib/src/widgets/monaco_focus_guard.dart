@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
 
@@ -18,6 +20,7 @@ class MonacoFocusGuard extends StatefulWidget {
     this.modalRouteObserver,
     this.ensureAttempts = 3,
     this.autoDisableInteraction = true,
+    this.onError,
   });
 
   /// The [MonacoController] for the editor that needs focus management.
@@ -46,7 +49,23 @@ class MonacoFocusGuard extends StatefulWidget {
   /// This is useful for ensuring Flutter dialogs and menus remain interactive
   /// over the Monaco editor on Web. Requires [modalRouteObserver] for dialogs
   /// and menus, or [routeObserver] for page routes.
+  ///
+  /// The guard holds a disable scope that composes like
+  /// [MonacoController.runWithInteractionDisabled]: it never overwrites the
+  /// interaction state the app sets through
+  /// [MonacoController.setInteractionEnabled] (or
+  /// `MonacoEditor.interactionEnabled`), including changes made while the
+  /// route is covered.
   final bool autoDisableInteraction;
+
+  /// Called when a focus or interaction update the guard runs in the
+  /// background fails. When `null`, failures go to [FlutterError.reportError].
+  ///
+  /// A controller that failed to boot, was disposed, or could not recover
+  /// from a page reload has no editor to focus; those cases are already
+  /// reported through the controller (`whenReady`, `onPageReloaded`) and are
+  /// not reported again here.
+  final void Function(Object error, StackTrace stackTrace)? onError;
 
   @override
   State<MonacoFocusGuard> createState() => _MonacoFocusGuardState();
@@ -58,8 +77,17 @@ class _MonacoFocusGuardState extends State<MonacoFocusGuard>
   RouteObserver<PageRoute<dynamic>>? _routeObserver;
   ModalRoute<dynamic>? _modalRoute;
   RouteObserver<ModalRoute<dynamic>>? _modalRouteObserver;
-  bool _interactionToggledByGuard = false;
-  bool _interactionWasEnabled = true;
+
+  /// Whether another route currently covers this guard's route.
+  bool _covered = false;
+
+  /// Releases the guard's interaction disable scope; null while none is
+  /// held.
+  Completer<void>? _disableScope;
+
+  /// Completes once the held scope exited and the controller applied the
+  /// resulting interaction state.
+  Future<void>? _disableScopeExit;
 
   @override
   void initState() {
@@ -70,6 +98,41 @@ class _MonacoFocusGuardState extends State<MonacoFocusGuard>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _syncRouteSubscriptions();
+    if (widget.autoDisableInteraction &&
+        widget.modalRouteObserver == null &&
+        widget.routeObserver == null) {
+      debugPrint(
+        '⚠️ [MonacoFocusGuard] autoDisableInteraction is enabled but no route observer was provided. '
+        'Pass a MonacoRouteObserver to handle web overlays automatically.',
+      );
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant MonacoFocusGuard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.modalRouteObserver != oldWidget.modalRouteObserver ||
+        widget.routeObserver != oldWidget.routeObserver) {
+      _syncRouteSubscriptions();
+      if (widget.modalRouteObserver == null && widget.routeObserver == null) {
+        // Nothing can report the covering route's pop any more.
+        _covered = false;
+      }
+    }
+    if (widget.controller != oldWidget.controller ||
+        widget.autoDisableInteraction != oldWidget.autoDisableInteraction ||
+        !_covered) {
+      // The scope belongs to the controller it was opened on.
+      _releaseDisableScope();
+    }
+    if (_covered && widget.autoDisableInteraction) {
+      _holdDisableScope();
+    }
+  }
+
+  /// (Re)subscribes to the configured observer for the current route.
+  void _syncRouteSubscriptions() {
     if (widget.modalRouteObserver != _modalRouteObserver) {
       if (_modalRouteObserver != null && _modalRoute != null) {
         _modalRouteObserver!.unsubscribe(this);
@@ -107,15 +170,6 @@ class _MonacoFocusGuardState extends State<MonacoFocusGuard>
         _routeObserver!.subscribe(this, route);
       }
     }
-
-    if (widget.autoDisableInteraction &&
-        widget.modalRouteObserver == null &&
-        widget.routeObserver == null) {
-      debugPrint(
-        '⚠️ [MonacoFocusGuard] autoDisableInteraction is enabled but no route observer was provided. '
-        'Pass a MonacoRouteObserver to handle web overlays automatically.',
-      );
-    }
   }
 
   @override
@@ -127,33 +181,102 @@ class _MonacoFocusGuardState extends State<MonacoFocusGuard>
     if (_modalRouteObserver != null && _modalRoute != null) {
       _modalRouteObserver!.unsubscribe(this);
     }
+    _releaseDisableScope();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      widget.controller.requestFocus(attempts: widget.ensureAttempts);
+      _requestFocus();
     }
   }
 
   @override
   void didPushNext() {
-    if (!widget.autoDisableInteraction) return;
-    if (_interactionToggledByGuard) return;
-    _interactionWasEnabled = widget.controller.isInteractionEnabled;
-    if (!_interactionWasEnabled) return;
-    _interactionToggledByGuard = true;
-    widget.controller.setInteractionEnabled(false);
+    _covered = true;
+    if (widget.autoDisableInteraction) {
+      _holdDisableScope();
+    }
   }
 
   @override
   void didPopNext() {
-    if (widget.autoDisableInteraction && _interactionToggledByGuard) {
-      _interactionToggledByGuard = false;
-      widget.controller.setInteractionEnabled(_interactionWasEnabled);
+    _covered = false;
+    final scopeExit = _releaseDisableScope();
+    if (scopeExit == null) {
+      _requestFocus();
+      return;
     }
-    widget.controller.requestFocus(attempts: widget.ensureAttempts);
+    // Focus requests are dropped while interaction is disabled, so focus
+    // only once the controller re-applied the app's interaction state.
+    unawaited(
+      scopeExit.then((_) {
+        if (mounted && !_covered) _requestFocus();
+      }),
+    );
+  }
+
+  /// Disables interaction for as long as the guard holds the scope. Like
+  /// [MonacoController.runWithInteractionDisabled] (which implements it),
+  /// it composes with the app's own interaction state instead of
+  /// snapshotting and restoring it.
+  void _holdDisableScope() {
+    if (_disableScope != null) return;
+    final scope = Completer<void>();
+    _disableScope = scope;
+    _disableScopeExit = _runInBackground(
+      widget.controller,
+      widget.controller.runWithInteractionDisabled(() => scope.future),
+    );
+  }
+
+  /// Exits the held scope (if any); the returned future completes once the
+  /// controller applied the resulting interaction state.
+  Future<void>? _releaseDisableScope() {
+    final scope = _disableScope;
+    final exit = _disableScopeExit;
+    _disableScope = null;
+    _disableScopeExit = null;
+    if (scope == null) return null;
+    if (!scope.isCompleted) scope.complete();
+    return exit;
+  }
+
+  void _requestFocus() {
+    unawaited(
+      _runInBackground(
+        widget.controller,
+        widget.controller.requestFocus(attempts: widget.ensureAttempts),
+      ),
+    );
+  }
+
+  /// Nobody awaits the guard's work, so its failures are routed here
+  /// instead of escaping as uncaught zone errors. The returned future never
+  /// fails.
+  Future<void> _runInBackground(
+    MonacoController controller,
+    Future<void> work,
+  ) {
+    return work.catchError((Object error, StackTrace stackTrace) {
+      // No editor to act on: the controller already reports why through
+      // whenReady / onPageReloaded.
+      if (error is MonacoDisposedError || !controller.isReady) return;
+      final handler = widget.onError;
+      if (mounted && handler != null) {
+        handler(error, stackTrace);
+        return;
+      }
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'flutter_monaco',
+          context: ErrorDescription('while running a MonacoFocusGuard update'),
+        ),
+      );
+    });
   }
 
   @override
