@@ -157,7 +157,9 @@ sealed class EditorOptions with _$EditorOptions {
     /// Whether parameter hints appear in call sites.
     bool? parameterHints,
 
-    /// Whether hover tooltips appear.
+    /// Whether hover tooltips appear. Sent as Monaco's `hover.enabled`
+    /// `'on'`/`'off'`; for `'onKeyboardModifier'` or other hover settings
+    /// use [extra] (e.g. `{'hover': {'enabled': 'onKeyboardModifier'}}`).
     bool? hover,
 
     /// Whether the right-click context menu is enabled.
@@ -593,7 +595,10 @@ sealed class EditorOptions with _$EditorOptions {
       if (suggestOnTriggerCharacters != null)
         'suggestOnTriggerCharacters': suggestOnTriggerCharacters,
       if (parameterHints != null) 'parameterHints': {'enabled': parameterHints},
-      if (hover != null) 'hover': {'enabled': hover},
+      if (hover != null)
+        // Monaco expects 'on' | 'off' | 'onKeyboardModifier' and ignores
+        // a boolean.
+        'hover': {'enabled': hover! ? 'on' : 'off'},
       if (contextMenu != null) 'contextmenu': contextMenu,
       if (selectionHighlight != null) 'selectionHighlight': selectionHighlight,
       if (occurrencesHighlight != null)

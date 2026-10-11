@@ -145,7 +145,12 @@ void main() {
       expect(map['cursorStyle'], 'block');
       expect(map['renderWhitespace'], 'all');
       expect(map['parameterHints'], {'enabled': false});
-      expect(map['hover'], {'enabled': false});
+      // Monaco 0.57 validates `hover.enabled` against 'on' | 'off' |
+      // 'onKeyboardModifier' and ignores a boolean.
+      expect(map['hover'], {'enabled': 'off'});
+      expect(const EditorOptions(hover: true).toMonacoOptions()['hover'], {
+        'enabled': 'on',
+      });
       expect(map['contextmenu'], false);
       expect(map['bracketPairColorization'], {'enabled': false});
       expect(map.containsKey('padding'), false);

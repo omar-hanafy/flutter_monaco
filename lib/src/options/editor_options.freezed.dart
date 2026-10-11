@@ -71,7 +71,9 @@ mixin _$EditorOptions {
  bool? get formatOnType;/// Whether the suggestion widget appears while typing.
  bool? get quickSuggestions;/// Whether suggestions appear on trigger characters (e.g. `.`).
  bool? get suggestOnTriggerCharacters;/// Whether parameter hints appear in call sites.
- bool? get parameterHints;/// Whether hover tooltips appear.
+ bool? get parameterHints;/// Whether hover tooltips appear. Sent as Monaco's `hover.enabled`
+/// `'on'`/`'off'`; for `'onKeyboardModifier'` or other hover settings
+/// use [extra] (e.g. `{'hover': {'enabled': 'onKeyboardModifier'}}`).
  bool? get hover;/// Whether the right-click context menu is enabled.
  bool? get contextMenu;/// Whether other occurrences of the selection are highlighted.
  bool? get selectionHighlight;/// Whether symbol occurrences are highlighted semantically.
@@ -516,7 +518,9 @@ class _EditorOptions extends EditorOptions {
 @override final  bool? suggestOnTriggerCharacters;
 /// Whether parameter hints appear in call sites.
 @override final  bool? parameterHints;
-/// Whether hover tooltips appear.
+/// Whether hover tooltips appear. Sent as Monaco's `hover.enabled`
+/// `'on'`/`'off'`; for `'onKeyboardModifier'` or other hover settings
+/// use [extra] (e.g. `{'hover': {'enabled': 'onKeyboardModifier'}}`).
 @override final  bool? hover;
 /// Whether the right-click context menu is enabled.
 @override final  bool? contextMenu;
