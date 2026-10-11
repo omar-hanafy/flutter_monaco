@@ -9,7 +9,11 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// Mirrors `MonacoEditor`'s chrome: shows [loadingBuilder] until the diff
 /// editor is ready and [errorBuilder] on boot failure. Content, language,
-/// options, and diff options update live via `didUpdateWidget`.
+/// options, and diff options update live via `didUpdateWidget`. After the
+/// controller recovers from a page reload (see
+/// `MonacoDiffController.onPageReloaded`) the widget re-applies its current
+/// texts, options, theme, diff options, and scroll handoff; a failed
+/// recovery is reported to [onError].
 ///
 /// ### Example
 ///
@@ -136,6 +140,7 @@ class _MonacoDiffEditorState extends State<MonacoDiffEditor> {
     isMounted: () => mounted,
   );
   StreamSubscription<MonacoScrollHandoffDetails>? _scrollHandoffSub;
+  StreamSubscription<void>? _pageReloadSub;
 
   /// The handoff sources and boundary policy last pushed to the diff page,
   /// so config rebuilds only produce bridge traffic when the effective
@@ -347,6 +352,7 @@ class _MonacoDiffEditorState extends State<MonacoDiffEditor> {
       }
 
       _wireScrollHandoff();
+      _wirePageReload();
       _syncScrollHandoffSources();
 
       setState(() => _connectionState = _DiffConnectionState.ready);
@@ -425,6 +431,52 @@ class _MonacoDiffEditorState extends State<MonacoDiffEditor> {
     );
   }
 
+  /// Re-applies this widget's configuration whenever the controller
+  /// recovers from a page reload; recovery failures route to onError.
+  void _wirePageReload() {
+    _pageReloadSub?.cancel();
+    _pageReloadSub = _controller!.onPageReloaded.listen(
+      (_) => _reapplyAfterPageReload(),
+      onError: _reportAsyncError,
+    );
+  }
+
+  /// The re-booted page carries the controller's BOOT-time payload (texts,
+  /// options, theme) and no scroll handoff listeners, so every applied
+  /// snapshot this widget dedupes against describes the old page. Reset
+  /// them and push the widget's current configuration.
+  void _reapplyAfterPageReload() {
+    final controller = _controller;
+    if (controller == null || !mounted) return;
+    final resolvedTheme = _resolveTheme();
+    _appliedResolvedTheme = resolvedTheme;
+    _ignoreAsync(() async {
+      await controller.updateOptions(widget.options);
+      await controller.updateDiffOptions(widget.diffOptions);
+      await controller.setTheme(resolvedTheme);
+    }());
+    if (_appliedOriginal != null) {
+      // This widget owned the texts on the old page: the reload reverted
+      // them to the boot texts, so push them again even if unchanged.
+      _appliedOriginal = widget.original;
+      _appliedModified = widget.modified;
+      _appliedLanguage = widget.language;
+      _ignoreAsync(
+        controller.setTexts(
+          original: widget.original,
+          modified: widget.modified,
+          language: widget.language,
+        ),
+      );
+    } else {
+      _syncTexts();
+    }
+    _syncedWheelSource = false;
+    _syncedTouchSource = false;
+    _syncedPolicy = MonacoScrollBoundaryPolicy.newGestureOnly;
+    _syncScrollHandoffSources();
+  }
+
   /// Pushes the desired handoff sources and boundary policy to the diff
   /// page when they differ from what was last pushed. A disabled config
   /// therefore produces no bridge traffic at all.
@@ -478,6 +530,8 @@ class _MonacoDiffEditorState extends State<MonacoDiffEditor> {
   void _teardown({required bool disposeOldController}) {
     _scrollHandoffSub?.cancel();
     _scrollHandoffSub = null;
+    _pageReloadSub?.cancel();
+    _pageReloadSub = null;
     final controller = _controller;
     if (controller != null &&
         !disposeOldController &&
