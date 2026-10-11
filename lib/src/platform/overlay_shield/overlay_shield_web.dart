@@ -1,5 +1,5 @@
 import 'dart:js_interop';
-import 'dart:ui' show Rect;
+import 'dart:ui' show Offset, Rect;
 import 'dart:ui_web' as ui_web;
 
 import 'package:flutter_monaco/src/platform/web_interaction_coordinator.dart';
@@ -55,17 +55,21 @@ class MonacoOverlayDomShield {
 
   /// Reposition / resize the shield to match a new overlay rect.
   ///
-  /// Pass [Rect.zero] to hide the shield without disposing it. While the
+  /// [rect] is in the Flutter view's global (logical) coordinates. Pass
+  /// [Rect.zero] to hide the shield without disposing it. While the
   /// pointer is hovering or pressing the shield, the coordinator keeps
   /// intersecting Monaco iframes locked.
   void update(Rect rect) {
     if (_disposed) return;
 
-    _rect = rect;
     final element = _element;
-    if (element == null) return;
+    if (element == null) {
+      _rect = rect;
+      return;
+    }
 
     if (rect.isEmpty || rect.width <= 0 || rect.height <= 0) {
+      _rect = rect;
       element.style.pointerEvents = 'none';
       element.style.left = '-10000px';
       element.style.top = '-10000px';
@@ -75,11 +79,17 @@ class MonacoOverlayDomShield {
       return;
     }
 
+    // The shield is viewport-fixed and the coordinator compares it with
+    // iframe viewport rects, but Flutter's global coordinates start at the
+    // view's origin, which is not the viewport origin when the app is
+    // embedded into a larger page (element embedding, multi-view).
+    final viewportRect = rect.shift(_viewViewportOrigin());
+    _rect = viewportRect;
     element.style.pointerEvents = 'auto';
-    element.style.left = '${rect.left}px';
-    element.style.top = '${rect.top}px';
-    element.style.width = '${rect.width}px';
-    element.style.height = '${rect.height}px';
+    element.style.left = '${viewportRect.left}px';
+    element.style.top = '${viewportRect.top}px';
+    element.style.width = '${viewportRect.width}px';
+    element.style.height = '${viewportRect.height}px';
 
     if (_hovering || _pointerDown) {
       _lockIntersectingEditors();
@@ -102,6 +112,17 @@ class MonacoOverlayDomShield {
     _element?.remove();
     _element = null;
     _host = null;
+  }
+
+  /// The viewport position of the Flutter view's logical origin: the
+  /// `<flutter-view>` element the engine renders into, or the host element
+  /// when the engine's DOM is unknown.
+  Offset _viewViewportOrigin() {
+    final host = _host;
+    if (host == null) return Offset.zero;
+    final view = host.querySelector('flutter-view') ?? host;
+    final bounds = view.getBoundingClientRect();
+    return Offset(bounds.left, bounds.top);
   }
 
   void _createElement() {
