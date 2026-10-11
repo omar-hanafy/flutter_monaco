@@ -329,6 +329,59 @@ class FakePlatformWebViewController implements PlatformWebViewController {
     );
   }
 
+  /// Emits only the `pageReady` lifecycle: a (re)loaded page shell whose
+  /// editor does not exist until `page.boot` creates it. After a first
+  /// handshake this is how the protocol detects a page reload.
+  void emitPageReady({String monacoVersion = 'test'}) {
+    tryEmitToChannel(
+      'flutterChannel',
+      jsonEncode({
+        'v': 3,
+        'kind': 'lifecycle',
+        'name': 'pageReady',
+        'protocolVersion': 3,
+        'monacoVersion': monacoVersion,
+        'capabilities': ['lsp', 'diff'],
+      }),
+    );
+  }
+
+  /// Emits a bare lifecycle envelope such as `ready` or `fatal`.
+  void emitLifecycle(String name, {Map<String, Object?>? error}) {
+    tryEmitToChannel(
+      'flutterChannel',
+      jsonEncode({
+        'v': 3,
+        'kind': 'lifecycle',
+        'name': name,
+        'error': ?error,
+      }),
+    );
+  }
+
+  /// Answers the dispatch with [id] by hand (for tests that set
+  /// [autoRespond] to false): a success with [value], or a JavaScript error
+  /// when [errorMessage] is set.
+  void respondTo(String id, {Object? value, String? errorMessage}) {
+    tryEmitToChannel(
+      'flutterChannel',
+      jsonEncode({
+        'v': 3,
+        'kind': 'response',
+        'id': id,
+        'ok': errorMessage == null,
+        if (errorMessage == null) 'value': value,
+        if (errorMessage != null)
+          'error': {'name': 'Error', 'message': errorMessage},
+      }),
+    );
+  }
+
+  /// The methods of every dispatched command, in order.
+  List<String> get dispatchedMethods => [
+    for (final call in dispatched) call['method']! as String,
+  ];
+
   /// Emits the pageReady + ready lifecycle pair (a booted page).
   void emitReadyLifecycle({String monacoVersion = 'test'}) {
     tryEmitToChannel(

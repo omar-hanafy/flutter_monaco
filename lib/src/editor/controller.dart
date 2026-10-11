@@ -38,6 +38,22 @@ class MonacoController {
   /// [_startBoot] runs.
   Map<String, Object?>? _bootPayload;
 
+  /// Page-reload recovery gate, awaited by [_ensureReady].
+  ///
+  /// Non-null from the moment a reload is picked up until the re-boot and
+  /// the registration replay finished. A reloaded page shell only knows
+  /// `page.boot` and `page.eval` until its editor exists, so commands issued
+  /// in that window queue here (FIFO, like pre-ready commands) instead of
+  /// reaching a page that would answer "Unknown method". Recovery itself
+  /// talks to the protocol directly and is never gated. A failed recovery
+  /// leaves the gate completed with a [MonacoPageReloadedError] so later
+  /// commands fail the same way until a newer reload recovers the editor.
+  Completer<void>? _recoveryGate;
+
+  /// Incremented per recovery attempt; a superseded attempt never settles
+  /// the gate that the newest attempt now owns.
+  int _recoveryGeneration = 0;
+
   /// The EFFECTIVE interaction state ([_baseInteractionEnabled] with no
   /// active [runWithInteractionDisabled] scopes).
   bool _interactionEnabled = true;
@@ -95,8 +111,10 @@ class MonacoController {
   /// readiness.
   Future<void> get whenReady => _onReady.future;
 
-  /// Returns `true` if the editor has finished initializing successfully.
-  bool get isReady => _onReady.isCompleted && _readyCompletedOk;
+  /// Returns `true` if the editor has finished initializing successfully
+  /// and is not recovering from a page reload (see [onPageReloaded]).
+  bool get isReady =>
+      _onReady.isCompleted && _readyCompletedOk && _recoveryGate == null;
   bool _readyCompletedOk = false;
 
   /// What the loaded page can do, from the protocol handshake.
@@ -181,9 +199,12 @@ class MonacoController {
   /// * LSP connections: they died with the page - disconnect and reconnect.
   ///
   /// Commands that were in flight when the page reloaded fail with
-  /// [MonacoPageReloadedError]; retry them from here. If the re-boot itself
-  /// fails, the failure is delivered as an error event on this stream and
-  /// the editor stays unusable.
+  /// [MonacoPageReloadedError]; retry them from here. Commands issued while
+  /// the controller recovers wait for the recovery (in issue order) and then
+  /// run against the re-booted editor. If the re-boot itself fails, the
+  /// failure is delivered as an error event on this stream, the editor stays
+  /// unusable, and waiting and later commands fail with
+  /// [MonacoPageReloadedError].
   Stream<void> get onPageReloaded => _pageReloaded.stream;
 
   /// Creates a new [MonacoController] and boots the editor.
@@ -340,6 +361,7 @@ class MonacoController {
   /// `pageReady`, `page.boot` carries [bootOptions] and [bootInitialText],
   /// and readiness follows the fake's `ready` lifecycle. Use this to
   /// exercise flows that depend on boot state, like page-reload recovery.
+  /// [readyTimeout] bounds that boot like [create]'s.
   @visibleForTesting
   static Future<MonacoController> createForTesting({
     required PlatformWebViewController webViewController,
@@ -348,6 +370,7 @@ class MonacoController {
     bool runBoot = false,
     EditorOptions? bootOptions,
     String? bootInitialText,
+    Duration readyTimeout = const Duration(seconds: 20),
   }) async {
     final protocol = MonacoProtocol(webView: webViewController);
 
@@ -364,7 +387,7 @@ class MonacoController {
         options: bootOptions,
         initialText: bootInitialText,
         page: const MonacoPageConfig(),
-        readyTimeout: const Duration(seconds: 20),
+        readyTimeout: readyTimeout,
       );
     } else if (markReady) {
       controller.completeReadyForTesting();
@@ -434,15 +457,25 @@ class MonacoController {
   /// still `isCompleted`, so an isCompleted fast path would let commands skip
   /// the boot error and enter the protocol of a dead page. Every command
   /// after a failed boot must keep rethrowing the ORIGINAL boot error.
-  Future<void> _ensureReady() {
+  ///
+  /// After readiness, a page-reload recovery in progress ([_recoveryGate])
+  /// holds the command until the re-booted editor accepts commands again.
+  Future<void> _ensureReady() async {
     if (_disposed) {
-      return Future.error(
-        const MonacoDisposedError(
-          message: 'MonacoController has been disposed.',
-        ),
+      throw const MonacoDisposedError(
+        message: 'MonacoController has been disposed.',
       );
     }
-    return _onReady.future;
+    await _onReady.future;
+    // Loop: a newer reload can open a fresh gate while this one settles.
+    for (var gate = _recoveryGate; gate != null; gate = _recoveryGate) {
+      await gate.future;
+    }
+    if (_disposed) {
+      throw const MonacoDisposedError(
+        message: 'MonacoController has been disposed.',
+      );
+    }
   }
 
   /// Dispatches a protocol command after readiness; maps a JavaScript
@@ -873,10 +906,12 @@ class MonacoController {
   ///
   /// Replays the original boot payload, awaits the reloaded page's ready
   /// lifecycle, re-registers Dart-side completion providers and custom
-  /// actions, then announces the recovery on [onPageReloaded]. A newer
-  /// reload arriving mid-recovery fails this attempt's commands with
-  /// [MonacoPageReloadedError] and runs its own recovery; a genuine boot
-  /// failure is surfaced as an error on [onPageReloaded].
+  /// actions, then opens the command gate and announces the recovery on
+  /// [onPageReloaded]. A newer reload arriving mid-recovery fails this
+  /// attempt's commands with [MonacoPageReloadedError] and runs its own
+  /// recovery, which takes over the gate; a genuine boot failure fails the
+  /// gate with [MonacoPageReloadedError] and is surfaced as an error on
+  /// [onPageReloaded].
   Future<void> _recoverFromPageReload(MonacoPageReload reload) async {
     if (_disposed) return;
     final bootPayload = _bootPayload;
@@ -890,21 +925,63 @@ class MonacoController {
       return;
     }
     debugPrint('[MonacoController] Page reloaded; re-booting the editor.');
+    final generation = ++_recoveryGeneration;
+    final gate = _openRecoveryGate();
     try {
       _capabilities = MonacoCapabilities.fromHandshake(reload.handshake);
       await _protocol.invoke('page.boot', bootPayload, timeout: null);
       await reload.editorReady;
       await _replayRegistrations();
-      if (_disposed) return;
+      if (_disposed || generation != _recoveryGeneration) return;
+      _recoveryGate = null;
+      gate.complete();
       _pageReloaded.add(null);
-    } on MonacoPageReloadedError {
-      // Superseded by an even newer reload; its recovery takes over.
     } on MonacoDisposedError {
-      // Disposed mid-recovery; nothing to announce.
+      // Disposed mid-recovery; dispose settles the gate.
+    } on MonacoPageReloadedError catch (e, st) {
+      // Normally superseded by an even newer reload whose recovery takes
+      // over the gate. A reloaded page that cannot be re-booted (protocol
+      // skew) interrupts this attempt without starting a new one; let the
+      // newer recovery (if any) register before deciding.
+      await Future<void>.delayed(Duration.zero);
+      if (_disposed || generation != _recoveryGeneration) return;
+      _failRecovery(gate, e, st);
     } catch (e, st) {
       debugPrint('[MonacoController] Page reload recovery failed: $e');
-      if (!_disposed) _pageReloaded.addError(e, st);
+      if (_disposed || generation != _recoveryGeneration) return;
+      _failRecovery(gate, e, st);
     }
+  }
+
+  /// Returns the pending recovery gate, opening a new one when the page was
+  /// healthy or the previous recovery failed.
+  Completer<void> _openRecoveryGate() {
+    final current = _recoveryGate;
+    if (current != null && !current.isCompleted) return current;
+    final gate = Completer<void>();
+    // Settled with an error when recovery fails or the controller is
+    // disposed, possibly while no command waits on it.
+    gate.future.ignore();
+    _recoveryGate = gate;
+    return gate;
+  }
+
+  /// Fails waiting and later commands with [MonacoPageReloadedError] and
+  /// reports [error] on [onPageReloaded]. The failed gate stays in place
+  /// until a newer reload recovers the editor.
+  void _failRecovery(Completer<void> gate, Object error, StackTrace st) {
+    if (!gate.isCompleted) {
+      gate.completeError(
+        MonacoPageReloadedError(
+          message:
+              'The Monaco page reloaded and the editor could not be '
+              'recovered: $error',
+          operation: 'page.boot',
+        ),
+        st,
+      );
+    }
+    _pageReloaded.addError(error, st);
   }
 
   /// Re-registers every live completion provider and custom action on the
@@ -1388,6 +1465,15 @@ class MonacoController {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+    // Commands waiting for a page-reload recovery must not wait forever.
+    final gate = _recoveryGate;
+    if (gate != null && !gate.isCompleted) {
+      gate.completeError(
+        const MonacoDisposedError(
+          message: 'MonacoController disposed while recovering a page reload.',
+        ),
+      );
+    }
     // LSP connections must come down before the WebView: closing them fires
     // bridged-transport onClose callbacks (e.g. killing server processes)
     // and finalizes connection state streams.

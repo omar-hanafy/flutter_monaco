@@ -158,6 +158,167 @@ void main() {
     });
   });
 
+  group('MonacoController commands during page-reload recovery', () {
+    late FakePlatformWebViewController webview;
+    late MonacoController controller;
+
+    setUp(() async {
+      webview = FakePlatformWebViewController();
+      controller = await MonacoController.createForTesting(
+        webViewController: webview,
+        markReady: false,
+        runBoot: true,
+        bootInitialText: 'boot text',
+      );
+      await controller.whenReady;
+      // The reloaded page is driven by hand from here on.
+      webview.autoRespond = false;
+    });
+
+    tearDown(() {
+      controller.dispose();
+    });
+
+    /// The id of the last dispatch of [method].
+    String lastIdOf(String method) =>
+        webview.dispatched.lastWhere((call) => call['method'] == method)['id']!
+            as String;
+
+    test(
+      'commands issued while the reloaded page has no editor are queued '
+      'until the re-boot and replay finish, then run in FIFO order',
+      () async {
+        webview.autoRespond = true;
+        await controller.registerCompletions(
+          id: 'kept',
+          languages: [MonacoLanguage.dart],
+          provider: (_) async => const CompletionList(suggestions: []),
+        );
+        webview.autoRespond = false;
+
+        webview.emitPageReady();
+        await pumpMicrotasks();
+        expect(webview.dispatchedMethods.last, 'page.boot');
+        expect(controller.isReady, isFalse);
+
+        // An autosave and a follow-up edit land while the page has no editor.
+        final first = controller.document.getText();
+        final second = controller.document.setText('after reload');
+        await pumpMicrotasks();
+        expect(
+          webview.dispatchedMethods.where((m) => m.startsWith('document.')),
+          isEmpty,
+          reason:
+              'editor commands are only registered once the re-boot '
+              'reports ready',
+        );
+
+        webview.respondTo(lastIdOf('page.boot'));
+        webview.emitLifecycle('ready');
+        await pumpMicrotasks();
+        List<String> afterBoot() => webview.dispatchedMethods.sublist(
+          webview.dispatchedMethods.lastIndexOf('page.boot') + 1,
+        );
+        // The owned registration is replayed first; app commands still wait.
+        expect(afterBoot(), ['completions.register']);
+        expect(controller.isReady, isFalse);
+
+        webview.respondTo(lastIdOf('completions.register'));
+        await pumpMicrotasks();
+        expect(afterBoot(), [
+          'completions.register',
+          'document.getText',
+          'document.setText',
+        ]);
+        expect(controller.isReady, isTrue);
+
+        webview.respondTo(lastIdOf('document.getText'), value: 'boot text');
+        webview.respondTo(lastIdOf('document.setText'));
+        expect(await first, 'boot text');
+        await second;
+      },
+    );
+
+    test('a failed recovery fails queued commands with '
+        'MonacoPageReloadedError', () async {
+      final reloadErrors = <Object>[];
+      controller.onPageReloaded.listen((_) {}, onError: reloadErrors.add);
+
+      webview.emitPageReady();
+      await pumpMicrotasks();
+      final queued = controller.document.getText();
+      webview.respondTo(lastIdOf('page.boot'));
+      webview.emitLifecycle(
+        'fatal',
+        error: {'name': 'Error', 'message': 'editor creation failed'},
+      );
+
+      await expectLater(queued, throwsA(isA<MonacoPageReloadedError>()));
+      await pumpMicrotasks();
+      expect(reloadErrors.single, isA<MonacoJavaScriptError>());
+      expect(controller.isReady, isFalse);
+      // Later commands fail the same way instead of reaching a page whose
+      // editor never came back.
+      await expectLater(
+        controller.getSelection(),
+        throwsA(isA<MonacoPageReloadedError>()),
+      );
+      expect(
+        webview.dispatchedMethods.where(
+          (m) => m.startsWith('document.') || m.startsWith('editor.'),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('a skewed reload that interrupts recovery fails queued commands '
+        'instead of leaving them waiting', () async {
+      webview.emitPageReady();
+      await pumpMicrotasks();
+      final queued = controller.document.getText();
+      // The page reloads again, now speaking an incompatible protocol: the
+      // in-flight re-boot fails and no new recovery can start.
+      webview.emitToChannel(
+        'flutterChannel',
+        '{"v":3,"kind":"lifecycle","name":"pageReady","protocolVersion":2,'
+            '"monacoVersion":"test","capabilities":[]}',
+      );
+
+      await expectLater(
+        queued.timeout(const Duration(seconds: 2)),
+        throwsA(isA<MonacoPageReloadedError>()),
+      );
+    });
+
+    test('a later reload recovers a previously failed recovery', () async {
+      webview.emitPageReady();
+      await pumpMicrotasks();
+      webview.respondTo(lastIdOf('page.boot'));
+      webview.emitLifecycle('fatal', error: {'message': 'boom'});
+      await pumpMicrotasks();
+      expect(controller.isReady, isFalse);
+
+      webview.autoRespond = true;
+      webview.emitPageReady();
+      await pumpMicrotasks();
+      expect(controller.isReady, isTrue);
+      await controller.document.setText('works again');
+      expect(webview.dispatchedMethods.last, 'document.setText');
+    });
+
+    test('dispose during recovery fails queued commands with '
+        'MonacoDisposedError', () async {
+      webview.emitPageReady();
+      await pumpMicrotasks();
+      final queued = controller.document.getText();
+      await pumpMicrotasks();
+
+      controller.dispose();
+
+      await expectLater(queued, throwsA(isA<MonacoDisposedError>()));
+    });
+  });
+
   group('MonacoController reload without a boot payload', () {
     test(
       'a synthetic double-ready on a markReady controller is inert',
