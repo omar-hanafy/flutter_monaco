@@ -32,6 +32,19 @@ window.__FMB.editorApi = function (ctx) {
                   }
                   return model;
                 };
+                // Programmatic edits as ONE undo step of their own.
+                // model.applyEdits bypasses the undo stack, so a later undo
+                // replays stale inverse edits over the shifted text and
+                // corrupts the document; pushEditOperations alone would
+                // merge into the user's still-open typing element. The
+                // surrounding stack elements close that element and this
+                // one. Model-level, so pinned inactive documents get the
+                // same undo semantics as the attached one.
+                const applyUndoableEdits = (model, edits) => {
+                  model.pushStackElement();
+                  model.pushEditOperations([], edits, () => null);
+                  model.pushStackElement();
+                };
 
                 window.flutterMonaco = {
 
@@ -201,8 +214,8 @@ window.__FMB.editorApi = function (ctx) {
                   },
 
                   // Edits
-                  applyEdits: (edits, opts) => {
-                    requireModel().applyEdits(edits || [], opts || {});
+                  applyEdits: (edits) => {
+                    applyUndoableEdits(requireModel(), edits || []);
                     return true;
                   },
 
@@ -282,7 +295,7 @@ window.__FMB.editorApi = function (ctx) {
                       9999
                     );
                     const edits = matches.map(mm => ({ range: mm.range, text: repl }));
-                    m.pushEditOperations([], edits, () => null);
+                    applyUndoableEdits(m, edits);
                     return edits.length;
                   },
 
@@ -501,7 +514,7 @@ window.__FMB.editorApi = function (ctx) {
                   });
                   FM.register('document.getLanguage', (p) => modelLanguage(resolveModel(p.uri)));
                   FM.register('document.applyEdits', (p) => {
-                    resolveModel(p.uri).applyEdits(p.edits || []);
+                    applyUndoableEdits(resolveModel(p.uri), p.edits || []);
                     return true;
                   });
                   FM.register('document.findMatches', (p) => {
@@ -517,7 +530,7 @@ window.__FMB.editorApi = function (ctx) {
                       { isRegex: p.isRegex, matchCase: p.matchCase, wholeWord: p.wholeWord,
                         searchOnlyEditableRange: p.searchOnlyEditableRange }, 9999);
                     const edits = matches.map((mm) => ({ range: mm.range, text: p.replacement }));
-                    model.pushEditOperations([], edits, () => null);
+                    applyUndoableEdits(model, edits);
                     return edits.length;
                   });
                   FM.register('document.getWordAt', (p) => {

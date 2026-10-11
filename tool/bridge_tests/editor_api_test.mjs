@@ -249,3 +249,59 @@ test('diff.getState reports an uncomputed diff as null, not zero', async () => {
     'an uncomputed diff must be distinguishable from zero changes',
   );
 });
+
+// ---- programmatic edits and the undo stack ----
+
+const range = (startLineNumber, startColumn, endLineNumber, endColumn) => ({
+  startLineNumber,
+  startColumn,
+  endLineNumber,
+  endColumn,
+});
+
+test('document.applyEdits is one undoable step after user typing', async () => {
+  const page = bootEditorPage();
+  const model = page.bootModel;
+  model.setValue('hello');
+  // Typing rides pushEditOperations and leaves its undo element open.
+  model.pushEditOperations(
+    [],
+    [{ range: range(1, 6, 1, 6), text: ' abc' }],
+    () => null,
+  );
+
+  const response = await dispatch(page, 'document.applyEdits', {
+    uri: null,
+    edits: [{ range: range(1, 1, 1, 1), text: 'XYZ-' }],
+  });
+  assert.equal(response.ok, true);
+  assert.equal(response.value, true, 'the return contract stays true');
+  assert.equal(model.getValue(), 'XYZ-hello abc');
+
+  model.undo();
+  assert.equal(
+    model.getValue(),
+    'hello abc',
+    'undo must revert exactly the programmatic edit',
+  );
+  model.undo();
+  assert.equal(model.getValue(), 'hello');
+  model.redo();
+  model.redo();
+  assert.equal(model.getValue(), 'XYZ-hello abc');
+});
+
+test('document.applyEdits on an inactive pinned document is undoable', async () => {
+  const page = bootEditorPage();
+  await dispatch(page, 'docs.open', { text: 'abc', uri: 'file:///p.txt' });
+  const model = page.models.get('file:///p.txt');
+
+  await dispatch(page, 'document.applyEdits', {
+    uri: 'file:///p.txt',
+    edits: [{ range: range(1, 4, 1, 4), text: 'd' }],
+  });
+  assert.equal(model.getValue(), 'abcd');
+  model.undo();
+  assert.equal(model.getValue(), 'abc');
+});
+
