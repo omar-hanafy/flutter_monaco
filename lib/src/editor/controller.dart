@@ -1393,9 +1393,12 @@ class MonacoController {
   /// ```
   ///
   /// Returns [defaultValue] (default `null`) when the expression returns
-  /// `undefined` or `null`. Throws a [MonacoProtocolError] when the value
-  /// cannot be converted to [T]; JavaScript execution errors propagate as
-  /// [MonacoJavaScriptError].
+  /// `undefined` or `null`. Numbers convert between `int` and `double`, and
+  /// numbers and booleans convert to `String`. Throws a
+  /// [MonacoProtocolError] when the value cannot be converted to [T] (for
+  /// example an object or array requested as `String`; return
+  /// `JSON.stringify(...)` from the expression for its JSON text);
+  /// JavaScript execution errors propagate as [MonacoJavaScriptError].
   ///
   /// ## Security
   ///
@@ -1428,7 +1431,11 @@ class MonacoController {
     // Number normalization: platforms and JSON round-trips blur int/double.
     if (T == int && result is num) return result.toInt() as T;
     if (T == double && result is num) return result.toDouble() as T;
-    if (T == String) return result.toString() as T;
+    // Scalars only: a map or list has no faithful string form here
+    // (Dart's toString is not JSON), so it is a conversion failure.
+    if (T == String && (result is num || result is bool)) {
+      return result.toString() as T;
+    }
     throw MonacoProtocolError(
       operation: 'page.eval',
       message:

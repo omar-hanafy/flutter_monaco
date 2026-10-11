@@ -1982,6 +1982,40 @@ void main() {
         },
       );
 
+      for (final MapEntry(key: kind, :value) in <String, Object>{
+        'map': {'count': 2},
+        'list': [1, 2, 3],
+      }.entries) {
+        test('throws MonacoProtocolError for a $kind result '
+            'when T is String', () async {
+          final bundle = await _createBundle();
+          bundle.webview.injectCommandSuccess('page.eval', value: value);
+
+          await expectLater(
+            bundle.controller.evaluateJavaScript<String>('someObject'),
+            throwsA(
+              isA<MonacoProtocolError>().having(
+                (e) => e.operation,
+                'operation',
+                'page.eval',
+              ),
+            ),
+          );
+        });
+      }
+
+      test('converts numeric and boolean scalars when T is String', () async {
+        final bundle = await _createBundle();
+        bundle.webview.injectCommandSuccess('page.eval', value: 42);
+        bundle.webview.injectCommandSuccess('page.eval', value: true);
+
+        expect(await bundle.controller.evaluateJavaScript<String>('42'), '42');
+        expect(
+          await bundle.controller.evaluateJavaScript<String>('true'),
+          'true',
+        );
+      });
+
       test('returns maps', () async {
         final bundle = await _createBundle();
         bundle.webview.injectCommandSuccess('page.eval', value: {'count': 2});
