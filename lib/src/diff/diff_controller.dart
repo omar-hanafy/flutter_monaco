@@ -54,6 +54,10 @@ class MonacoDiffController {
   /// reload recovers the editor.
   Completer<void>? _recoveryGate;
   int _recoveryGeneration = 0;
+
+  /// The boot deadline ([create]'s `readyTimeout`), which also bounds each
+  /// page-reload re-boot so commands waiting on the gate cannot hang.
+  Duration _readyTimeout = MonacoDefaults.readyTimeout;
   StreamSubscription<MonacoPageReload>? _reloadSubscription;
 
   /// Completes when the diff editor is fully initialized and ready to
@@ -78,7 +82,8 @@ class MonacoDiffController {
   /// `MonacoDiffEditor` widget re-applies its own texts and configuration);
   /// commands that were in flight failed with [MonacoPageReloadedError], and
   /// commands issued during the recovery wait for it and then run in issue
-  /// order. A failed recovery surfaces as an error event on this stream, and
+  /// order. A failed recovery (including a re-boot that misses [create]'s
+  /// `readyTimeout`) surfaces as an error event on this stream, and
   /// waiting and later commands fail with [MonacoPageReloadedError].
   Stream<void> get onPageReloaded => _pageReloaded.stream;
 
@@ -98,8 +103,20 @@ class MonacoDiffController {
     final generation = ++_recoveryGeneration;
     final gate = _openRecoveryGate();
     try {
-      await _protocol.invoke('page.boot', bootPayload, timeout: null);
-      await reload.editorReady;
+      final readyTimeout = _readyTimeout;
+      await () async {
+        await _protocol.invoke('page.boot', bootPayload, timeout: null);
+        await reload.editorReady;
+      }().timeout(
+        readyTimeout,
+        onTimeout: () => throw MonacoTimeoutError(
+          message:
+              'The reloaded Monaco diff editor did not report ready in '
+              '${readyTimeout.inSeconds} seconds.',
+          timeout: readyTimeout,
+          operation: 'boot',
+        ),
+      );
       if (_disposed || generation != _recoveryGeneration) return;
       _recoveryGate = null;
       gate.complete();
@@ -216,6 +233,7 @@ class MonacoDiffController {
   }) {
     final bootOptions = MonacoDefaults.editorOptions.merge(options);
     final bootTheme = bootOptions.theme ?? MonacoDefaults.darkTheme;
+    _readyTimeout = readyTimeout;
     _onReady.future.ignore();
     unawaited(() async {
       try {

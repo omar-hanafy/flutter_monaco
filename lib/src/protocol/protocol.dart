@@ -233,6 +233,22 @@ class MonacoProtocol {
           // with the new page.
           _failPendingForReload();
           _lastEventSeq = 0;
+          // The previous reload's editor died with its document too: a
+          // recovery still waiting for it must fail instead of waiting for a
+          // `ready` that page can no longer post (a skewed page is never
+          // booted, so nothing else would ever settle it).
+          final previousReloadReady = _reloadEditorReady;
+          _reloadEditorReady = null;
+          if (previousReloadReady != null && !previousReloadReady.isCompleted) {
+            previousReloadReady.completeError(
+              const MonacoPageReloadedError(
+                message:
+                    'The Monaco page reloaded again before the re-booted '
+                    'editor reported ready.',
+                operation: 'page.boot',
+              ),
+            );
+          }
         }
         if (handshake.protocolVersion != kMonacoProtocolVersion) {
           final error = MonacoProtocolError(

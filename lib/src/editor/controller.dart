@@ -55,6 +55,10 @@ class MonacoController {
   /// the gate that the newest attempt now owns.
   int _recoveryGeneration = 0;
 
+  /// The boot deadline ([create]'s `readyTimeout`), which also bounds each
+  /// page-reload re-boot so commands waiting on the gate cannot hang.
+  Duration _readyTimeout = MonacoDefaults.readyTimeout;
+
   /// The EFFECTIVE interaction state ([_baseInteractionEnabled] with no
   /// active [runWithInteractionDisabled] scopes).
   bool _interactionEnabled = true;
@@ -202,7 +206,8 @@ class MonacoController {
   /// Commands that were in flight when the page reloaded fail with
   /// [MonacoPageReloadedError]; retry them from here. Commands issued while
   /// the controller recovers wait for the recovery (in issue order) and then
-  /// run against the re-booted editor. If the re-boot itself fails, the
+  /// run against the re-booted editor. If the re-boot itself fails (or does
+  /// not report ready within [create]'s `readyTimeout`), the
   /// failure is delivered as an error event on this stream, the editor stays
   /// unusable, and waiting and later commands fail with
   /// [MonacoPageReloadedError].
@@ -298,6 +303,7 @@ class MonacoController {
     final bootTheme = bootOptions.theme ?? MonacoDefaults.darkTheme;
     // Boot failures must reach callers through [whenReady] (and the commands
     // gated on it), never as an unhandled zone error when nobody awaits it.
+    _readyTimeout = readyTimeout;
     _onReady.future.ignore();
     unawaited(() async {
       try {
@@ -928,8 +934,20 @@ class MonacoController {
     final gate = _openRecoveryGate();
     try {
       _capabilities = MonacoCapabilities.fromHandshake(reload.handshake);
-      await _protocol.invoke('page.boot', bootPayload, timeout: null);
-      await reload.editorReady;
+      final readyTimeout = _readyTimeout;
+      await () async {
+        await _protocol.invoke('page.boot', bootPayload, timeout: null);
+        await reload.editorReady;
+      }().timeout(
+        readyTimeout,
+        onTimeout: () => throw MonacoTimeoutError(
+          message:
+              'The reloaded Monaco editor did not report ready in '
+              '${readyTimeout.inSeconds} seconds.',
+          timeout: readyTimeout,
+          operation: 'boot',
+        ),
+      );
       await _replayRegistrations();
       if (_disposed || generation != _recoveryGeneration) return;
       _recoveryGate = null;

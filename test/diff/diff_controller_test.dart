@@ -381,4 +381,36 @@ void main() {
       await expectLater(queued, throwsA(isA<MonacoDisposedError>()));
     });
   });
+
+  testWidgets('MonacoDiffController fails queued commands when a re-boot '
+      'misses the boot deadline', (tester) async {
+    final webview = FakePlatformWebViewController();
+    final controller = await MonacoDiffController.createForTesting(
+      webViewController: webview,
+      runBoot: true,
+      readyTimeout: const Duration(seconds: 1),
+    );
+    await tester.pump();
+    expect(controller.isReady, isTrue);
+
+    webview.autoRespond = false;
+    webview.emitPageReady();
+    await tester.pump();
+    final boot = webview.dispatched.lastWhere(
+      (call) => call['method'] == 'page.boot',
+    );
+    webview.respondTo(boot['id']! as String);
+    Object? queuedError;
+    controller.getModifiedText().then<void>(
+      (_) {},
+      onError: (Object e) {
+        queuedError = e;
+      },
+    );
+
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+    expect(queuedError, isA<MonacoPageReloadedError>());
+    controller.dispose();
+  });
 }
