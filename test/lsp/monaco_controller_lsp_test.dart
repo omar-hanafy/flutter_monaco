@@ -566,6 +566,28 @@ void main() {
         throwsA(isA<MonacoDisposedError>()),
       );
     });
+
+    test('connect after dispose still releases a bridged transport', () async {
+      controller.dispose();
+      var onCloseCalls = 0;
+      await expectLater(
+        controller.connectLanguageServer(
+          id: 'late-bridged',
+          transport: LspBridgedTransport(
+            // Never listened to: the connect fails before the pump starts.
+            fromServer: const Stream<Map<String, Object?>>.empty(),
+            toServer: (_) {},
+            onClose: () async => onCloseCalls++,
+          ),
+        ),
+        throwsA(isA<MonacoDisposedError>()),
+      );
+      expect(
+        onCloseCalls,
+        1,
+        reason: 'a failed connect has released the server process',
+      );
+    });
   });
 
   group('bridged transport hardening', () {

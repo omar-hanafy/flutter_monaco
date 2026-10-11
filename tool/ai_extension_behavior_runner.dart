@@ -980,18 +980,19 @@ void _seedBridgeMismatch(Directory fixture) {
   final controller = File.fromUri(
     fixture.uri.resolve('lib/src/editor/controller.dart'),
   );
-  const anchor = '''  Future<MonacoTheme?> getTheme() async {
-    final result = await _invoke('editor.getTheme', {});
-    return result is String && result.isNotEmpty ? MonacoTheme(result) : null;
-  }
+  // The fixture command goes in front of getTheme's doc comment, a stable
+  // anchor that does not depend on the method body.
+  const anchor =
+      '''  /// Returns the theme the editor last applied through this package.
 ''';
-  const mismatch = '''$anchor
-  /// Evaluation fixture: the JavaScript handler and harness are missing.
+  const mismatch =
+      '''  /// Evaluation fixture: the JavaScript handler and harness are missing.
   Future<String> evalFixturePing() async {
     final result = await _invoke('editor.evalFixturePing', {});
     return result! as String;
   }
-''';
+
+$anchor''';
   final source = controller.readAsStringSync();
   if (!source.contains(anchor)) {
     throw StateError('Could not seed the bridge mismatch fixture.');

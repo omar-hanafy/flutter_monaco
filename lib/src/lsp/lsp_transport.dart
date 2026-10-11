@@ -171,12 +171,10 @@ final class LspBridgedTransport extends LspTransport {
   /// page reload. If `connectLanguageServer` throws, this callback has
   /// already completed by the time the error reaches the caller, whatever
   /// the cause (invalid or duplicate id, an unsupported reconnect policy,
-  /// a failed or timed-out handshake, disposal or a page reload during
-  /// connect). The only exception is a call that fails while waiting for
-  /// the editor to become ready (the controller was disposed or the editor
-  /// failed to boot): the transport was never used, this callback does not
-  /// run, and the caller still owns the server. `LspServerProcess.stop` is
-  /// idempotent, so calling it after any failed connect is always safe.
+  /// a failed or timed-out handshake, a controller that was disposed or
+  /// whose editor failed to boot, or a page reload during connect).
+  /// `LspServerProcess.stop` is idempotent, so calling it again after a
+  /// failed connect is always safe.
   final Future<void> Function()? onClose;
 
   @override

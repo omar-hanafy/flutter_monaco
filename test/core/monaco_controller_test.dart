@@ -256,7 +256,7 @@ void main() {
         final bundle = await _createBundle();
         bundle.webview.injectCommandFailure(
           'editor.getTheme',
-          message: 'monaco.editor.getTheme is not a function',
+          message: 'Monaco editor is not ready.',
         );
         await expectLater(
           bundle.controller.getTheme(),
@@ -268,6 +268,15 @@ void main() {
         final bundle = await _createBundle();
         bundle.webview.injectCommandSuccess('editor.getTheme', value: '');
         expect(await bundle.controller.getTheme(), isNull);
+      });
+
+      test('getTheme rejects a malformed result', () async {
+        final bundle = await _createBundle();
+        bundle.webview.injectCommandSuccess('editor.getTheme', value: 42);
+        await expectLater(
+          bundle.controller.getTheme(),
+          throwsA(isA<MonacoProtocolError>()),
+        );
       });
 
       test(
@@ -498,6 +507,18 @@ void main() {
         expect(selection.startColumn, 2);
         expect(selection.endLine, 3);
         expect(selection.endColumn, 4);
+      });
+
+      test('getSelection rejects a malformed result', () async {
+        final bundle = await _createBundle();
+        bundle.webview.injectCommandSuccess(
+          'editor.getSelection',
+          value: 'not a selection',
+        );
+        await expectLater(
+          bundle.controller.getSelection(),
+          throwsA(isA<MonacoProtocolError>()),
+        );
       });
 
       test('getSelection rethrows bridge errors', () async {
@@ -1259,6 +1280,15 @@ void main() {
         expect(pos, isNotNull);
         expect(pos!.line, 5);
         expect(pos.column, 10);
+      });
+
+      test('getCursorPosition rejects a malformed result', () async {
+        final bundle = await _createBundle();
+        bundle.webview.injectCommandSuccess('editor.getCursor', value: [5, 10]);
+        await expectLater(
+          bundle.controller.getCursorPosition(),
+          throwsA(isA<MonacoProtocolError>()),
+        );
       });
 
       test('setCursorPosition calls JS with coordinates', () async {

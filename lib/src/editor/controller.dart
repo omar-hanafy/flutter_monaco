@@ -523,15 +523,24 @@ class MonacoController {
     await _invoke('editor.setTheme', {'theme': theme.id});
   }
 
-  /// Returns the theme currently active in the editor.
+  /// Returns the theme the editor last applied through this package.
   ///
-  /// Reads the live value from Monaco's runtime rather than caching what
-  /// Dart most recently sent. Returns `null` when Monaco can't report a
-  /// theme (e.g. on engine versions that don't expose `editor.getTheme()`).
-  /// Bridge failures throw a [MonacoException].
+  /// Monaco has no public theme getter, so the page tracks the boot theme
+  /// and then every [setTheme] and [updateOptions] theme. The id is not
+  /// checked against the registered themes: for an id that was never
+  /// defined Monaco renders `vs` while this still reports the requested
+  /// id, and a theme changed from [runJavaScript] or [evaluateJavaScript]
+  /// is not observed. Returns `null` when the page reports no theme.
+  /// Throws a [MonacoProtocolError] on a malformed result; other bridge
+  /// failures throw a [MonacoException].
   Future<MonacoTheme?> getTheme() async {
     final result = await _invoke('editor.getTheme', {});
-    return result is String && result.isNotEmpty ? MonacoTheme(result) : null;
+    if (result == null || result == '') return null;
+    if (result is String) return MonacoTheme(result);
+    throw MonacoProtocolError(
+      operation: 'editor.getTheme',
+      message: 'Expected a theme id string, got ${result.runtimeType}.',
+    );
   }
 
   /// Registers or replaces a custom Monaco theme.
@@ -739,6 +748,12 @@ class MonacoController {
   /// Runs a Monaco editor action, e.g.
   /// `executeAction(MonacoAction.formatDocument)`. Custom command ids run
   /// via `MonacoAction('my.command')`.
+  ///
+  /// Completes when the action or command finishes, including asynchronous
+  /// ones. Throws a [MonacoJavaScriptError] when Monaco has no action or
+  /// command with that id (including the deprecated [MonacoAction] catalog
+  /// ids that standalone Monaco does not register), when the command fails,
+  /// or when a command id is run while no document is attached.
   Future<void> executeAction(MonacoAction action, {Object? args}) async {
     await _invoke('editor.executeAction', {
       'actionId': action.id,
@@ -832,11 +847,15 @@ class MonacoController {
   }
 
   /// Scrolls the editor to the very top (line 1, column 1).
+  ///
+  /// Throws a [MonacoJavaScriptError] when no document is attached.
   Future<void> scrollToTop() async {
     await _invoke('editor.scrollToEdge', {'edge': 'top'});
   }
 
   /// Scrolls the editor to the last line.
+  ///
+  /// Throws a [MonacoJavaScriptError] when no document is attached.
   Future<void> scrollToBottom() async {
     await _invoke('editor.scrollToEdge', {'edge': 'bottom'});
   }
@@ -1088,13 +1107,17 @@ class MonacoController {
 
   /// Retrieves the current primary selection range.
   ///
-  /// Returns `null` when the editor reports no selection. Bridge failures
+  /// Returns `null` when the editor reports no selection. Throws a
+  /// [MonacoProtocolError] on a malformed result; other bridge failures
   /// throw a [MonacoException].
   Future<Range?> getSelection() async {
     final result = await _invoke('editor.getSelection', {});
-    return result is Map
-        ? Range.fromJson(Map<String, dynamic>.from(result))
-        : null;
+    if (result == null) return null;
+    if (result is Map) return Range.fromJson(Map<String, dynamic>.from(result));
+    throw MonacoProtocolError(
+      operation: 'editor.getSelection',
+      message: 'Expected a selection map or null, got ${result.runtimeType}.',
+    );
   }
 
   /// Selects the specified [range] in the editor.
@@ -1229,12 +1252,20 @@ class MonacoController {
   /// Returns the current cursor position.
   ///
   /// Returns `null` when the editor reports no cursor. Throws a
-  /// [MonacoException] on bridge failure.
+  /// [MonacoProtocolError] on a malformed result; other bridge failures
+  /// throw a [MonacoException].
   Future<Position?> getCursorPosition() async {
     final result = await _invoke('editor.getCursor', {});
-    return result is Map
-        ? Position.fromJson(Map<String, dynamic>.from(result))
-        : null;
+    if (result == null) return null;
+    if (result is Map) {
+      return Position.fromJson(Map<String, dynamic>.from(result));
+    }
+    throw MonacoProtocolError(
+      operation: 'editor.getCursor',
+      message:
+          'Expected a cursor position map or null, got '
+          '${result.runtimeType}.',
+    );
   }
 
   /// Set cursor position
@@ -1322,13 +1353,15 @@ class MonacoController {
     required LspTransport transport,
     LspReconnectPolicy reconnectPolicy = const LspReconnectPolicy.none(),
     Duration initializationTimeout = const Duration(seconds: 30),
-  }) async {
-    await _ensureReady();
+  }) {
+    // The readiness wait runs inside the manager so a disposed controller
+    // or failed boot also releases a bridged transport (its onClose runs).
     return _lspManager.connect(
       id: id,
       transport: transport,
       reconnectPolicy: reconnectPolicy,
       initializationTimeout: initializationTimeout,
+      waitUntilReady: _ensureReady,
     );
   }
 
