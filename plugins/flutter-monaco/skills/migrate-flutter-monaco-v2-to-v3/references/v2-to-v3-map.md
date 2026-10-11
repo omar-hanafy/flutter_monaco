@@ -198,7 +198,7 @@ The `MonacoEditor.onContentChanged` text callback, `onRawContentChanged` bool ca
 
 ## Actions, focus, and JavaScript
 
-Removed action conveniences map to `executeAction`, including `.formatDocument`, `.find`, `.startFindReplaceAction`, `.toggleWordWrap`, `.selectAll`, `.undo`, `.redo`, `.clipboardCutAction`, `.clipboardCopyAction`, `.clipboardPasteAction`, `.foldAll`, `.unfoldAll`, `.commentLine`, `.indentLines`, and `.outdentLines`.
+Removed action conveniences map to `executeAction`, including `.formatDocument`, `.find`, `.startFindReplaceAction`, `.selectAll`, `.undo`, `.redo`, `.clipboardCutAction`, `.clipboardCopyAction`, `.clipboardPasteAction`, `.foldAll`, `.unfoldAll`, `.commentLine`, `.indentLines`, and `.outdentLines`. `toggleWordWrap()` was always a no-op because standalone Monaco registers no `editor.action.toggleWordWrap`; from 4.0 `executeAction` throws for it, so replace it with `updateOptions(EditorOptions(wordWrap: ...))`.
 
 `focus` and `ensureEditorFocus` become `requestFocus`; optional retry tuning remains. `releaseNativeInputFocus` becomes `releaseNativeFocus`.
 

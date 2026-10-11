@@ -1321,10 +1321,13 @@ void main() {
         );
       });
 
-      test('toggleWordWrap action id reaches the wire', () async {
+      test('toggleStickyScroll action id reaches the wire', () async {
         final bundle = await _createBundle();
-        await bundle.controller.executeAction(MonacoAction.toggleWordWrap);
-        expect(bundle.webview.executed.join('\n'), contains('toggleWordWrap'));
+        await bundle.controller.executeAction(MonacoAction.toggleStickyScroll);
+        expect(
+          bundle.webview.executed.join('\n'),
+          contains('toggleStickyScroll'),
+        );
       });
 
       test('undo/redo action ids reach the wire', () async {
