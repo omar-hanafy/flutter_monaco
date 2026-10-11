@@ -808,6 +808,111 @@ void main() {
       });
     });
 
+    group('callbacks changed after readiness', () {
+      testWidgets('onSelectionChanged supplied after bootstrap fires', (
+        tester,
+      ) async {
+        final bundle = await _createBundle();
+        await tester.pumpWidget(
+          _wrap(MonacoEditor(controller: bundle.controller)),
+        );
+        await tester.pumpAndSettle();
+
+        final selections = <Range?>[];
+        await tester.pumpWidget(
+          _wrap(
+            MonacoEditor(
+              controller: bundle.controller,
+              onSelectionChanged: selections.add,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        bundle.webview.emitEvent('selectionChanged', {
+          'selection': {
+            'startLineNumber': 1,
+            'startColumn': 1,
+            'endLineNumber': 1,
+            'endColumn': 2,
+          },
+        });
+        await tester.pump();
+
+        expect(selections, hasLength(1));
+      });
+
+      testWidgets('clearing onContentChanged with a debounce pending reports '
+          'no error and emits nothing', (tester) async {
+        final bundle = await _createBundle();
+        bundle.webview.injectCommandSuccess('document.getText', value: 'abc');
+        final errors = <Object>[];
+        final calls = <String>[];
+        await tester.pumpWidget(
+          _wrap(
+            MonacoEditor(
+              controller: bundle.controller,
+              onContentChanged: calls.add,
+              onError: (e, _) => errors.add(e),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        bundle.webview.emitEvent('contentChanged', {'isFlush': false});
+        await tester.pump();
+        await tester.pumpWidget(
+          _wrap(
+            MonacoEditor(
+              controller: bundle.controller,
+              onError: (e, _) => errors.add(e),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pump();
+
+        expect(errors, isEmpty);
+        expect(calls, isEmpty);
+      });
+
+      testWidgets('clearing onContentChanged while a pull is in flight '
+          'reports no error', (tester) async {
+        final bundle = await _createBundle();
+        final errors = <Object>[];
+        await tester.pumpWidget(
+          _wrap(
+            MonacoEditor(
+              controller: bundle.controller,
+              onContentChanged: (_) {},
+              onError: (e, _) => errors.add(e),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        // Hold the text pull in flight.
+        bundle.webview.autoRespond = false;
+
+        bundle.webview.emitEvent('contentChanged', {'isFlush': true});
+        await tester.pump();
+        final pull = bundle.webview.dispatched.lastWhere(
+          (d) => d['method'] == 'document.getText',
+        );
+        await tester.pumpWidget(
+          _wrap(
+            MonacoEditor(
+              controller: bundle.controller,
+              onError: (e, _) => errors.add(e),
+            ),
+          ),
+        );
+        bundle.webview.respondTo(pull['id']! as String, value: 'abc');
+        await tester.pump();
+        await tester.pump();
+
+        expect(errors, isEmpty);
+      });
+    });
+
     group('other callbacks', () {
       testWidgets('selection/focus/blur callbacks wired', (tester) async {
         final bundle = await _createBundle();
