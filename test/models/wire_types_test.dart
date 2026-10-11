@@ -14,7 +14,7 @@ void main() {
     const diagnostics = MonacoAssetDiagnostics(
       exists: true,
       path: '/cache/monaco',
-      monacoVersion: '0.55.1',
+      monacoVersion: '0.57.0',
       fileCount: 12,
       totalSizeBytes: 2 * 1024 * 1024,
       generatedHtmlCount: 3,
@@ -28,7 +28,7 @@ void main() {
       const same = MonacoAssetDiagnostics(
         exists: true,
         path: '/cache/monaco',
-        monacoVersion: '0.55.1',
+        monacoVersion: '0.57.0',
         fileCount: 12,
         totalSizeBytes: 2 * 1024 * 1024,
         generatedHtmlCount: 3,
@@ -36,7 +36,7 @@ void main() {
       const different = MonacoAssetDiagnostics(
         exists: false,
         path: '/cache/monaco',
-        monacoVersion: '0.55.1',
+        monacoVersion: '0.57.0',
       );
       expect(diagnostics, same);
       expect(diagnostics.hashCode, same.hashCode);
@@ -47,7 +47,7 @@ void main() {
       final text = '$diagnostics';
       expect(text, contains('exists: true'));
       expect(text, contains('/cache/monaco'));
-      expect(text, contains('0.55.1'));
+      expect(text, contains('0.57.0'));
       expect(text, contains('fileCount: 12'));
       expect(text, contains('generatedHtmlCount: 3'));
     });
@@ -100,17 +100,39 @@ void main() {
       expect(const MonacoPageConfig().stableCacheKey(), '27e4515bfc9e5827');
       expect(a.stableCacheKey(), '66223b0815404914');
     });
+
+    test('stableCacheKey separates CSS that differs only above ASCII', () {
+      // Two configurations sharing a key share one generated HTML file, so
+      // whichever editor loads second silently gets the other's page. The
+      // key must hash the full text: U+0151 ("ő") and U+0051 ("Q") share
+      // their low byte, as do U+0100 and NUL.
+      const pairs = [
+        ['.x::after { content: "ő"; }', '.x::after { content: "Q"; }'],
+        ['.y { font-family: "Ā"; }', '.y { font-family: "\u0000"; }'],
+        ['/* \u{1F600} */', '/* \u{1F610} */'],
+      ];
+      for (final pair in pairs) {
+        final first = MonacoPageConfig(customCss: pair[0]);
+        final second = MonacoPageConfig(customCss: pair[1]);
+        expect(first, isNot(second));
+        expect(
+          first.stableCacheKey(),
+          isNot(second.stableCacheKey()),
+          reason: '${pair[0]} vs ${pair[1]}',
+        );
+      }
+    });
   });
 
   group('MonacoCapabilities', () {
     test('fromHandshake maps capability flags', () {
       const handshake = MonacoHandshake(
         protocolVersion: 3,
-        monacoVersion: '0.55.1',
+        monacoVersion: '0.57.0',
         capabilities: {'lsp'},
       );
       final capabilities = MonacoCapabilities.fromHandshake(handshake);
-      expect(capabilities.monacoVersion, '0.55.1');
+      expect(capabilities.monacoVersion, '0.57.0');
       expect(capabilities.protocolVersion, 3);
       expect(capabilities.lsp, isTrue);
       expect(capabilities.diff, isFalse);
@@ -160,6 +182,7 @@ void main() {
         ],
         'scroll': {'top': 10},
       });
+      // Non-const for the same reason.
       // ignore: prefer_const_constructors
       final b = MonacoViewState.fromJson({
         'cursorState': [
@@ -351,7 +374,8 @@ void main() {
         isEmpty,
       );
       expect(
-        () => DecorationOptions.fromJson(const {'options': {}}),
+        () =>
+            DecorationOptions.fromJson(const {'options': <String, Object?>{}}),
         throwsFormatException,
       );
     });

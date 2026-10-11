@@ -31,3 +31,12 @@ example/macos/Flutter/ephemeral/
 example/macos/Podfile.lock
 example/macos/Pods/
 example/windows/flutter/ephemeral/
+
+# Monaco files that no runtime path loads. They stay in the repository so
+# assets/monaco/min remains byte-identical to the npm release; keeping them
+# out of the archive keeps them out of every app bundle.
+# - AMD worker entries: workers start from the hashed bundles in vs/assets/.
+# - UI translations: the package never configures a Monaco UI locale.
+assets/monaco/min/vs/editor/editor.worker.js
+assets/monaco/min/vs/language/*/*.worker.js
+assets/monaco/min/vs/nls/

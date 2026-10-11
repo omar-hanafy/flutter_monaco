@@ -7,7 +7,7 @@ import '../fakes/fake_platform_webview_controller.dart';
 
 Future<List<String>> _loadActionValues() async {
   final file = File('lib/src/options/action.dart');
-  if (!await file.exists()) {
+  if (!file.existsSync()) {
     throw StateError('action.dart not found');
   }
   final contents = await file.readAsString();
@@ -47,6 +47,9 @@ void main() {
         MonacoAction.startFindReplaceAction.id,
         'editor.action.startFindReplaceAction',
       );
+      // Deprecated because standalone Monaco never registers it; the id is
+      // unchanged.
+      // ignore: deprecated_member_use_from_same_package
       expect(MonacoAction.toggleWordWrap.id, 'editor.action.toggleWordWrap');
       expect(MonacoAction.selectAll.id, 'editor.action.selectAll');
       expect(MonacoAction.undo.id, 'undo');

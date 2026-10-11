@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:flutter_monaco_example/showcase/data/showcase_metadata.dart';
 import 'package:flutter_monaco_example/showcase/sections/features_section.dart';
 import 'package:flutter_monaco_example/showcase/sections/get_started_section.dart';
 import 'package:flutter_monaco_example/showcase/sections/hero_section.dart';
-import 'package:flutter_monaco_example/showcase/data/showcase_metadata.dart';
 import 'package:flutter_monaco_example/showcase/state/showcase_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Layout guard for the static sections (the playground is excluded because it
 /// embeds a real Monaco web view).

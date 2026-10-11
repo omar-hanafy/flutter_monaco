@@ -3,6 +3,68 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] - 2026-10-11
+
+Flutter 3.47 moved Material out of the SDK into the `material_ui` package, and flutter_monaco follows it; that type move is the only source-breaking change. The release also upgrades the bundled engine to Monaco 0.57.0, makes Monaco's background workers run on Windows (#43), and fixes a set of bridge, lifecycle, and LSP defects found in a full audit. The README's "Migrating from 3.x to 4.0" section has the short upgrade path.
+
+### Breaking
+- **Requires Flutter 3.47.7 and Dart 3.13.5 or later.** Apple targets follow Flutter 3.47's own minimums: iOS 15 and macOS 12. The macOS plugin's Swift package and podspec now declare macOS 12.0 (was 10.15).
+- **Material comes from `material_ui`.** The editor chrome (`MonacoEditor`/`MonacoDiffEditor` loading and error surfaces, `MonacoStatusBar`, `MonacoScaffold`, `MonacoEditorTheme`) now uses `package:material_ui`, so the Material types in this package's API are `material_ui`'s: `MonacoScaffold.floatingActionButtonLocation`/`floatingActionButtonAnimator` and `MonacoEditorThemeData.retryButtonStyle` (`ButtonStyle`). Brightness-following defaults and the chrome read `material_ui`'s `Theme`. Migrate the app with `flutter pub add material_ui` and `dart fix --apply --code=migrate_design_widgets`; an app still on `package:flutter/material.dart` gets `material_ui`'s default theme in the editor chrome (set `EditorOptions.theme` explicitly to keep a dark editor).
+- **Calls that used to fail silently now throw.** `executeAction` throws for an action or command id that Monaco does not register and for a command that fails, instead of reporting success. Seven `MonacoAction` catalog constants that standalone Monaco does not register are deprecated: `accessibilityHelp`, `accessibleView`, `goToLocation`, `inlineSuggestTriggerInlineEdit`, `inlineSuggestTriggerInlineEditExplicit`, `toggleScreenReaderAccessibilityMode`, and `toggleWordWrap` (set `EditorOptions.wordWrap` with `updateOptions` instead). `executeAction` with a command id, `scrollToTop`, and `scrollToBottom` throw when no document is attached. `getTheme`, `getSelection`, `getCursorPosition`, `document.isDirty()`, and `getWordAt()` throw `MonacoProtocolError` on a malformed bridge result instead of returning `null` or `false`, and `evaluateJavaScript<String>` throws `MonacoProtocolError` for an object or array result instead of returning Dart's `toString()` of it (return `JSON.stringify(...)` from the expression for its JSON text). `MonacoPageConfig.allowedConnectSources` entries are checked against the CSP source-expression grammar: an entry with a query string, a fragment, or `&` (which let an HTML character reference such as `&#59;` add a directive to the policy) now fails `whenReady` with an `ArgumentError`.
+
+### Added
+- **Options for Monaco 0.56 and 0.57 features.**
+  - `EditorOptions.wordWrapIndicator` draws a marker where soft-wrapped lines break. With `wordWrap: on` or `bounded`, lines wrap one column earlier to make room for it.
+  - `EditorOptions.fullwidthCharacterWidth` (`MonacoFullwidthCharacterWidth`): `twoCells` renders full-width characters such as CJK exactly two cells wide in monospace fonts.
+  - `EditorOptions.doubleClickSelectsBlock`: since Monaco 0.56, double-clicking just inside brackets or quotes selects the enclosed block; set `false` to keep plain word selection.
+  - `EditorOptions.find` (`MonacoFindOptions`): `closeOnResult`, `loop`, `seedSearchStringFromSelection` (`MonacoFindSeedSearchString`), `autoFindInSelection` (`MonacoAutoFindInSelection`), and `addExtraSpaceOnTop`. Like the other structured options, it merges field-wise.
+- **`MonacoFocusGuard.onError`** receives failures of the guard's background focus and interaction updates; without it they go to `FlutterError.reportError` instead of escaping as uncaught errors.
+
+### Changed
+- **Bundled Monaco Editor 0.57.0** (was 0.55.1). Highlights that reach apps without code changes: double-clicking just inside brackets or quotes selects the enclosed block (opt out with `doubleClickSelectsBlock: false`), better IME/EditContext handling, hidden find-widget inputs leave the tab order, and DOMPurify 3.4.15. Markdown from language servers is now untrusted: `command:` links in hovers and completion docs render as plain text.
+- **Web warmup covers the whole 0.57 boot graph.** `MonacoAssets.precache()` now discovers the hash-named editor chunks by following the AMD dependency graph (15 modules, about 4.2 MB) instead of matching a single chunk name.
+- **Smaller app footprint for the new engine.** Monaco files no runtime path loads (AMD worker entries and UI translations, 10.6 MB) are left out of the published package, so apps ship about 15 MB of Monaco instead of 25.6 MB.
+- **Monaco's MIT license now ships with the package** and appears on apps' license pages; upstream's third-party notices are included under `third_party/monaco-editor/`.
+- **Strict parsers reject fractional and non-finite integers.** Integer fields in `EditorOptions.fromJson` (including `rulers`), the sub-option parsers, and the position, range, marker, completion, text-edit, and statistics parsers now throw `FormatException` for values such as `2.5`, `NaN`, or infinity instead of truncating them. Whole-number doubles such as `2.0` still parse.
+- **`MonacoThemeDefinition.fromJson` requires string `colors` values.** A `null` or numeric color used to become `"null"` or a bare digit string, which Monaco silently painted red; it now throws `FormatException`.
+- Dependencies: `material_ui` 1.6.0 (new), `webview_flutter` 4.14.1, `webview_flutter_windows` 1.3.0 (fixes WebView2 popups such as `<select>` dropdowns opening away from their element), and `path_provider` 2.1.6.
+- **Windows: the editor page's origin is `https://flutter-monaco.example`** (see the #43 fix below). Language-server WebSocket handshakes carry it as their `Origin` header.
+- **Release automation.** CI pins every action to a verified release commit, tests on Flutter 3.47.7, fails when committed generated code is stale, resolves the lowest allowed dependencies in a separate job, and boots the bundled editor in headless Chrome in the pages the native hosts serve.
+- **The example app targets the new floors** (iOS 15, macOS 12) and builds with the Flutter 3.47 Android template (Gradle 9.3.1, AGP 9.1.0, Kotlin 2.4.0).
+
+### Fixed
+- **LSP**
+  - `LspServerProcess.stop()` always finishes: it escalates to SIGTERM and SIGKILL even when the server has stopped reading its input.
+  - A language server that exits or drops its connection during the `initialize` handshake fails `connectLanguageServer` immediately with the real cause, instead of a 30-second timeout that pointed at CSP. For `LspServerProcess` the cause is a `ProcessException` carrying the exit code and the server's last stderr lines; a server that later crashes with a non-zero exit code moves its connection to `failed` with that error.
+  - After an editor page reload, language server connections no longer claim to be open. They end as `failed` with `MonacoPageReloadedError`, their id can be reused right away, and bridged server processes are stopped. Reconnect from `onPageReloaded`.
+  - When `connectLanguageServer` fails for a bridged transport, the transport's `onClose` has already completed, whatever the cause (an invalid or duplicate id, a failed handshake, or a controller that was disposed or failed to boot), so apps no longer have to guess whether they still own the server process. A connect on a disposed controller throws `MonacoDisposedError` instead of `StateError`.
+  - A connect cut short during the `initialize` handshake settles in the page too, so timed-out reconnect attempts no longer leave pending requests behind.
+  - Disposing the controller while a connection is starting no longer leaks the server-stream subscription.
+  - Invalid UTF-8 in a server's stderr (for example Windows code-page output) is shown with replacement characters instead of raising an uncaught error.
+- **Editor bridge**
+  - Peek Definition, Find All References, and other peek views no longer break the editor. Their embedded editor re-installed the bridge, which caused a second ready event, lost decorations, LSP connections, and actions, doubled change events, and "no active model" errors after the peek closed. The bridge now binds once, to the primary editor.
+  - `insert`, `replaceRange`, `deleteRange`, `applyEdits`, and `replaceMatches` are each one undo step. Undo after a programmatic edit no longer corrupts the document, and an edit elsewhere no longer deletes the indentation the user just got from pressing Enter.
+  - Whole-word find and replace match words that start or end with symbols (`$x`, `@foo`), follow the editor's `wordSeparators` option, and also apply to regex searches.
+  - `replaceMatches` replaces every match; it stopped at 9,999.
+  - `getTheme()` returns the current theme (the boot theme, then the latest `setTheme` or `updateOptions` theme) instead of always `null`.
+  - Marker tags (`unnecessary`, `deprecated`) render, and hovering a marker with related information no longer fails.
+  - Disconnecting an LSP connection while its WebSocket or custom transport is still connecting settles the connect at once and no longer leaves a live client and transport in the page, even when the transport never connects.
+- **Lifecycle and widgets**
+  - Commands issued while the editor recovers from a page reload wait for the recovered editor and run in order, instead of failing with "Unknown method" JavaScript errors. If recovery fails or misses `readyTimeout`, they fail with `MonacoPageReloadedError`. `isReady` is `false` while the editor recovers.
+  - A page reload during the first boot no longer leaves a `MonacoController` or `MonacoDiffController` unusable while `onPageReloaded` reports success: `whenReady` completes once the re-booted editor is ready.
+  - `MonacoDiffEditor` re-applies its texts, options, theme, diff options, and scroll handoff after a page reload, and reports a failed recovery to `onError`.
+  - Disposing a `MonacoController` or `MonacoDiffController` before it is ready completes `whenReady` and queued commands at once with `MonacoDisposedError`, instead of after the boot timeout. On Web the pending load stops without leaking blob URLs.
+  - `MonacoFocusGuard` no longer raises uncaught errors on app resume or route pop after a failed boot, and no longer overrides interaction changes the app makes while a route covers the editor.
+  - `MonacoEditor.onSelectionChanged` fires when it is supplied after the editor is ready, clearing `onContentChanged` while an update is pending no longer reports a null-check error, and autofocus failures go to `onError`.
+  - Web: `MonacoOverlayBoundary` protects overlays when the Flutter app is embedded at an offset in a larger page (element embedding or multi-view).
+  - macOS: the boot timeout names the most likely cause, a sandboxed app without the Outgoing Connections (Client) entitlement (`com.apple.security.network.client`), and how to enable it. The README's requirements now say so too.
+- **Windows and native hosting**
+  - Windows: Monaco's background workers run (#43). `MonacoDiffEditor` shows added and removed lines, and links, word suggestions, and the JSON, CSS, HTML, and TypeScript language services answer. WebView2 does not let a worker load scripts from a `file://` page, so the editor page is now served from the WebView2 virtual host `https://flutter-monaco.example/`, mapped onto the extracted assets. If the WebView2 runtime cannot map the host, or `allowedConnectSources` lists a `ws://` or `http://` endpoint that is not on loopback or a bare `*` (an https page may not reach such endpoints), the page loads from `file://` as before.
+  - A WebView that cannot start workers from a `file://` page no longer leaves Monaco waiting on them: the diff is computed on the main thread, and the built-in language services return no result at once instead of hanging. `window.__FM_WORKERS.mode` reports which mode the page runs in. Android, iOS, and macOS keep their real workers.
+  - The editor loads when the app's data path contains an apostrophe, for example a Windows user named O'Brien or an app named "Bob's Editor".
+  - Two page configurations whose `customCss` differs only in non-ASCII characters no longer share one generated page.
+  - Asset extraction, bridge updates, and `MonacoAssets.clearCache()` are atomic. Editors or windows starting together no longer see a partially written asset tree, an invalid tree is replaced only once its replacement is complete, and an `ensureReady` during `clearCache` re-extracts instead of returning a tree that is being deleted. On Windows, installing the tree retries while antivirus scanners or the search indexer briefly hold its files open, and a clear that cannot remove every file no longer leaves a tree the next `ensureReady` accepts.
+
 ## [3.4.3] - 2026-08-06
 
 ### Fixed

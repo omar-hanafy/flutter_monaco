@@ -35,14 +35,9 @@ void main() {
     });
 
     test('the JSON sample follows current package metadata', () {
-      final decoded =
-          jsonDecode(
-                sampleFor(
-                  MonacoLanguage.json,
-                  metadata: ShowcaseMetadata.fallback,
-                ),
-              )
-              as Map<String, dynamic>;
+      final decoded = jsonDecode(
+        sampleFor(MonacoLanguage.json, metadata: ShowcaseMetadata.fallback),
+      ) as Map<String, dynamic>;
 
       expect(decoded['version'], ShowcaseMetadata.fallback.version);
       expect(decoded['platforms'], [

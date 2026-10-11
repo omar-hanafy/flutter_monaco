@@ -145,10 +145,183 @@ void main() {
       expect(map['cursorStyle'], 'block');
       expect(map['renderWhitespace'], 'all');
       expect(map['parameterHints'], {'enabled': false});
-      expect(map['hover'], {'enabled': false});
+      // Monaco 0.57 validates `hover.enabled` against 'on' | 'off' |
+      // 'onKeyboardModifier' and ignores a boolean.
+      expect(map['hover'], {'enabled': 'off'});
+      expect(const EditorOptions(hover: true).toMonacoOptions()['hover'], {
+        'enabled': 'on',
+      });
       expect(map['contextmenu'], false);
       expect(map['bracketPairColorization'], {'enabled': false});
       expect(map.containsKey('padding'), false);
+    });
+  });
+
+  group('Monaco 0.56/0.57 options', () {
+    const find = MonacoFindOptions(
+      seedSearchStringFromSelection: MonacoFindSeedSearchString.selection,
+      autoFindInSelection: MonacoAutoFindInSelection.multiline,
+      addExtraSpaceOnTop: false,
+      loop: false,
+      closeOnResult: true,
+    );
+    const options = EditorOptions(
+      wordWrapIndicator: true,
+      fullwidthCharacterWidth: MonacoFullwidthCharacterWidth.twoCells,
+      doubleClickSelectsBlock: false,
+      find: find,
+    );
+
+    test('toJson emits Monaco value strings and round-trips', () {
+      final json = options.toJson();
+      expect(json, {
+        'wordWrapIndicator': true,
+        'fullwidthCharacterWidth': 'twoCells',
+        'doubleClickSelectsBlock': false,
+        'find': {
+          'seedSearchStringFromSelection': 'selection',
+          'autoFindInSelection': 'multiline',
+          'addExtraSpaceOnTop': false,
+          'loop': false,
+          'closeOnResult': true,
+        },
+      });
+      expect(EditorOptions.fromJson(json), options);
+    });
+
+    test('toMonacoOptions maps the new options to Monaco keys', () {
+      expect(options.toMonacoOptions(), {
+        'wordWrapIndicator': true,
+        'fullwidthCharacterWidth': 'twoCells',
+        'doubleClickSelectsBlock': false,
+        'find': {
+          'seedSearchStringFromSelection': 'selection',
+          'autoFindInSelection': 'multiline',
+          'addExtraSpaceOnTop': false,
+          'loop': false,
+          'closeOnResult': true,
+        },
+      });
+    });
+
+    test('unset options and empty find stay sparse', () {
+      expect(const EditorOptions().toMonacoOptions(), isEmpty);
+      expect(const MonacoFindOptions().toMonacoJson(), isEmpty);
+      expect(
+        const EditorOptions(find: MonacoFindOptions(loop: true))
+            .toMonacoOptions(),
+        {
+          'find': {'loop': true},
+        },
+      );
+      expect(MonacoFindOptions.fromJson(const {}), const MonacoFindOptions());
+    });
+
+    test('extra still overrides the modeled keys', () {
+      final map = options
+          .copyWith(
+            extra: const {
+              'doubleClickSelectsBlock': true,
+              'find': {'cursorMoveOnType': false},
+            },
+          )
+          .toMonacoOptions();
+      expect(map['doubleClickSelectsBlock'], true);
+      // `extra` replaces the whole key; it does not deep-merge.
+      expect(map['find'], {'cursorMoveOnType': false});
+      expect(map['wordWrapIndicator'], true);
+    });
+
+    test('fromJson rejects unknown enum ids and wrong types', () {
+      expect(
+        () => EditorOptions.fromJson(const {'fullwidthCharacterWidth': 'wide'}),
+        throwsFormatException,
+      );
+      expect(
+        () => EditorOptions.fromJson(const {'wordWrapIndicator': 'yes'}),
+        throwsFormatException,
+      );
+      expect(
+        () => EditorOptions.fromJson(const {'doubleClickSelectsBlock': 1}),
+        throwsFormatException,
+      );
+      expect(
+        () => EditorOptions.fromJson(const {'find': true}),
+        throwsFormatException,
+      );
+    });
+
+    test('MonacoFindOptions.fromJson is strict', () {
+      expect(
+        () => MonacoFindOptions.fromJson(const {'cursorMoveOnType': false}),
+        throwsFormatException,
+      );
+      expect(
+        () => EditorOptions.fromJson(const {
+          'find': {'loop': true, 'history': 'never'},
+        }),
+        throwsFormatException,
+      );
+      // Monaco also accepts booleans here; the typed surface does not.
+      expect(
+        () => MonacoFindOptions.fromJson(const {
+          'seedSearchStringFromSelection': true,
+        }),
+        throwsFormatException,
+      );
+      expect(
+        () => MonacoFindOptions.fromJson(const {'autoFindInSelection': 'some'}),
+        throwsFormatException,
+      );
+      expect(
+        () => MonacoFindOptions.fromJson(const {'closeOnResult': 'true'}),
+        throwsFormatException,
+      );
+    });
+
+    test('merge is field-wise and nulls do not overwrite', () {
+      const base = EditorOptions(
+        wordWrapIndicator: true,
+        fullwidthCharacterWidth: MonacoFullwidthCharacterWidth.twoCells,
+        doubleClickSelectsBlock: false,
+        find: MonacoFindOptions(
+          seedSearchStringFromSelection: MonacoFindSeedSearchString.never,
+          loop: false,
+        ),
+      );
+      const override = EditorOptions(
+        doubleClickSelectsBlock: true,
+        find: MonacoFindOptions(closeOnResult: true),
+      );
+
+      final merged = base.merge(override);
+      expect(merged.wordWrapIndicator, true);
+      expect(
+        merged.fullwidthCharacterWidth,
+        MonacoFullwidthCharacterWidth.twoCells,
+      );
+      expect(merged.doubleClickSelectsBlock, true);
+      expect(
+        merged.find,
+        const MonacoFindOptions(
+          seedSearchStringFromSelection: MonacoFindSeedSearchString.never,
+          loop: false,
+          closeOnResult: true,
+        ),
+      );
+
+      expect(base.merge(const EditorOptions()), base);
+      expect(const EditorOptions().merge(base).find, base.find);
+      expect(find.merge(null), same(find));
+      expect(find.merge(const MonacoFindOptions()), find);
+    });
+
+    test('curated defaults leave the new options to Monaco', () {
+      final defaults = MonacoDefaults.editorOptions;
+      expect(defaults.wordWrapIndicator, isNull);
+      expect(defaults.fullwidthCharacterWidth, isNull);
+      expect(defaults.doubleClickSelectsBlock, isNull);
+      expect(defaults.find, isNull);
     });
   });
 }

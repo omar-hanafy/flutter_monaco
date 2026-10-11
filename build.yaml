@@ -1,0 +1,7 @@
+# Code generation (Freezed) only reads the library. Without this, build_runner
+# also scans the example app, including its platform plugin symlinks.
+targets:
+  $default:
+    sources:
+      - lib/**
+      - $package$

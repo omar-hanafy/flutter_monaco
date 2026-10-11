@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_monaco/src/widgets/monaco_overlay_boundary.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Drop-in [Scaffold] replacement that automatically protects common
 /// static overlay slots from iframe-backed Monaco editors on Web.

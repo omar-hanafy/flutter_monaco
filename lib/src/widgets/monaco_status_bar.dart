@@ -6,8 +6,8 @@
 /// package barrel.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The default status bar, optimized to only rebuild when stats change.
 ///

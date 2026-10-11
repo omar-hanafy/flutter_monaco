@@ -1,15 +1,15 @@
 import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../helpers/generate_index_html.dart';
 
 import '../helpers/bridge_sources.dart';
+import '../helpers/generate_index_html.dart';
 
 void main() {
   group('LSP bridge assets', () {
     test(
-      'bundled Monaco version is 0.55.1 (first version with monaco.lsp)',
+      'bundled Monaco version is 0.57.0 (monaco.lsp first shipped in 0.55)',
       () {
-        expect(MonacoAssets.monacoVersion, '0.55.1');
+        expect(MonacoAssets.monacoVersion, '0.57.0');
       },
     );
 
@@ -31,7 +31,7 @@ void main() {
     test('acknowledges optional server refresh requests', () {
       final lsp = bridgeSource('lsp.js');
 
-      // Monaco 0.55.1 answers these with method-not-found, which kills
+      // Monaco (0.55 through 0.57) answers these with method-not-found, which kills
       // servers like pyright via an unhandled rejection; the bridge must
       // register benign handlers instead.
       expect(lsp, contains('workspace/diagnostic/refresh'));

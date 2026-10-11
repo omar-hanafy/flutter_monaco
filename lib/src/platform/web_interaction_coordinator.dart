@@ -68,7 +68,8 @@ class MonacoWebInteractionCoordinator {
     _apply(entry);
   }
 
-  /// Locks every iframe whose DOM rect intersects [rect]. Lock ownership is
+  /// Locks every iframe whose DOM rect intersects [rect] (viewport CSS
+  /// pixels, as `getBoundingClientRect` reports them). Lock ownership is
   /// keyed by [owner]; calling this again with the same owner replaces the
   /// previous set of locked editors (so a moving overlay tracks correctly).
   void lockEditorsForRect(String owner, Rect rect) {

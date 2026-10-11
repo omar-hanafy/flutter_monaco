@@ -130,12 +130,16 @@ final class LspWebSocketTransport extends LspTransport {
 ///
 /// - [fromServer] streams messages produced by the server; the connection
 ///   forwards each one into the in-page LSP client. When this stream closes
-///   or errors, the connection treats the server as gone and transitions to
-///   `closed`.
+///   the connection treats the server as gone and transitions to `closed`;
+///   when it emits an error the connection transitions to `failed` with that
+///   error. Either one during the LSP `initialize` handshake makes
+///   `connectLanguageServer` throw right away (the error, or a [StateError]
+///   for a plain close).
 /// - [toServer] receives every message the in-page client sends; write it to
-///   the server (the `LspServerProcess` helper frames it onto stdin).
-/// - [onClose] runs once when the connection is disconnected or disposed -
-///   terminate the server process here.
+///   the server (the `LspServerProcess` helper frames it onto stdin). If it
+///   throws, the connection treats the server as gone.
+/// - [onClose] runs once when the connection ends for good - terminate the
+///   server process here. See [onClose] for exactly when it runs.
 ///
 /// Message ordering is preserved in both directions.
 ///
@@ -159,8 +163,18 @@ final class LspBridgedTransport extends LspTransport {
   /// Called for every message the in-page client sends to the server.
   final void Function(Map<String, Object?> message) toServer;
 
-  /// Invoked once when the connection closes for good (explicit disconnect,
-  /// controller disposal, or server death).
+  /// Releases the server; invoked at most once.
+  ///
+  /// The connection owns the transport once `connectLanguageServer` has
+  /// started connecting it, and runs this callback when the connection ends
+  /// for good: explicit disconnect, controller disposal, server death, or a
+  /// page reload. If `connectLanguageServer` throws, this callback has
+  /// already completed by the time the error reaches the caller, whatever
+  /// the cause (invalid or duplicate id, an unsupported reconnect policy,
+  /// a failed or timed-out handshake, a controller that was disposed or
+  /// whose editor failed to boot, or a page reload during connect).
+  /// `LspServerProcess.stop` is idempotent, so calling it again after a
+  /// failed connect is always safe.
   final Future<void> Function()? onClose;
 
   @override

@@ -14,7 +14,7 @@ excluded from the pub.dev archive.
 | `integrate-flutter-monaco` | skill | Adding the editor, choosing widget-owned or controller-owned lifecycle, multi-document state, typed events, overlays, and platform setup |
 | `configure-flutter-monaco-lsp` | skill | Selecting WebSocket, bridged stdio, or custom LSP transport and configuring page security, URIs, lifecycle, and platform constraints |
 | `diagnose-flutter-monaco` | skill | Boot, asset, protocol, focus, overlay, LSP, scroll-handoff, and disposal failures |
-| `migrate-flutter-monaco-v2-to-v3` | skill | Moving an existing 2.x integration to the current 3.x APIs and wire protocol |
+| `migrate-flutter-monaco-v2-to-v3` | skill | Moving an existing 2.x integration to the 3.x APIs and wire protocol that 4.x keeps |
 | `maintain-flutter-monaco-bridge` | skill | Changing Dart commands or events, the JavaScript bridge, platform hosts, fakes, and contract tests together |
 | `upgrade-bundled-monaco` | skill | Replacing the bundled Monaco distribution, worker assets, warmup manifest, and bridge compatibility checks |
 | `bridge-contract-reviewer` | Claude Code agent | Read-only source audit for Dart-to-JavaScript contract drift. It applies the bridge skill as the canonical procedure |
@@ -120,9 +120,10 @@ public-directory submission.
 
 ## Compatibility
 
-- Consumer skills target `flutter_monaco` 3.x and inspect the resolved package APIs
-  before proposing code. The migration skill covers 2.x to 3.x.
-- Both plugin manifests use version `3.4.3`, matching the package release that ships
+- Consumer skills target `flutter_monaco` 3.x and 4.x and inspect the resolved package
+  APIs before proposing code. The migration skill covers 2.x to 3.x or 4.x; the 3.x to
+  4.0 upgrade changes no editor API and is covered by the package README.
+- Both plugin manifests use version `4.0.0`, matching the package release that ships
   this support. Both marketplace entries carry the same version.
 - The manifests and commands were validated with Claude Code 2.1.215 and Codex CLI
   0.144.6. The shared SKILL.md frontmatter deliberately uses the fields accepted by

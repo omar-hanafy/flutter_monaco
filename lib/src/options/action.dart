@@ -2,6 +2,12 @@
 //
 // ignore_for_file: public_member_api_docs
 
+/// Deprecation message for catalog ids that standalone Monaco does not
+/// register (verified against the bundled Monaco 0.57.0).
+const String _notRegistered =
+    'Standalone Monaco does not register this action, so executeAction '
+    'throws for it.';
+
 /// Pre-built Monaco editor action identifiers.
 ///
 /// These IDs are sourced from the bundled Monaco editor assets, plus
@@ -14,7 +20,7 @@
 /// example `MonacoAction('my.custom.action')`.
 extension type const MonacoAction(
   /// The raw action id string sent to the Monaco editor.
-  String id
+  String id,
 ) {
   // General commands (non editor.action)
   static const acceptAlternativeSelectedSuggestion = MonacoAction(
@@ -347,6 +353,10 @@ extension type const MonacoAction(
   );
 
   // Monaco editor.action commands
+
+  /// Not registered by standalone Monaco; `MonacoController.executeAction`
+  /// throws for it.
+  @Deprecated(_notRegistered)
   static const accessibilityHelp = MonacoAction(
     'editor.action.accessibilityHelp',
   );
@@ -356,6 +366,10 @@ extension type const MonacoAction(
   static const accessibleDiffViewerPrev = MonacoAction(
     'editor.action.accessibleDiffViewer.prev',
   );
+
+  /// Not registered by standalone Monaco; `MonacoController.executeAction`
+  /// throws for it.
+  @Deprecated(_notRegistered)
   static const accessibleView = MonacoAction('editor.action.accessibleView');
   static const addCommentLine = MonacoAction('editor.action.addCommentLine');
   static const addCursorsToBottom = MonacoAction(
@@ -436,6 +450,10 @@ extension type const MonacoAction(
   static const goToImplementation = MonacoAction(
     'editor.action.goToImplementation',
   );
+
+  /// Not registered by standalone Monaco; `MonacoController.executeAction`
+  /// throws for it.
+  @Deprecated(_notRegistered)
   static const goToLocation = MonacoAction('editor.action.goToLocation');
   static const goToLocations = MonacoAction('editor.action.goToLocations');
   static const goToMatchFindAction = MonacoAction(
@@ -511,9 +529,17 @@ extension type const MonacoAction(
   static const inlineSuggestTrigger = MonacoAction(
     'editor.action.inlineSuggest.trigger',
   );
+
+  /// Not registered by standalone Monaco; `MonacoController.executeAction`
+  /// throws for it.
+  @Deprecated(_notRegistered)
   static const inlineSuggestTriggerInlineEdit = MonacoAction(
     'editor.action.inlineSuggest.triggerInlineEdit',
   );
+
+  /// Not registered by standalone Monaco; `MonacoController.executeAction`
+  /// throws for it.
+  @Deprecated(_notRegistered)
   static const inlineSuggestTriggerInlineEditExplicit = MonacoAction(
     'editor.action.inlineSuggest.triggerInlineEditExplicit',
   );
@@ -690,6 +716,10 @@ extension type const MonacoAction(
   static const toggleHighContrast = MonacoAction(
     'editor.action.toggleHighContrast',
   );
+
+  /// Not registered by standalone Monaco; `MonacoController.executeAction`
+  /// throws for it.
+  @Deprecated(_notRegistered)
   static const toggleScreenReaderAccessibilityMode = MonacoAction(
     'editor.action.toggleScreenReaderAccessibilityMode',
   );
@@ -699,6 +729,14 @@ extension type const MonacoAction(
   static const toggleTabFocusMode = MonacoAction(
     'editor.action.toggleTabFocusMode',
   );
+
+  /// Not registered by standalone Monaco; `MonacoController.executeAction`
+  /// throws for it. Set `EditorOptions.wordWrap` with
+  /// `MonacoController.updateOptions` instead.
+  @Deprecated(
+    'Standalone Monaco does not register this action, so executeAction '
+    'throws for it. Set EditorOptions.wordWrap with updateOptions instead.',
+  )
   static const toggleWordWrap = MonacoAction('editor.action.toggleWordWrap');
   static const transformToCamelcase = MonacoAction(
     'editor.action.transformToCamelcase',

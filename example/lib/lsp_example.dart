@@ -22,8 +22,8 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   runApp(const LspExampleApp());
@@ -364,9 +364,8 @@ class _LspDemoPageState extends State<LspDemoPage> {
                 itemCount: _log.length,
                 itemBuilder: (context, index) => Text(
                   _log[_log.length - 1 - index],
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(fontFamily: 'monospace'),
                 ),
               ),
             ),

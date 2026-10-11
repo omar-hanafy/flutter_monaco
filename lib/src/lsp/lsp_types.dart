@@ -15,8 +15,10 @@ enum LspConnectionStatus {
   closed,
 
   /// The connection ended with an error and will not recover (initial
-  /// connect failed after being surfaced, or every reconnect attempt was
-  /// exhausted).
+  /// connect failed after being surfaced, every reconnect attempt was
+  /// exhausted, the transport reported an error, or the editor page
+  /// reloaded - then [LspConnectionState.error] is a
+  /// `MonacoPageReloadedError`).
   failed,
 }
 
@@ -71,7 +73,11 @@ class LspConnectionState {
 ///
 /// Reconnects only apply to drops that happen *after* the connection was
 /// open: the initial `connectLanguageServer` call always throws on failure.
-/// An explicit `disconnect()` never triggers a reconnect.
+/// An explicit `disconnect()` never triggers a reconnect, and neither does
+/// an editor page reload: the reload discards the in-page client, the
+/// connection fails with `MonacoPageReloadedError`, and the application
+/// reconnects from `MonacoController.onPageReloaded` once its documents are
+/// restored.
 ///
 /// Not supported for `LspBridgedTransport` (its message stream is single-use;
 /// respawn the server and reconnect from app code instead).

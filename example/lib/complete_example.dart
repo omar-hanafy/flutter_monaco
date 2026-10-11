@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'custom_font_example.dart';
 import 'focus_test_example.dart';
@@ -329,7 +329,7 @@ class _MonacoExamplePageState extends State<MonacoExamplePage> {
             heroTag: 'focus',
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(
+                MaterialPageRoute<void>(
                   builder: (context) => const FocusTestExample(),
                 ),
               );
@@ -343,7 +343,7 @@ class _MonacoExamplePageState extends State<MonacoExamplePage> {
             heroTag: 'multi',
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(
+                MaterialPageRoute<void>(
                   builder: (context) => const MultiEditorExample(),
                 ),
               );
@@ -358,7 +358,7 @@ class _MonacoExamplePageState extends State<MonacoExamplePage> {
             heroTag: 'font',
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(
+                MaterialPageRoute<void>(
                   builder: (context) => const CustomFontExample(),
                 ),
               );
@@ -374,7 +374,7 @@ class _MonacoExamplePageState extends State<MonacoExamplePage> {
             onPressed: () async {
               final content = await _controller?.document.getText();
               if (content != null && context.mounted) {
-                showDialog(
+                showDialog<void>(
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Editor Content'),

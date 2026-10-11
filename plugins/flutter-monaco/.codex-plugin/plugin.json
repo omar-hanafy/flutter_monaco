@@ -1,6 +1,6 @@
 {
   "name": "flutter-monaco",
-  "version": "3.4.3",
+  "version": "4.0.0",
   "description": "Package-specific skills for integrating, diagnosing, migrating, and maintaining flutter_monaco.",
   "author": {
     "name": "Omar Hanafy",

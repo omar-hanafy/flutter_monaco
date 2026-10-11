@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../data/showcase_metadata.dart';
 import '../theme/showcase_text.dart';
@@ -122,7 +122,7 @@ class _Step extends StatelessWidget {
                 width: 34,
                 height: 34,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   gradient: accentGradient,
                   shape: BoxShape.circle,
                 ),

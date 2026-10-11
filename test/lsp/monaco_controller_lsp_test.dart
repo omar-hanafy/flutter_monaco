@@ -566,6 +566,28 @@ void main() {
         throwsA(isA<MonacoDisposedError>()),
       );
     });
+
+    test('connect after dispose still releases a bridged transport', () async {
+      controller.dispose();
+      var onCloseCalls = 0;
+      await expectLater(
+        controller.connectLanguageServer(
+          id: 'late-bridged',
+          transport: LspBridgedTransport(
+            // Never listened to: the connect fails before the pump starts.
+            fromServer: const Stream<Map<String, Object?>>.empty(),
+            toServer: (_) {},
+            onClose: () async => onCloseCalls++,
+          ),
+        ),
+        throwsA(isA<MonacoDisposedError>()),
+      );
+      expect(
+        onCloseCalls,
+        1,
+        reason: 'a failed connect has released the server process',
+      );
+    });
   });
 
   group('bridged transport hardening', () {
@@ -629,6 +651,389 @@ void main() {
       closeGate.complete();
       await done;
       expect(disconnected, isTrue);
+    });
+  });
+
+  group('handshake failures fail fast', () {
+    // Each case uses a long initialization timeout and asserts the connect
+    // settles well inside it: waiting the timeout out is the defect.
+    const longTimeout = Duration(seconds: 30);
+    const fastEnough = Duration(seconds: 2);
+
+    Future<Object?> connectError(Future<LanguageServerConnection> future) {
+      return future
+          .then<Object?>(
+            (_) => fail('connect unexpectedly succeeded'),
+            onError: (Object error) => error,
+          )
+          .timeout(
+            fastEnough,
+            onTimeout: () => fail(
+              'connect waited for the initialization timeout instead of '
+              'failing fast',
+            ),
+          );
+    }
+
+    test('a server stream error fails connect with that error', () async {
+      webView.autoRespond = false;
+      final fromServer = StreamController<Map<String, Object?>>();
+      addTearDown(fromServer.close);
+      var onCloseCalls = 0;
+      final states = <LspConnectionStatus>[];
+
+      final future = controller.connectLanguageServer(
+        id: 'srv',
+        transport: LspBridgedTransport(
+          fromServer: fromServer.stream,
+          toServer: (_) {},
+          onClose: () async => onCloseCalls++,
+        ),
+        initializationTimeout: longTimeout,
+      );
+      await harness.waitForDispatch('lsp.connect');
+      final connection = controller.languageServerConnection('srv')!;
+      connection.stateChanges.listen((s) => states.add(s.status));
+
+      final cause = StateError('server exited with code 2');
+      fromServer.addError(cause);
+
+      expect(await connectError(future), same(cause));
+      expect(connection.state.status, LspConnectionStatus.failed);
+      expect(connection.state.error, same(cause));
+      expect(states, [LspConnectionStatus.failed]);
+      expect(onCloseCalls, 1);
+      expect(controller.languageServerConnections, isEmpty);
+      // The half-built page client is torn down.
+      await harness.waitForDispatch('lsp.disconnect');
+    });
+
+    test('a server stream that ends fails connect as failed', () async {
+      webView.autoRespond = false;
+      final fromServer = StreamController<Map<String, Object?>>();
+
+      final future = controller.connectLanguageServer(
+        id: 'srv',
+        transport: LspBridgedTransport(
+          fromServer: fromServer.stream,
+          toServer: (_) {},
+        ),
+        initializationTimeout: longTimeout,
+      );
+      await harness.waitForDispatch('lsp.connect');
+      final connection = controller.languageServerConnection('srv')!;
+
+      await fromServer.close();
+
+      final error = await connectError(future);
+      expect(
+        error,
+        isA<StateError>().having(
+          (e) => e.message,
+          'message',
+          contains('before completing the LSP initialize handshake'),
+        ),
+      );
+      expect(connection.state.status, LspConnectionStatus.failed);
+      expect(connection.state.error, same(error));
+    });
+
+    test('a throwing toServer fails connect with that error', () async {
+      webView.autoRespond = false;
+      final fromServer = StreamController<Map<String, Object?>>();
+      addTearDown(fromServer.close);
+      final cause = StateError('stdin pipe broken');
+
+      final future = controller.connectLanguageServer(
+        id: 'srv',
+        transport: LspBridgedTransport(
+          fromServer: fromServer.stream,
+          toServer: (_) => throw cause,
+        ),
+        initializationTimeout: longTimeout,
+      );
+      await harness.waitForDispatch('lsp.connect');
+      harness.emitLspMessage('srv', {
+        'jsonrpc': '2.0',
+        'id': 0,
+        'method': 'initialize',
+      });
+
+      expect(await connectError(future), same(cause));
+      expect(
+        controller.languageServerConnection('srv'),
+        isNull,
+        reason: 'the failed connection is unregistered',
+      );
+    });
+
+    test('a transport closed by the page fails connect', () async {
+      webView.autoRespond = false;
+
+      final future = controller.connectLanguageServer(
+        id: 'ws',
+        transport: LspWebSocketTransport(url: Uri.parse('ws://localhost:1')),
+        initializationTimeout: longTimeout,
+      );
+      await harness.waitForDispatch('lsp.connect');
+      harness.emitStatus('ws', 'closed', errorMessage: 'socket dropped');
+
+      expect(
+        await connectError(future),
+        isA<MonacoJavaScriptError>().having(
+          (e) => e.message,
+          'message',
+          contains('socket dropped'),
+        ),
+      );
+      expect(controller.languageServerConnections, isEmpty);
+    });
+
+    test('disconnect during the handshake settles connect at once', () async {
+      webView.autoRespond = false;
+      final future = controller.connectLanguageServer(
+        id: 'ws',
+        transport: LspWebSocketTransport(url: Uri.parse('ws://localhost:1')),
+        initializationTimeout: longTimeout,
+      );
+      await harness.waitForDispatch('lsp.connect');
+      final connection = controller.languageServerConnection('ws')!;
+
+      final disconnected = connection.disconnect();
+      await harness.acknowledge('lsp.disconnect');
+      await disconnected;
+
+      expect(await connectError(future), isA<StateError>());
+      expect(connection.state.status, LspConnectionStatus.closed);
+    });
+  });
+
+  group('bridged transport ownership', () {
+    // Once handed to connectLanguageServer, a bridged transport belongs to
+    // the connection: when the call throws, onClose has already completed.
+    Future<void> expectClosedBeforeThrow(
+      Future<LanguageServerConnection> Function(LspBridgedTransport) connect,
+      Matcher throwsMatcher,
+    ) async {
+      final closeGate = Completer<void>();
+      var onCloseCalls = 0;
+      final transport = LspBridgedTransport(
+        fromServer: const Stream.empty(),
+        toServer: (_) {},
+        onClose: () {
+          onCloseCalls++;
+          return closeGate.future;
+        },
+      );
+      var settled = false;
+      final future = connect(transport);
+      unawaited(
+        future.then((_) {}, onError: (_) {}).whenComplete(() => settled = true),
+      );
+      await pumpMicrotasks();
+      expect(onCloseCalls, 1);
+      expect(settled, isFalse, reason: 'connect waits for onClose');
+      closeGate.complete();
+      await expectLater(future, throwsMatcher);
+      expect(onCloseCalls, 1);
+    }
+
+    test('an invalid id still runs onClose', () {
+      return expectClosedBeforeThrow(
+        (transport) =>
+            controller.connectLanguageServer(id: ' ', transport: transport),
+        throwsArgumentError,
+      );
+    });
+
+    test('a duplicate id still runs onClose', () async {
+      await controller.connectLanguageServer(
+        id: 'dup',
+        transport: LspWebSocketTransport(url: Uri.parse('ws://localhost:1')),
+      );
+      return expectClosedBeforeThrow(
+        (transport) =>
+            controller.connectLanguageServer(id: 'dup', transport: transport),
+        throwsStateError,
+      );
+    });
+
+    test('an unsupported reconnect policy still runs onClose', () {
+      return expectClosedBeforeThrow(
+        (transport) => controller.connectLanguageServer(
+          id: 'p',
+          transport: transport,
+          reconnectPolicy: const LspReconnectPolicy.exponentialBackoff(),
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('a failed handshake runs onClose before throwing', () {
+      webView.injectCommandFailure('lsp.connect', message: 'boom');
+      return expectClosedBeforeThrow(
+        (transport) =>
+            controller.connectLanguageServer(id: 'p', transport: transport),
+        throwsA(isA<MonacoJavaScriptError>()),
+      );
+    });
+  });
+
+  group('controller disposal during connect', () {
+    test('does not subscribe to the server stream of a connection disposed '
+        'while lsp.connect was being issued', () async {
+      webView.autoRespond = false;
+      var listened = false;
+      final source = StreamController<Map<String, Object?>>(
+        onListen: () => listened = true,
+      );
+      // close() only completes once a listener saw the done event, and the
+      // fixed code never listens.
+      addTearDown(() => unawaited(source.close()));
+
+      final future = controller.connectLanguageServer(
+        id: 'p',
+        transport: LspBridgedTransport(
+          fromServer: source.stream,
+          toServer: (_) {},
+        ),
+      );
+      final error = future.then<Object?>((_) => null, onError: (Object e) => e);
+      // Dispose after the connect script was handed to the WebView but
+      // before the manager resumed from issuing it.
+      for (var i = 0; i < 10 && webView.dispatched.isEmpty; i++) {
+        await Future<void>.microtask(() {});
+      }
+      expect(webView.dispatched.map((c) => c['method']), ['lsp.connect']);
+      controller.dispose();
+      await pumpMicrotasks();
+
+      expect(await error, isA<MonacoDisposedError>());
+      expect(
+        source.hasListener,
+        isFalse,
+        reason:
+            'a disposed connection must not keep a pump subscription '
+            '(listened: $listened)',
+      );
+    });
+  });
+
+  group('page reload', () {
+    // A reload discards the page-side LSP client and any page-owned socket,
+    // so every connection must end as failed with MonacoPageReloadedError.
+    late FakePlatformWebViewController reloadWebView;
+    late MonacoController booted;
+    late LspBridgeHarness reloadHarness;
+
+    setUp(() async {
+      reloadWebView = FakePlatformWebViewController();
+      booted = await MonacoController.createForTesting(
+        webViewController: reloadWebView,
+        markReady: false,
+        runBoot: true,
+      );
+      await booted.whenReady;
+      reloadHarness = LspBridgeHarness(reloadWebView);
+    });
+
+    tearDown(() => booted.dispose());
+
+    int connectCount() => reloadWebView.dispatched
+        .where((c) => c['method'] == 'lsp.connect')
+        .length;
+
+    test('fails every open connection with MonacoPageReloadedError', () async {
+      final ws = await booted.connectLanguageServer(
+        id: 'ws',
+        transport: LspWebSocketTransport(url: Uri.parse('ws://localhost:1')),
+        reconnectPolicy: const LspReconnectPolicy.exponentialBackoff(
+          initialDelay: Duration(milliseconds: 1),
+        ),
+      );
+      final fromServer = StreamController<Map<String, Object?>>();
+      addTearDown(fromServer.close);
+      var onCloseCalls = 0;
+      final bridged = await booted.connectLanguageServer(
+        id: 'proc',
+        transport: LspBridgedTransport(
+          fromServer: fromServer.stream,
+          toServer: (_) {},
+          onClose: () async => onCloseCalls++,
+        ),
+      );
+      expect(fromServer.hasListener, isTrue);
+      final connectsBefore = connectCount();
+      final reloaded = booted.onPageReloaded.first;
+
+      reloadWebView.emitReadyLifecycle();
+      await reloaded;
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await pumpMicrotasks();
+
+      for (final connection in [ws, bridged]) {
+        expect(connection.isOpen, isFalse);
+        expect(connection.state.status, LspConnectionStatus.failed);
+        expect(connection.state.error, isA<MonacoPageReloadedError>());
+        await connection.whenClosed.timeout(const Duration(seconds: 1));
+        expect(() => connection.sendRequest('x'), throwsStateError);
+      }
+      expect(booted.languageServerConnections, isEmpty);
+      // No automatic reconnect onto the bare page: the app reconnects after
+      // restoring its documents.
+      expect(connectCount(), connectsBefore);
+      // The bridged server is released to its owner and the pump stops.
+      expect(onCloseCalls, 1);
+      expect(fromServer.hasListener, isFalse);
+      // Disconnecting the stale handle is still safe.
+      await ws.disconnect();
+    });
+
+    test('the same id reconnects from onPageReloaded', () async {
+      await booted.connectLanguageServer(
+        id: 'ws',
+        transport: LspWebSocketTransport(url: Uri.parse('ws://localhost:1')),
+      );
+      final reconnected = Completer<LanguageServerConnection>();
+      booted.onPageReloaded.listen((_) {
+        reconnected.complete(
+          booted.connectLanguageServer(
+            id: 'ws',
+            transport: LspWebSocketTransport(
+              url: Uri.parse('ws://localhost:1'),
+            ),
+          ),
+        );
+      });
+
+      reloadWebView.emitReadyLifecycle();
+      final connection = await reconnected.future.timeout(
+        const Duration(seconds: 1),
+      );
+      expect(connection.isOpen, isTrue);
+      expect(booted.languageServerConnection('ws'), same(connection));
+    });
+
+    test('a connect in flight fails with MonacoPageReloadedError', () async {
+      reloadWebView.autoRespond = false;
+      var onCloseCalls = 0;
+      final fromServer = StreamController<Map<String, Object?>>();
+      addTearDown(fromServer.close);
+      final future = booted.connectLanguageServer(
+        id: 'proc',
+        transport: LspBridgedTransport(
+          fromServer: fromServer.stream,
+          toServer: (_) {},
+          onClose: () async => onCloseCalls++,
+        ),
+      );
+      await reloadHarness.waitForDispatch('lsp.connect');
+
+      reloadWebView.emitReadyLifecycle();
+
+      await expectLater(future, throwsA(isA<MonacoPageReloadedError>()));
+      expect(onCloseCalls, 1);
+      expect(booted.languageServerConnections, isEmpty);
     });
   });
 }

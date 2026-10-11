@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Example demonstrating edge scroll handoff.
 ///
@@ -156,7 +156,7 @@ class _ScrollHandoffExamplePageState extends State<ScrollHandoffExamplePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _SectionText(
+                  const _SectionText(
                     title: 'A page that scrolls through its editors',
                     body:
                         'Scroll this page with the wheel or trackpad. With '
@@ -183,7 +183,7 @@ class _ScrollHandoffExamplePageState extends State<ScrollHandoffExamplePage> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  _SectionText(
+                  const _SectionText(
                     title: 'Long editor: scrolls itself first',
                     body:
                         'This one holds 220 lines. Wheel over it and it '
@@ -202,7 +202,7 @@ class _ScrollHandoffExamplePageState extends State<ScrollHandoffExamplePage> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  _SectionText(
+                  const _SectionText(
                     title: 'Control editor: handoff disabled',
                     body:
                         'This editor keeps the pre-2.3.0 behavior and traps '

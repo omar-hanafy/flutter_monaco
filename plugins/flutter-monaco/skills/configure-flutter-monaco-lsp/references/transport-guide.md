@@ -85,7 +85,7 @@ Retain one handle per open file and close it with the app tab. Monaco synchroniz
 
 ## Page reload recovery
 
-`controller.onPageReloaded` fires after the rebuilt editor is ready. Serialize one recovery routine that disconnects the stale registered connection, restores extra documents from app-owned state, replaces stale `MonacoDocument` handles, and then connects again with the intended id. Store and cancel the stream subscription with the controller owner. Transport reconnect policies cover unexpected transport drops; they do not replace this full page-state recovery.
+`controller.onPageReloaded` fires after the rebuilt editor is ready. Serialize one recovery routine that restores extra documents from app-owned state, replaces stale `MonacoDocument` handles, and then connects again with the intended id. From 4.0 the reload has already ended each connection as `failed` with `MonacoPageReloadedError` and freed its id; disconnecting the stale handle is optional and waits for its `onClose`. On 3.x, disconnect the stale registered connection first. Store and cancel the stream subscription with the controller owner. Transport reconnect policies cover unexpected transport drops; they do not replace this full page-state recovery.
 
 ## Failure matrix
 

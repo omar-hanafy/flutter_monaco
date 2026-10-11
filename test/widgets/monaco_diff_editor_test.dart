@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../fakes/fake_platform_webview_controller.dart';
 
@@ -237,6 +237,116 @@ void main() {
       // The single editor disposes its failed owned controller immediately;
       // the diff editor must not leak its WebView until retry/dispose.
       expect(bundle.webview.disposed, isTrue);
+    });
+  });
+
+  group('MonacoDiffEditor page reload', () {
+    /// A diff controller booted through the real pipeline with texts and
+    /// options that differ from what the widget wants.
+    Future<_TestBundle> bootedBundle() async {
+      final webview = FakePlatformWebViewController(
+        widget: const SizedBox(key: Key('diff-webview')),
+      );
+      final controller = await MonacoDiffController.createForTesting(
+        webViewController: webview,
+        runBoot: true,
+        bootOriginal: 'boot-old',
+        bootModified: 'boot-new',
+      );
+      await controller.whenReady;
+      return _TestBundle(controller, webview);
+    }
+
+    /// Methods (with params) dispatched after the most recent page.boot.
+    List<Map<String, Object?>> sinceLastBoot(FakePlatformWebViewController w) {
+      final methods = w.dispatchedMethods;
+      return w.dispatched.sublist(methods.lastIndexOf('page.boot') + 1);
+    }
+
+    Widget diffEditor(
+      MonacoDiffController controller, {
+      String original = 'old',
+      String modified = 'new',
+      void Function(Object, StackTrace)? onError,
+    }) {
+      return _wrap(
+        MonacoDiffEditor(
+          controller: controller,
+          original: original,
+          modified: modified,
+          language: MonacoLanguage.dart,
+          options: const EditorOptions(
+            fontSize: 17,
+            theme: MonacoTheme.hcBlack,
+          ),
+          diffOptions: const MonacoDiffOptions(renderSideBySide: false),
+          scrollHandoff: const MonacoScrollHandoff.edge(),
+          onError: onError,
+        ),
+      );
+    }
+
+    testWidgets('re-applies texts, options, theme, diff options and scroll '
+        'handoff to the re-booted page', (tester) async {
+      final bundle = await bootedBundle();
+      await tester.pumpWidget(diffEditor(bundle.controller));
+      await tester.pump();
+      await tester.pump();
+
+      bundle.webview.emitReadyLifecycle();
+      await tester.pump();
+      await tester.pump();
+
+      final reapplied = sinceLastBoot(bundle.webview);
+      final setTexts = reapplied.where((d) => d['method'] == 'diff.setTexts');
+      expect(setTexts.single['params'], {
+        'original': 'old',
+        'modified': 'new',
+        'language': 'dart',
+      });
+      final optionUpdates = [
+        for (final d in reapplied)
+          if (d['method'] == 'diff.updateOptions')
+            d['params']! as Map<String, Object?>,
+      ];
+      expect(
+        optionUpdates.map((p) => p['options']),
+        containsAll([
+          containsPair('fontSize', 17),
+          containsPair('renderSideBySide', false),
+          {'theme': 'hc-black'},
+        ]),
+      );
+      final handoff = reapplied.where(
+        (d) => d['method'] == 'page.setScrollHandoff',
+      );
+      expect(handoff.single['params'], containsPair('wheel', true));
+    });
+
+    testWidgets('a failed recovery is reported to onError', (tester) async {
+      final bundle = await bootedBundle();
+      final errors = <Object>[];
+      await tester.pumpWidget(
+        diffEditor(bundle.controller, onError: (e, _) => errors.add(e)),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      bundle.webview.autoRespond = false;
+      bundle.webview.emitPageReady();
+      await tester.pump();
+      final boot = bundle.webview.dispatched.lastWhere(
+        (d) => d['method'] == 'page.boot',
+      );
+      bundle.webview.respondTo(boot['id']! as String);
+      bundle.webview.emitLifecycle(
+        'fatal',
+        error: {'message': 'diff boot failed'},
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(errors, [isA<MonacoJavaScriptError>()]);
     });
   });
 }

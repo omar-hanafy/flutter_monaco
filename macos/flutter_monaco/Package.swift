@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
   name: "flutter_monaco",
   platforms: [
-    .macOS("10.15")
+    .macOS("12.0")
   ],
   products: [
     .library(name: "flutter-monaco", targets: ["flutter_monaco"])

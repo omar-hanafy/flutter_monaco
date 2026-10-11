@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../data/demo_snippets.dart';
 import '../data/samples.dart';
@@ -76,7 +76,7 @@ class _EditorCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.showcaseColors;
     final monaco = controller.monaco;
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(Radii.lg),

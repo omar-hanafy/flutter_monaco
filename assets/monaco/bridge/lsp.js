@@ -5,7 +5,7 @@
 'use strict';
 window.__FMB = window.__FMB || {};
 
-// LSP bridge: bridged transport pump, the Monaco 0.55.1 client wrapper
+// LSP bridge: bridged transport pump, the Monaco 0.57.0 client wrapper
 // (adds the missing dispose()), benign refresh handlers. VERBATIM PORT.
 window.__FMB.lsp = function (ctx) {
   const { serialize, postMessageToFlutter } = ctx;
@@ -97,13 +97,13 @@ window.__FMB.lsp = function (ctx) {
                     };
                   }
 
-                  // Monaco 0.55.1's MonacoLspClient exposes no dispose() and
+                  // Monaco 0.57.0's MonacoLspClient exposes no dispose() and
                   // discards the feature DisposableStore it creates in its
                   // constructor, so a stock client can never unregister its
                   // providers. This wrapper captures the store and reaches
                   // into the private fields (_initPromise, _bridge,
                   // _capabilitiesRegistry, _connection) - all verified against
-                  // the 0.55.1 sources. Kept in this one block so future
+                  // the 0.57.0 sources. Kept in this one block so future
                   // Monaco upgrades have a single place to re-verify.
                   let FlutterLspClientClass = null;
                   function getClientClass() {
@@ -168,7 +168,7 @@ window.__FMB.lsp = function (ctx) {
                     }
                   }
 
-                  // Monaco 0.55.1's client leaves several optional
+                  // Monaco 0.57.0's client leaves several optional
                   // server->client requests unhandled and answers them with
                   // a method-not-found error. Some servers treat that error
                   // as fatal - pyright (vscode-languageserver) dies on the
@@ -229,9 +229,10 @@ window.__FMB.lsp = function (ctx) {
                     } catch (_) {}
                   }
 
-                  function disposeEntry(entry) {
-                    if (entry.disposed) return;
-                    entry.disposed = true;
+                  // Disposes whatever the entry holds right now and forgets
+                  // it, so a second call only releases what was built
+                  // since the first.
+                  function releaseResources(entry) {
                     try {
                       entry.stateWatch && entry.stateWatch.dispose &&
                         entry.stateWatch.dispose();
@@ -243,6 +244,20 @@ window.__FMB.lsp = function (ctx) {
                       entry.transport && entry.transport.dispose &&
                         entry.transport.dispose();
                     } catch (_) {}
+                    entry.stateWatch = null;
+                    entry.client = null;
+                    entry.transport = null;
+                  }
+
+                  function disposeEntry(entry) {
+                    if (entry.disposed) return;
+                    entry.disposed = true;
+                    if (entry.abandon) {
+                      entry.abandon(new Error(
+                        'LSP connection "' + entry.id +
+                        '" was disposed during initialization.'));
+                    }
+                    releaseResources(entry);
                     connections.delete(entry.id);
                     if (connections.size === 0) {
                       // Monaco's LSP diagnostics all publish under the fixed
@@ -254,6 +269,20 @@ window.__FMB.lsp = function (ctx) {
                           monaco.editor.setModelMarkers(model, 'lsp', []);
                         }
                       } catch (_) {}
+                    }
+                  }
+
+                  // A disconnect (the Dart connect timeout, or an explicit
+                  // disconnect) can land while connect() is awaiting. Once
+                  // the entry is disposed, connect() must stop building and
+                  // release whatever it built after disposeEntry ran -
+                  // without touching the connections map, where the id may
+                  // already belong to a newer connect.
+                  function throwIfAbandoned(entry) {
+                    if (entry.disposed) {
+                      throw new Error(
+                        'LSP connection "' + entry.id +
+                        '" was disposed during initialization.');
                     }
                   }
 
@@ -275,7 +304,17 @@ window.__FMB.lsp = function (ctx) {
                         bridged: null,
                         stateWatch: null,
                         disposed: false,
+                        abandon: null,
                       };
+                      // Rejected by disposeEntry. Monaco's LSP client never
+                      // settles `initialized` once its transport is closed,
+                      // so a disconnect during the handshake would otherwise
+                      // leave this call - and Dart's pending lsp.connect
+                      // request - waiting forever.
+                      const abandoned = new Promise((_, reject) => {
+                        entry.abandon = reject;
+                      });
+                      abandoned.catch(() => {});
                       // Register synchronously (before any await) so bridged
                       // server->client messages can be delivered while the
                       // initialize handshake is still in flight - the
@@ -286,7 +325,20 @@ window.__FMB.lsp = function (ctx) {
                           entry.bridged = createBridgedTransport(id);
                           entry.transport = entry.bridged;
                         } else {
-                          entry.transport = await buildTransport(id, transportPayload);
+                          const building = buildTransport(id, transportPayload);
+                          // A transport that never settles (a WebSocket stuck
+                          // connecting, a factory that never resolves) must not
+                          // hold this call after a disconnect; one that settles
+                          // after the disconnect is released here.
+                          building.then((transport) => {
+                            if (entry.disposed && transport) {
+                              try {
+                                transport.dispose && transport.dispose();
+                              } catch (_) {}
+                            }
+                          }, () => {});
+                          entry.transport = await Promise.race([building, abandoned]);
+                          throwIfAbandoned(entry);
                         }
                         if (!entry.transport ||
                             typeof entry.transport.send !== 'function' ||
@@ -300,16 +352,16 @@ window.__FMB.lsp = function (ctx) {
                         entry.client = new ClientClass(entry.transport);
                         registerBenignRefreshHandlers(entry);
                         watchTransportClose(entry);
-                        await entry.client.initialized;
-                        if (entry.disposed) {
-                          throw new Error(
-                            'LSP connection "' + id +
-                            '" was disposed during initialization.');
-                        }
+                        await Promise.race([entry.client.initialized, abandoned]);
+                        throwIfAbandoned(entry);
                         postStatus(id, 'open', null);
                         return true;
                       } catch (e) {
-                        disposeEntry(entry);
+                        if (entry.disposed) {
+                          releaseResources(entry);
+                        } else {
+                          disposeEntry(entry);
+                        }
                         throw e;
                       }
                     },
@@ -345,7 +397,7 @@ window.__FMB.lsp = function (ctx) {
 
                     // EXPERIMENTAL escape hatch for non-standard server
                     // extensions. Depends on Monaco-internal channel plumbing
-                    // (verified against 0.55.1); may break on future Monaco
+                    // (verified against 0.57.0); may break on future Monaco
                     // upgrades, in which case it throws a descriptive error.
                     async sendRequest(id, method, params) {
                       const entry = connections.get(id);

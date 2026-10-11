@@ -27,7 +27,7 @@ void main() {
       final html = buildMonacoIndexHtml(
         vsPath: 'min/vs',
         bridgeBase: 'bridge',
-        monacoVersion: '0.55.1',
+        monacoVersion: '0.57.0',
         isWeb: true,
         messageToken: 'token',
       );

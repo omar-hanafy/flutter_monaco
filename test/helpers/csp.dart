@@ -7,6 +7,8 @@
 /// does instead - with one deliberate deviation, see [admitsWithoutSelf].
 library;
 
+import 'dart:convert';
+
 /// The policy carried by the page's `<meta http-equiv>` element.
 class PageCsp {
   PageCsp._(this.directives);
@@ -23,7 +25,7 @@ class PageCsp {
       throw StateError('No Content-Security-Policy meta element in the page');
     }
     final directives = <String, List<String>>{};
-    for (final part in match.group(1)!.split(';')) {
+    for (final part in decodeHtmlAttribute(match.group(1)!).split(';')) {
       final tokens = part.trim().split(RegExp(r'\s+'));
       if (tokens.isEmpty || tokens.first.isEmpty) continue;
       directives[tokens.first] = tokens.skip(1).toList();
@@ -76,15 +78,24 @@ class PageCsp {
 }
 
 /// Every script URL the generated page references literally: `<script src>`
-/// attributes plus the dynamically assigned `loaderScript.src` used on web.
+/// attributes (HTML-decoded) plus the dynamically assigned
+/// `loaderScript.src` used on web (a JSON string literal).
 ///
 /// Derived from the page rather than restated as literals, so a `<script>`
 /// added later pointing at a new asset root is covered automatically.
 List<String> scriptUrlsIn(String html) => [
-  ...RegExp(
-    r'<script[^>]*\ssrc="([^"]+)"',
-  ).allMatches(html).map((m) => m.group(1)!),
-  ...RegExp(
-    r"""\.src\s*=\s*'([^']+)'""",
-  ).allMatches(html).map((m) => m.group(1)!),
+  ...RegExp(r'<script[^>]*\ssrc="([^"]+)"')
+      .allMatches(html)
+      .map((m) => decodeHtmlAttribute(m.group(1)!)),
+  ...RegExp(r'''\.src\s*=\s*("(?:[^"\\]|\\.)*")''')
+      .allMatches(html)
+      .map((m) => jsonDecode(m.group(1)!) as String),
 ];
+
+/// Decodes the character references the page builder emits in attribute
+/// values, as an HTML parser would.
+String decodeHtmlAttribute(String value) => value
+    .replaceAll('&quot;', '"')
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&amp;', '&');

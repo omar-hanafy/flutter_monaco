@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -273,5 +275,190 @@ void main() {
         },
       );
     });
+  });
+
+  group('MonacoDiffController page-reload recovery', () {
+    Future<void> pumpMicrotasks([int rounds = 8]) async {
+      for (var i = 0; i < rounds; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+    }
+
+    late FakePlatformWebViewController webview;
+    late MonacoDiffController controller;
+
+    setUp(() async {
+      webview = FakePlatformWebViewController();
+      controller = await MonacoDiffController.createForTesting(
+        webViewController: webview,
+        runBoot: true,
+        bootOriginal: 'old',
+        bootModified: 'new',
+      );
+      await controller.whenReady;
+      webview.autoRespond = false;
+    });
+
+    tearDown(() => controller.dispose());
+
+    String lastIdOf(String method) =>
+        webview.dispatched.lastWhere((call) => call['method'] == method)['id']!
+            as String;
+
+    test('re-boots with the original payload', () async {
+      webview.autoRespond = true;
+      webview.emitReadyLifecycle();
+      await pumpMicrotasks();
+
+      final boots = webview.dispatched
+          .where((call) => call['method'] == 'page.boot')
+          .toList();
+      expect(boots, hasLength(2));
+      final params = boots.last['params']! as Map<String, Object?>;
+      expect(params['mode'], 'diff');
+      expect(params['original'], 'old');
+      expect(params['modified'], 'new');
+      expect(controller.isReady, isTrue);
+    });
+
+    test('commands issued while the reloaded page has no diff editor wait '
+        'for the re-boot and run in FIFO order', () async {
+      webview.emitPageReady();
+      await pumpMicrotasks();
+      expect(webview.dispatchedMethods.last, 'page.boot');
+      expect(controller.isReady, isFalse);
+
+      final first = controller.getModifiedText();
+      final second = controller.setTexts(original: 'a', modified: 'b');
+      await pumpMicrotasks();
+      expect(webview.dispatchedMethods.last, 'page.boot');
+
+      webview.respondTo(lastIdOf('page.boot'));
+      webview.emitLifecycle('ready');
+      await pumpMicrotasks();
+      final afterBoot = webview.dispatchedMethods.sublist(
+        webview.dispatchedMethods.lastIndexOf('page.boot') + 1,
+      );
+      expect(afterBoot, ['diff.getState', 'diff.setTexts']);
+      expect(controller.isReady, isTrue);
+
+      webview.respondTo(
+        lastIdOf('diff.getState'),
+        value: {'modifiedText': 'x'},
+      );
+      webview.respondTo(lastIdOf('diff.setTexts'));
+      expect(await first, 'x');
+      await second;
+    });
+
+    test('a failed recovery fails queued commands with '
+        'MonacoPageReloadedError', () async {
+      final reloadErrors = <Object>[];
+      controller.onPageReloaded.listen((_) {}, onError: reloadErrors.add);
+
+      webview.emitPageReady();
+      await pumpMicrotasks();
+      final queued = controller.getModifiedText();
+      webview.respondTo(lastIdOf('page.boot'));
+      webview.emitLifecycle('fatal', error: {'message': 'diff boot failed'});
+
+      await expectLater(queued, throwsA(isA<MonacoPageReloadedError>()));
+      await pumpMicrotasks();
+      expect(reloadErrors.single, isA<MonacoJavaScriptError>());
+      expect(controller.isReady, isFalse);
+      expect(
+        webview.dispatchedMethods.where((m) => m.startsWith('diff.')),
+        // Nothing reached the page that has no diff editor.
+        <String>[],
+      );
+    });
+
+    test('dispose during recovery fails queued commands with '
+        'MonacoDisposedError', () async {
+      webview.emitPageReady();
+      await pumpMicrotasks();
+      final queued = controller.getModifiedText();
+      await pumpMicrotasks();
+
+      controller.dispose();
+
+      await expectLater(queued, throwsA(isA<MonacoDisposedError>()));
+    });
+  });
+
+  group('MonacoDiffController reload during the first boot', () {
+    Future<void> pumpMicrotasks([int rounds = 8]) async {
+      for (var i = 0; i < rounds; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+    }
+
+    test('becomes ready once the re-booted page reports ready', () async {
+      final webview = FakePlatformWebViewController()..autoRespond = false;
+      final controller = await MonacoDiffController.createForTesting(
+        webViewController: webview,
+        runBoot: true,
+        bootOriginal: 'old',
+        bootModified: 'new',
+      );
+      addTearDown(controller.dispose);
+      await pumpMicrotasks();
+      expect(webview.dispatchedMethods, contains('page.boot'));
+
+      // The page reloads before it answers the first page.boot.
+      webview.emitPageReady();
+      await pumpMicrotasks();
+      final boots = webview.dispatched
+          .where((call) => call['method'] == 'page.boot')
+          .toList();
+      expect(boots, hasLength(2));
+      final params = boots.last['params']! as Map<String, Object?>;
+      expect(params['original'], 'old');
+      expect(params['modified'], 'new');
+      webview.respondTo(boots.last['id']! as String);
+      webview.emitLifecycle('ready');
+
+      await controller.whenReady;
+      await pumpMicrotasks();
+      expect(controller.isReady, isTrue);
+
+      webview.autoRespond = true;
+      await controller.setTexts(original: 'a', modified: 'b');
+      expect(webview.dispatchedMethods.last, 'diff.setTexts');
+    });
+  });
+
+  testWidgets('MonacoDiffController fails queued commands when a re-boot '
+      'misses the boot deadline', (tester) async {
+    final webview = FakePlatformWebViewController();
+    final controller = await MonacoDiffController.createForTesting(
+      webViewController: webview,
+      runBoot: true,
+      readyTimeout: const Duration(seconds: 1),
+    );
+    await tester.pump();
+    expect(controller.isReady, isTrue);
+
+    webview.autoRespond = false;
+    webview.emitPageReady();
+    await tester.pump();
+    final boot = webview.dispatched.lastWhere(
+      (call) => call['method'] == 'page.boot',
+    );
+    webview.respondTo(boot['id']! as String);
+    Object? queuedError;
+    unawaited(
+      controller.getModifiedText().then<void>(
+        (_) {},
+        onError: (Object e) {
+          queuedError = e;
+        },
+      ),
+    );
+
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+    expect(queuedError, isA<MonacoPageReloadedError>());
+    controller.dispose();
   });
 }

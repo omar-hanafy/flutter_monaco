@@ -4,9 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('showcase lays MonacoEditor out as a direct sized child', () {
-    final source = File(
-      'example/lib/showcase/sections/playground_section.dart',
-    ).readAsStringSync();
+    final source = File('example/lib/showcase/sections/playground_section.dart')
+        .readAsStringSync();
     final editorStart = source.indexOf('child: MonacoEditor(');
     expect(editorStart, isNonNegative);
 

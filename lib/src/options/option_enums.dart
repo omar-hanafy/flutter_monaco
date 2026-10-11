@@ -3,6 +3,10 @@
 // Each enum value exposes an `id` that is the exact wire string the Monaco
 // editor expects for the corresponding option.
 
+/// @docImport 'package:flutter_monaco/src/types/json_diagnostics.dart';
+/// @docImport 'package:flutter_monaco/src/types/markers.dart';
+library;
+
 /// Controls how lines are wrapped in the editor.
 enum MonacoWordWrap {
   /// Lines never wrap.
@@ -328,6 +332,107 @@ enum DiagnosticsSeverity {
     if (id == null) return orElse;
     return DiagnosticsSeverity.values.firstWhere(
       (s) => s.id == id,
+      orElse: () => orElse,
+    );
+  }
+}
+
+/// Controls the width used to render full-width characters (Monaco
+/// `fullwidthCharacterWidth`, added in Monaco 0.57).
+enum MonacoFullwidthCharacterWidth {
+  /// Full-width characters use the width defined by the font (Monaco's
+  /// default).
+  font('font'),
+
+  /// Full-width characters render centered in exactly two character cells,
+  /// keeping columns aligned.
+  ///
+  /// Only applies to monospace fonts (Monaco behaves as [font] otherwise),
+  /// does not apply to multi-code-point full-width characters or to GPU
+  /// rendering, and costs some line-rendering performance.
+  twoCells('twoCells');
+
+  const MonacoFullwidthCharacterWidth(this.id);
+
+  /// The wire string sent to the Monaco editor.
+  final String id;
+
+  /// Creates a [MonacoFullwidthCharacterWidth] from its string [id].
+  ///
+  /// If the [id] is not found, returns [orElse].
+  static MonacoFullwidthCharacterWidth fromId(
+    String? id, {
+    MonacoFullwidthCharacterWidth orElse = MonacoFullwidthCharacterWidth.font,
+  }) {
+    if (id == null) return orElse;
+    return MonacoFullwidthCharacterWidth.values.firstWhere(
+      (w) => w.id == id,
+      orElse: () => orElse,
+    );
+  }
+}
+
+/// Controls whether the find widget's search string is seeded from the
+/// editor selection (Monaco `find.seedSearchStringFromSelection`).
+enum MonacoFindSeedSearchString {
+  /// Never seed the search string from the editor selection.
+  never('never'),
+
+  /// Always seed the search string from the editor selection, including
+  /// the word at the cursor when nothing is selected (Monaco's default).
+  always('always'),
+
+  /// Seed the search string only from a non-empty editor selection.
+  selection('selection');
+
+  const MonacoFindSeedSearchString(this.id);
+
+  /// The wire string sent to the Monaco editor.
+  final String id;
+
+  /// Creates a [MonacoFindSeedSearchString] from its string [id].
+  ///
+  /// If the [id] is not found, returns [orElse].
+  static MonacoFindSeedSearchString fromId(
+    String? id, {
+    MonacoFindSeedSearchString orElse = MonacoFindSeedSearchString.always,
+  }) {
+    if (id == null) return orElse;
+    return MonacoFindSeedSearchString.values.firstWhere(
+      (s) => s.id == id,
+      orElse: () => orElse,
+    );
+  }
+}
+
+/// Controls when the find widget turns on "Find in Selection"
+/// automatically (Monaco `find.autoFindInSelection`).
+enum MonacoAutoFindInSelection {
+  /// Never turn on Find in Selection automatically (Monaco's default).
+  never('never'),
+
+  /// Always turn on Find in Selection automatically.
+  always('always'),
+
+  /// Turn on Find in Selection automatically when multiple lines of
+  /// content are selected.
+  multiline('multiline');
+
+  const MonacoAutoFindInSelection(this.id);
+
+  /// The wire string sent to the Monaco editor.
+  final String id;
+
+  /// Creates a [MonacoAutoFindInSelection] from its string [id].
+  ///
+  /// If the [id] is not found, returns [orElse].
+  static MonacoAutoFindInSelection fromId(
+    String? id, {
+    MonacoAutoFindInSelection orElse = MonacoAutoFindInSelection.never,
+  }) {
+    if (id == null) return orElse;
+    return MonacoAutoFindInSelection.values.firstWhere(
+      (a) => a.id == id,
       orElse: () => orElse,
     );
   }

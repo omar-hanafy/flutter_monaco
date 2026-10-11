@@ -2,8 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:flutter_monaco/src/editor/boot_timeout.dart';
 import 'package:flutter_monaco/src/editor/focus_coordinator.dart';
 import 'package:flutter_monaco/src/lsp/lsp_connection.dart';
 import 'package:flutter_monaco/src/platform/platform_webview.dart';
@@ -37,6 +38,26 @@ class MonacoController {
   /// when the page document reloads (see [onPageReloaded]). Null until
   /// [_startBoot] runs.
   Map<String, Object?>? _bootPayload;
+
+  /// Page-reload recovery gate, awaited by [_ensureReady].
+  ///
+  /// Non-null from the moment a reload is picked up until the re-boot and
+  /// the registration replay finished. A reloaded page shell only knows
+  /// `page.boot` and `page.eval` until its editor exists, so commands issued
+  /// in that window queue here (FIFO, like pre-ready commands) instead of
+  /// reaching a page that would answer "Unknown method". Recovery itself
+  /// talks to the protocol directly and is never gated. A failed recovery
+  /// leaves the gate completed with a [MonacoPageReloadedError] so later
+  /// commands fail the same way until a newer reload recovers the editor.
+  Completer<void>? _recoveryGate;
+
+  /// Incremented per recovery attempt; a superseded attempt never settles
+  /// the gate that the newest attempt now owns.
+  int _recoveryGeneration = 0;
+
+  /// The boot deadline ([create]'s `readyTimeout`), which also bounds each
+  /// page-reload re-boot so commands waiting on the gate cannot hang.
+  Duration _readyTimeout = MonacoDefaults.readyTimeout;
 
   /// The EFFECTIVE interaction state ([_baseInteractionEnabled] with no
   /// active [runWithInteractionDisabled] scopes).
@@ -95,8 +116,10 @@ class MonacoController {
   /// readiness.
   Future<void> get whenReady => _onReady.future;
 
-  /// Returns `true` if the editor has finished initializing successfully.
-  bool get isReady => _onReady.isCompleted && _readyCompletedOk;
+  /// Returns `true` if the editor has finished initializing successfully
+  /// and is not recovering from a page reload (see [onPageReloaded]).
+  bool get isReady =>
+      _onReady.isCompleted && _readyCompletedOk && _recoveryGate == null;
   bool _readyCompletedOk = false;
 
   /// What the loaded page can do, from the protocol handshake.
@@ -181,9 +204,13 @@ class MonacoController {
   /// * LSP connections: they died with the page - disconnect and reconnect.
   ///
   /// Commands that were in flight when the page reloaded fail with
-  /// [MonacoPageReloadedError]; retry them from here. If the re-boot itself
-  /// fails, the failure is delivered as an error event on this stream and
-  /// the editor stays unusable.
+  /// [MonacoPageReloadedError]; retry them from here. Commands issued while
+  /// the controller recovers wait for the recovery (in issue order) and then
+  /// run against the re-booted editor. If the re-boot itself fails (or does
+  /// not report ready within [create]'s `readyTimeout`), the
+  /// failure is delivered as an error event on this stream, the editor stays
+  /// unusable, and waiting and later commands fail with
+  /// [MonacoPageReloadedError].
   Stream<void> get onPageReloaded => _pageReloaded.stream;
 
   /// Creates a new [MonacoController] and boots the editor.
@@ -276,6 +303,7 @@ class MonacoController {
     final bootTheme = bootOptions.theme ?? MonacoDefaults.darkTheme;
     // Boot failures must reach callers through [whenReady] (and the commands
     // gated on it), never as an unhandled zone error when nobody awaits it.
+    _readyTimeout = readyTimeout;
     _onReady.future.ignore();
     unawaited(() async {
       try {
@@ -300,25 +328,30 @@ class MonacoController {
             'scrollHandoff': const {'wheel': false, 'touch': false},
           };
           _bootPayload = bootPayload;
-          await _protocol.invoke('page.boot', bootPayload, timeout: null);
+          try {
+            await _protocol.invoke('page.boot', bootPayload, timeout: null);
+          } on MonacoPageReloadedError {
+            // The page reloaded before answering. Page-reload recovery
+            // re-boots the new page with this payload, and that page's
+            // ready lifecycle completes editorReady below; a fatal or
+            // skewed reload fails it instead.
+          }
 
           await _protocol.editorReady;
         }().timeout(
           readyTimeout,
           onTimeout: () => throw MonacoTimeoutError(
-            message:
-                'Monaco Editor did not report ready in '
-                '${readyTimeout.inSeconds} seconds.'
-                '${kIsWeb ? ' On web the first load downloads the editor '
-                          'bundle; a slow connection can exceed this deadline. '
-                          'Retrying resumes from the browser cache.' : ''}',
+            message: monacoBootTimeoutMessage(
+              subject: 'Monaco Editor',
+              timeout: readyTimeout,
+            ),
             timeout: readyTimeout,
             operation: 'boot',
           ),
         );
 
-        _readyCompletedOk = true;
         if (!_onReady.isCompleted) {
+          _readyCompletedOk = true;
           _onReady.complete();
         }
       } catch (e, st) {
@@ -340,6 +373,7 @@ class MonacoController {
   /// `pageReady`, `page.boot` carries [bootOptions] and [bootInitialText],
   /// and readiness follows the fake's `ready` lifecycle. Use this to
   /// exercise flows that depend on boot state, like page-reload recovery.
+  /// [readyTimeout] bounds that boot like [create]'s.
   @visibleForTesting
   static Future<MonacoController> createForTesting({
     required PlatformWebViewController webViewController,
@@ -348,6 +382,7 @@ class MonacoController {
     bool runBoot = false,
     EditorOptions? bootOptions,
     String? bootInitialText,
+    Duration readyTimeout = const Duration(seconds: 20),
   }) async {
     final protocol = MonacoProtocol(webView: webViewController);
 
@@ -364,7 +399,7 @@ class MonacoController {
         options: bootOptions,
         initialText: bootInitialText,
         page: const MonacoPageConfig(),
-        readyTimeout: const Duration(seconds: 20),
+        readyTimeout: readyTimeout,
       );
     } else if (markReady) {
       controller.completeReadyForTesting();
@@ -434,15 +469,25 @@ class MonacoController {
   /// still `isCompleted`, so an isCompleted fast path would let commands skip
   /// the boot error and enter the protocol of a dead page. Every command
   /// after a failed boot must keep rethrowing the ORIGINAL boot error.
-  Future<void> _ensureReady() {
+  ///
+  /// After readiness, a page-reload recovery in progress ([_recoveryGate])
+  /// holds the command until the re-booted editor accepts commands again.
+  Future<void> _ensureReady() async {
     if (_disposed) {
-      return Future.error(
-        const MonacoDisposedError(
-          message: 'MonacoController has been disposed.',
-        ),
+      throw const MonacoDisposedError(
+        message: 'MonacoController has been disposed.',
       );
     }
-    return _onReady.future;
+    await _onReady.future;
+    // Loop: a newer reload can open a fresh gate while this one settles.
+    for (var gate = _recoveryGate; gate != null; gate = _recoveryGate) {
+      await gate.future;
+    }
+    if (_disposed) {
+      throw const MonacoDisposedError(
+        message: 'MonacoController has been disposed.',
+      );
+    }
   }
 
   /// Dispatches a protocol command after readiness; maps a JavaScript
@@ -485,15 +530,24 @@ class MonacoController {
     await _invoke('editor.setTheme', {'theme': theme.id});
   }
 
-  /// Returns the theme currently active in the editor.
+  /// Returns the theme the editor last applied through this package.
   ///
-  /// Reads the live value from Monaco's runtime rather than caching what
-  /// Dart most recently sent. Returns `null` when Monaco can't report a
-  /// theme (e.g. on engine versions that don't expose `editor.getTheme()`).
-  /// Bridge failures throw a [MonacoException].
+  /// Monaco has no public theme getter, so the page tracks the boot theme
+  /// and then every [setTheme] and [updateOptions] theme. The id is not
+  /// checked against the registered themes: for an id that was never
+  /// defined Monaco renders `vs` while this still reports the requested
+  /// id, and a theme changed from [runJavaScript] or [evaluateJavaScript]
+  /// is not observed. Returns `null` when the page reports no theme.
+  /// Throws a [MonacoProtocolError] on a malformed result; other bridge
+  /// failures throw a [MonacoException].
   Future<MonacoTheme?> getTheme() async {
     final result = await _invoke('editor.getTheme', {});
-    return result is String && result.isNotEmpty ? MonacoTheme(result) : null;
+    if (result == null || result == '') return null;
+    if (result is String) return MonacoTheme(result);
+    throw MonacoProtocolError(
+      operation: 'editor.getTheme',
+      message: 'Expected a theme id string, got ${result.runtimeType}.',
+    );
   }
 
   /// Registers or replaces a custom Monaco theme.
@@ -701,6 +755,12 @@ class MonacoController {
   /// Runs a Monaco editor action, e.g.
   /// `executeAction(MonacoAction.formatDocument)`. Custom command ids run
   /// via `MonacoAction('my.command')`.
+  ///
+  /// Completes when the action or command finishes, including asynchronous
+  /// ones. Throws a [MonacoJavaScriptError] when Monaco has no action or
+  /// command with that id (including the deprecated [MonacoAction] catalog
+  /// ids that standalone Monaco does not register), when the command fails,
+  /// or when a command id is run while no document is attached.
   Future<void> executeAction(MonacoAction action, {Object? args}) async {
     await _invoke('editor.executeAction', {
       'actionId': action.id,
@@ -794,11 +854,15 @@ class MonacoController {
   }
 
   /// Scrolls the editor to the very top (line 1, column 1).
+  ///
+  /// Throws a [MonacoJavaScriptError] when no document is attached.
   Future<void> scrollToTop() async {
     await _invoke('editor.scrollToEdge', {'edge': 'top'});
   }
 
   /// Scrolls the editor to the last line.
+  ///
+  /// Throws a [MonacoJavaScriptError] when no document is attached.
   Future<void> scrollToBottom() async {
     await _invoke('editor.scrollToEdge', {'edge': 'bottom'});
   }
@@ -873,10 +937,12 @@ class MonacoController {
   ///
   /// Replays the original boot payload, awaits the reloaded page's ready
   /// lifecycle, re-registers Dart-side completion providers and custom
-  /// actions, then announces the recovery on [onPageReloaded]. A newer
-  /// reload arriving mid-recovery fails this attempt's commands with
-  /// [MonacoPageReloadedError] and runs its own recovery; a genuine boot
-  /// failure is surfaced as an error on [onPageReloaded].
+  /// actions, then opens the command gate and announces the recovery on
+  /// [onPageReloaded]. A newer reload arriving mid-recovery fails this
+  /// attempt's commands with [MonacoPageReloadedError] and runs its own
+  /// recovery, which takes over the gate; a genuine boot failure fails the
+  /// gate with [MonacoPageReloadedError] and is surfaced as an error on
+  /// [onPageReloaded].
   Future<void> _recoverFromPageReload(MonacoPageReload reload) async {
     if (_disposed) return;
     final bootPayload = _bootPayload;
@@ -890,21 +956,75 @@ class MonacoController {
       return;
     }
     debugPrint('[MonacoController] Page reloaded; re-booting the editor.');
+    final generation = ++_recoveryGeneration;
+    final gate = _openRecoveryGate();
     try {
       _capabilities = MonacoCapabilities.fromHandshake(reload.handshake);
-      await _protocol.invoke('page.boot', bootPayload, timeout: null);
-      await reload.editorReady;
+      final readyTimeout = _readyTimeout;
+      await () async {
+        await _protocol.invoke('page.boot', bootPayload, timeout: null);
+        await reload.editorReady;
+      }().timeout(
+        readyTimeout,
+        onTimeout: () => throw MonacoTimeoutError(
+          message:
+              'The reloaded Monaco editor did not report ready in '
+              '${readyTimeout.inSeconds} seconds.',
+          timeout: readyTimeout,
+          operation: 'boot',
+        ),
+      );
       await _replayRegistrations();
-      if (_disposed) return;
+      if (_disposed || generation != _recoveryGeneration) return;
+      _recoveryGate = null;
+      gate.complete();
       _pageReloaded.add(null);
-    } on MonacoPageReloadedError {
-      // Superseded by an even newer reload; its recovery takes over.
     } on MonacoDisposedError {
-      // Disposed mid-recovery; nothing to announce.
+      // Disposed mid-recovery; dispose settles the gate.
+    } on MonacoPageReloadedError catch (e, st) {
+      // Normally superseded by an even newer reload whose recovery takes
+      // over the gate. A reloaded page that cannot be re-booted (protocol
+      // skew) interrupts this attempt without starting a new one; let the
+      // newer recovery (if any) register before deciding.
+      await Future<void>.delayed(Duration.zero);
+      if (_disposed || generation != _recoveryGeneration) return;
+      _failRecovery(gate, e, st);
     } catch (e, st) {
       debugPrint('[MonacoController] Page reload recovery failed: $e');
-      if (!_disposed) _pageReloaded.addError(e, st);
+      if (_disposed || generation != _recoveryGeneration) return;
+      _failRecovery(gate, e, st);
     }
+  }
+
+  /// Returns the pending recovery gate, opening a new one when the page was
+  /// healthy or the previous recovery failed.
+  Completer<void> _openRecoveryGate() {
+    final current = _recoveryGate;
+    if (current != null && !current.isCompleted) return current;
+    final gate = Completer<void>();
+    // Settled with an error when recovery fails or the controller is
+    // disposed, possibly while no command waits on it.
+    gate.future.ignore();
+    _recoveryGate = gate;
+    return gate;
+  }
+
+  /// Fails waiting and later commands with [MonacoPageReloadedError] and
+  /// reports [error] on [onPageReloaded]. The failed gate stays in place
+  /// until a newer reload recovers the editor.
+  void _failRecovery(Completer<void> gate, Object error, StackTrace st) {
+    if (!gate.isCompleted) {
+      gate.completeError(
+        MonacoPageReloadedError(
+          message:
+              'The Monaco page reloaded and the editor could not be '
+              'recovered: $error',
+          operation: 'page.boot',
+        ),
+        st,
+      );
+    }
+    _pageReloaded.addError(error, st);
   }
 
   /// Re-registers every live completion provider and custom action on the
@@ -994,13 +1114,17 @@ class MonacoController {
 
   /// Retrieves the current primary selection range.
   ///
-  /// Returns `null` when the editor reports no selection. Bridge failures
+  /// Returns `null` when the editor reports no selection. Throws a
+  /// [MonacoProtocolError] on a malformed result; other bridge failures
   /// throw a [MonacoException].
   Future<Range?> getSelection() async {
     final result = await _invoke('editor.getSelection', {});
-    return result is Map
-        ? Range.fromJson(Map<String, dynamic>.from(result))
-        : null;
+    if (result == null) return null;
+    if (result is Map) return Range.fromJson(Map<String, dynamic>.from(result));
+    throw MonacoProtocolError(
+      operation: 'editor.getSelection',
+      message: 'Expected a selection map or null, got ${result.runtimeType}.',
+    );
   }
 
   /// Selects the specified [range] in the editor.
@@ -1135,12 +1259,20 @@ class MonacoController {
   /// Returns the current cursor position.
   ///
   /// Returns `null` when the editor reports no cursor. Throws a
-  /// [MonacoException] on bridge failure.
+  /// [MonacoProtocolError] on a malformed result; other bridge failures
+  /// throw a [MonacoException].
   Future<Position?> getCursorPosition() async {
     final result = await _invoke('editor.getCursor', {});
-    return result is Map
-        ? Position.fromJson(Map<String, dynamic>.from(result))
-        : null;
+    if (result == null) return null;
+    if (result is Map) {
+      return Position.fromJson(Map<String, dynamic>.from(result));
+    }
+    throw MonacoProtocolError(
+      operation: 'editor.getCursor',
+      message:
+          'Expected a cursor position map or null, got '
+          '${result.runtimeType}.',
+    );
   }
 
   /// Set cursor position
@@ -1228,13 +1360,15 @@ class MonacoController {
     required LspTransport transport,
     LspReconnectPolicy reconnectPolicy = const LspReconnectPolicy.none(),
     Duration initializationTimeout = const Duration(seconds: 30),
-  }) async {
-    await _ensureReady();
+  }) {
+    // The readiness wait runs inside the manager so a disposed controller
+    // or failed boot also releases a bridged transport (its onClose runs).
     return _lspManager.connect(
       id: id,
       transport: transport,
       reconnectPolicy: reconnectPolicy,
       initializationTimeout: initializationTimeout,
+      waitUntilReady: _ensureReady,
     );
   }
 
@@ -1316,9 +1450,12 @@ class MonacoController {
   /// ```
   ///
   /// Returns [defaultValue] (default `null`) when the expression returns
-  /// `undefined` or `null`. Throws a [MonacoProtocolError] when the value
-  /// cannot be converted to [T]; JavaScript execution errors propagate as
-  /// [MonacoJavaScriptError].
+  /// `undefined` or `null`. Numbers convert between `int` and `double`, and
+  /// numbers and booleans convert to `String`. Throws a
+  /// [MonacoProtocolError] when the value cannot be converted to [T] (for
+  /// example an object or array requested as `String`; return
+  /// `JSON.stringify(...)` from the expression for its JSON text);
+  /// JavaScript execution errors propagate as [MonacoJavaScriptError].
   ///
   /// ## Security
   ///
@@ -1351,7 +1488,11 @@ class MonacoController {
     // Number normalization: platforms and JSON round-trips blur int/double.
     if (T == int && result is num) return result.toInt() as T;
     if (T == double && result is num) return result.toDouble() as T;
-    if (T == String) return result.toString() as T;
+    // Scalars only: a map or list has no faithful string form here
+    // (Dart's toString is not JSON), so it is a conversion failure.
+    if (T == String && (result is num || result is bool)) {
+      return result.toString() as T;
+    }
     throw MonacoProtocolError(
       operation: 'page.eval',
       message:
@@ -1388,6 +1529,26 @@ class MonacoController {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+    // Settle readiness now: the boot may be parked in a page load that only
+    // gives up at its deadline (web waits for the iframe to attach), and
+    // whenReady and every command queued behind it must not wait that long.
+    if (!_onReady.isCompleted) {
+      _onReady.future.ignore();
+      _onReady.completeError(
+        const MonacoDisposedError(
+          message: 'MonacoController disposed before the editor became ready.',
+        ),
+      );
+    }
+    // Commands waiting for a page-reload recovery must not wait forever.
+    final gate = _recoveryGate;
+    if (gate != null && !gate.isCompleted) {
+      gate.completeError(
+        const MonacoDisposedError(
+          message: 'MonacoController disposed while recovering a page reload.',
+        ),
+      );
+    }
     // LSP connections must come down before the WebView: closing them fires
     // bridged-transport onClose callbacks (e.g. killing server processes)
     // and finalizes connection state streams.

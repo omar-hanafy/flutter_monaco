@@ -173,8 +173,10 @@ sealed class EditorState with _$EditorState {
 int? _optInt(Map<String, dynamic> json, String key) {
   final value = json[key];
   if (value == null) return null;
-  if (value is num) return value.toInt();
-  throw FormatException(
-    'stats: "$key" must be a number, got ${value.runtimeType}',
-  );
+  // Web numbers are doubles: `2.0 is int` and `double.infinity is int` hold.
+  if (value is int && value.isFinite) return value;
+  if (value is double && value.isFinite && value == value.truncateToDouble()) {
+    return value.toInt();
+  }
+  throw FormatException('stats: "$key" must be an integer, got $value');
 }

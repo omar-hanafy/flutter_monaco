@@ -1,3 +1,6 @@
+/// @docImport 'package:flutter_monaco/src/options/editor_options.dart';
+library;
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'diff_options.freezed.dart';

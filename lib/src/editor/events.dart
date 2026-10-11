@@ -31,7 +31,7 @@ sealed class MonacoEvent {
             isFlush: data['isFlush'] == true,
             changes: rawChanges is List
                 ? rawChanges
-                      .whereType<Map>()
+                      .whereType<Map<Object?, Object?>>()
                       .map(
                         (c) => MonacoTextChange.fromJson(
                           Map<String, dynamic>.from(c),

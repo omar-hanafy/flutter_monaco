@@ -8,8 +8,10 @@ import 'package:flutter_monaco/src/types/text.dart';
 
 /// Internal command dispatcher a document handle rides. Wired to the
 /// controller's readiness-gated invoke.
-typedef MonacoDocumentInvoke =
-    Future<Object?> Function(String method, Map<String, Object?> params);
+typedef MonacoDocumentInvoke = Future<Object?> Function(
+  String method,
+  Map<String, Object?> params,
+);
 
 /// A handle to one Monaco text model.
 ///
@@ -185,7 +187,7 @@ final class MonacoDocument {
       );
     }
     return matches
-        .whereType<Map>()
+        .whereType<Map<Object?, Object?>>()
         .map((match) => FindMatch.fromJson(Map<String, dynamic>.from(match)))
         .toList();
   }
@@ -220,18 +222,32 @@ final class MonacoDocument {
   }
 
   /// Returns the word at [position], or `null` when there is none.
+  ///
+  /// Throws a [MonacoProtocolError] when the bridge answers with anything
+  /// other than a string or `null`.
   Future<String?> getWordAt(Position position) async {
     final result = await _invoke('document.getWordAt', {
       'uri': _uriParam,
       'position': {'lineNumber': position.line, 'column': position.column},
     });
-    return result is String ? result : null;
+    if (result == null || result is String) return result as String?;
+    throw MonacoProtocolError(
+      operation: 'document.getWordAt',
+      message: 'Expected a word string or null, got ${result.runtimeType}.',
+    );
   }
 
   /// Whether the document changed since the last [markSaved].
+  ///
+  /// Throws a [MonacoProtocolError] when the bridge answers with anything
+  /// other than a boolean.
   Future<bool> isDirty() async {
     final result = await _invoke('document.isDirty', {'uri': _uriParam});
-    return result == true;
+    if (result is bool) return result;
+    throw MonacoProtocolError(
+      operation: 'document.isDirty',
+      message: 'Expected a boolean dirty flag, got ${result.runtimeType}.',
+    );
   }
 
   /// Marks the current content as the saved baseline for [isDirty].

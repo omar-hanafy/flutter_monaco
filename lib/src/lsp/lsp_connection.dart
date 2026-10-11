@@ -21,18 +21,31 @@ import 'package:flutter_monaco/src/protocol/protocol.dart';
 /// ```
 /// connecting ──► open ──► closed
 ///      │           │
-///      ▼           ▼ (unexpected drop + reconnect policy)
-///   (throws)   connecting ──► open / failed
+///      ▼           ├──► (unexpected drop + reconnect policy)
+///   (throws)       │    connecting ──► open / failed
+///                  └──► failed (page reload)
 /// ```
 ///
 /// - The initial `connectLanguageServer` call resolves only after the LSP
 ///   `initialize` handshake completes; on failure it throws and no handle is
-///   returned.
+///   returned. A transport that ends during the handshake (a server process
+///   that exits, a socket the page reports closed, a throwing `toServer`)
+///   fails the call right away with that cause instead of waiting for the
+///   initialization timeout.
 /// - [stateChanges] broadcasts every transition; [whenClosed] completes once
 ///   the connection permanently ends.
 /// - [disconnect] tears down the in-page client (unregistering all language
 ///   feature providers) and, for bridged transports, invokes the transport's
 ///   `onClose` callback.
+/// - A page reload (see `MonacoController.onPageReloaded`) discards the
+///   in-page LSP client together with any page-owned socket, so every
+///   connection ends as [LspConnectionStatus.failed] with a
+///   [MonacoPageReloadedError] as soon as the reload is detected. Reconnect
+///   policies do not apply: the page is re-booted bare, and the application
+///   reconnects (the id is free again) after restoring its documents.
+///   Bridged transports have `onClose` invoked as usual, so an
+///   `LspServerProcess` is stopped and a fresh one must be started for the
+///   new connection.
 ///
 /// Diagnostics published by the server appear as Monaco markers under the
 /// owner `'lsp'`.
@@ -64,7 +77,14 @@ class LanguageServerConnection {
       StreamController<LspConnectionState>.broadcast();
   final Completer<void> _closedCompleter = Completer<void>();
 
+  // Owned and cancelled by MonacoLspManager (_finalize), which starts the
+  // pump.
+  // ignore: cancel_subscriptions
   StreamSubscription<Map<String, Object?>>? _pumpSubscription;
+
+  /// The connect/reconnect attempt currently waiting on the handshake;
+  /// null outside `_open`.
+  _ConnectAttempt? _attempt;
   Future<void> _deliverChain = Future<void>.value();
   Timer? _reconnectTimer;
   int _reconnectAttempt = 0;
@@ -86,7 +106,8 @@ class LanguageServerConnection {
 
   /// Completes when the connection has permanently ended (explicit
   /// [disconnect], controller disposal, transport death without reconnect,
-  /// or exhausted reconnect attempts). Never completes with an error.
+  /// exhausted reconnect attempts, or an editor page reload). Never
+  /// completes with an error.
   Future<void> get whenClosed => _closedCompleter.future;
 
   /// Whether the connection currently serves language features.
@@ -109,7 +130,7 @@ class LanguageServerConnection {
   /// LSP traffic is fully handled by Monaco - do not replicate it here.
   ///
   /// This escape hatch relies on Monaco-internal plumbing (verified against
-  /// Monaco 0.55.1) and may throw a descriptive [MonacoJavaScriptError]
+  /// Monaco 0.57.0) and may throw a descriptive [MonacoJavaScriptError]
   /// on future Monaco upgrades. Throws [StateError] when the connection is
   /// not open.
   Future<Object?> sendRequest(
@@ -151,15 +172,17 @@ class LanguageServerConnection {
 ///
 /// Not exported from the package; use `MonacoController.connectLanguageServer`.
 class MonacoLspManager {
-  /// Creates a manager wired to [protocol] events.
+  /// Creates a manager wired to the events of a [MonacoProtocol].
   MonacoLspManager({required this._protocol}) {
     _eventsSubscription = _protocol.events.listen(_onProtocolEvent);
+    _reloadSubscription = _protocol.pageReloads.listen(_onPageReloaded);
   }
 
   static const Duration _disconnectTimeout = Duration(seconds: 5);
 
   final MonacoProtocol _protocol;
   StreamSubscription<ProtocolEvent>? _eventsSubscription;
+  StreamSubscription<MonacoPageReload>? _reloadSubscription;
 
   final Map<String, LanguageServerConnection> _connections = {};
   bool _disposed = false;
@@ -173,14 +196,61 @@ class MonacoLspManager {
 
   /// Opens a new language server connection. See
   /// `MonacoController.connectLanguageServer` for the public contract.
+  ///
+  /// A bridged transport is owned by the connection from this call on: when
+  /// the returned future fails, the transport's `onClose` has already
+  /// completed - including for argument and state validation failures and
+  /// for a [waitUntilReady] failure - so callers never have to guess whether
+  /// they still own the server process.
+  ///
+  /// [waitUntilReady], when given, is awaited first (the controller can
+  /// pass its editor-readiness wait) so a readiness failure falls under the
+  /// same ownership rule.
   Future<LanguageServerConnection> connect({
     required String id,
     required LspTransport transport,
     LspReconnectPolicy reconnectPolicy = const LspReconnectPolicy.none(),
     Duration initializationTimeout = const Duration(seconds: 30),
+    Future<void> Function()? waitUntilReady,
   }) async {
+    try {
+      await waitUntilReady?.call();
+      _validateConnect(id, transport, reconnectPolicy);
+    } catch (_) {
+      await _closeUnusedTransport(id, transport);
+      rethrow;
+    }
+
+    final connection = LanguageServerConnection._(
+      id: id,
+      transport: transport,
+      reconnectPolicy: reconnectPolicy,
+      initializationTimeout: initializationTimeout,
+      manager: this,
+    );
+    _connections[id] = connection;
+
+    try {
+      await _open(connection, attempt: 0);
+      return connection;
+    } catch (error) {
+      _finalize(connection, LspConnectionStatus.failed, error: error);
+      // Ownership contract: a failed connect has released the transport.
+      await connection._transportShutdown;
+      rethrow;
+    }
+  }
+
+  void _validateConnect(
+    String id,
+    LspTransport transport,
+    LspReconnectPolicy reconnectPolicy,
+  ) {
     if (_disposed) {
-      throw StateError('MonacoController has been disposed.');
+      throw const MonacoDisposedError(
+        message: 'MonacoController has been disposed.',
+        operation: 'lsp.connect',
+      );
     }
     if (id.trim().isEmpty) {
       throw ArgumentError.value(id, 'id', 'id must be a non-empty string');
@@ -198,22 +268,18 @@ class MonacoLspManager {
         'connectLanguageServer again from app code instead.',
       );
     }
+  }
 
-    final connection = LanguageServerConnection._(
-      id: id,
-      transport: transport,
-      reconnectPolicy: reconnectPolicy,
-      initializationTimeout: initializationTimeout,
-      manager: this,
-    );
-    _connections[id] = connection;
-
+  /// Runs `onClose` of a bridged transport that never became a registered
+  /// connection (see the ownership contract on [connect]).
+  Future<void> _closeUnusedTransport(String id, LspTransport transport) async {
+    if (transport is! LspBridgedTransport) return;
+    final onClose = transport.onClose;
+    if (onClose == null) return;
     try {
-      await _open(connection, attempt: 0);
-      return connection;
-    } catch (error) {
-      _finalize(connection, LspConnectionStatus.failed, error: error);
-      rethrow;
+      await onClose();
+    } catch (closeError) {
+      debugPrint('[MonacoLsp] onClose for "$id" threw: $closeError');
     }
   }
 
@@ -225,6 +291,11 @@ class MonacoLspManager {
   }
 
   /// Establishes (or re-establishes) the in-page client for [connection].
+  ///
+  /// The handshake is raced against the connection ending: a transport that
+  /// dies, a disconnect, a page reload, or controller disposal settles the
+  /// attempt at once with the cause instead of waiting for
+  /// `initializationTimeout`.
   Future<void> _open(
     LanguageServerConnection connection, {
     required int attempt,
@@ -236,56 +307,106 @@ class MonacoLspManager {
       ),
     );
 
-    _throwIfGone(connection);
-
-    // Issue the connect call first: the JS side registers the connection
-    // synchronously in its prologue, so every deliverServerMessage issued
-    // afterwards (the pump below) finds a live transport - including the
-    // server's response to the `initialize` request that the handshake
-    // itself depends on.
-    final resultFuture = await _protocol.invokeIssued('lsp.connect', {
-      'id': connection.id,
-      'transport': connection.transport.toBridgePayload(),
-    }, timeout: null);
-    resultFuture.ignore();
-
-    final transport = connection.transport;
-    if (transport is LspBridgedTransport &&
-        connection._pumpSubscription == null) {
-      _startBridgedPump(connection, transport);
-    }
-
+    final connectAttempt = _ConnectAttempt();
+    connection._attempt = connectAttempt;
     try {
-      await resultFuture.timeout(connection._initializationTimeout);
-    } on TimeoutException {
-      // Best-effort teardown of whatever the page managed to build.
-      unawaited(_invokeSafely('lsp.disconnect', {'id': connection.id}));
-      throw TimeoutException(
-        'Language server "${connection.id}" did not complete the LSP '
-        'initialize handshake within '
-        '${connection._initializationTimeout.inSeconds}s. Check that the '
-        'server is reachable (for WebSocket transports also check the '
-        'allowedConnectSources CSP opt-in).',
-        connection._initializationTimeout,
-      );
-    }
+      _throwIfGone(connection, connectAttempt);
 
-    _throwIfGone(connection);
-    connection._reconnectAttempt = 0;
-    connection._setState(
-      const LspConnectionState(status: LspConnectionStatus.open),
+      // Issue the connect call first: the JS side registers the connection
+      // synchronously in its prologue, so every deliverServerMessage issued
+      // afterwards (the pump below) finds a live transport - including the
+      // server's response to the `initialize` request that the handshake
+      // itself depends on.
+      final resultFuture = await _protocol.invokeIssued('lsp.connect', {
+        'id': connection.id,
+        'transport': connection.transport.toBridgePayload(),
+      }, timeout: null);
+      resultFuture.ignore();
+
+      // The controller may have been disposed, the page reloaded, or the
+      // connection disconnected while the script was being issued. Its
+      // finalization already ran, so subscribing now would leak the pump.
+      _throwIfGone(connection, connectAttempt);
+
+      final transport = connection.transport;
+      if (transport is LspBridgedTransport &&
+          connection._pumpSubscription == null) {
+        _startBridgedPump(connection, transport);
+      }
+
+      var timedOut = false;
+      await Future.any<Object?>([resultFuture, connectAttempt.aborted]).timeout(
+        connection._initializationTimeout,
+        onTimeout: () {
+          timedOut = true;
+          return null;
+        },
+      );
+      if (timedOut) {
+        // Best-effort teardown of whatever the page managed to build.
+        unawaited(_invokeSafely('lsp.disconnect', {'id': connection.id}));
+        throw TimeoutException(
+          'Language server "${connection.id}" did not complete the LSP '
+          'initialize handshake within '
+          '${connection._initializationTimeout.inSeconds}s. Check that the '
+          'server is reachable (for WebSocket transports also check the '
+          'allowedConnectSources CSP opt-in).',
+          connection._initializationTimeout,
+        );
+      }
+
+      _throwIfGone(connection, connectAttempt);
+      connection._reconnectAttempt = 0;
+      connection._setState(
+        const LspConnectionState(status: LspConnectionStatus.open),
+      );
+    } finally {
+      if (identical(connection._attempt, connectAttempt)) {
+        connection._attempt = null;
+      }
+    }
+  }
+
+  void _throwIfGone(
+    LanguageServerConnection connection,
+    _ConnectAttempt attempt,
+  ) {
+    final abortError = attempt.error;
+    // Rethrow the abort cause unchanged: a MonacoException or whatever the
+    // transport's stream reported, which need not be an Exception or Error.
+    // ignore: only_throw_errors
+    if (abortError != null) throw abortError;
+    if (_disposed) throw _disposedDuringConnect();
+    if (connection._finalized || connection._userDisconnected) {
+      throw _disconnectedDuringConnect(connection);
+    }
+  }
+
+  static MonacoDisposedError _disposedDuringConnect() {
+    return const MonacoDisposedError(
+      message: 'MonacoController was disposed during LSP connect.',
+      operation: 'lsp.connect',
     );
   }
 
-  void _throwIfGone(LanguageServerConnection connection) {
-    if (_disposed) {
-      throw StateError('MonacoController was disposed during LSP connect.');
+  static StateError _disconnectedDuringConnect(
+    LanguageServerConnection connection,
+  ) {
+    return StateError(
+      'LSP connection "${connection.id}" was disconnected during connect.',
+    );
+  }
+
+  /// Fails the in-flight handshake of [connection] with [cause] and tears
+  /// down the half-built page client. Returns false when no handshake is in
+  /// flight.
+  bool _abortHandshake(LanguageServerConnection connection, Object cause) {
+    final attempt = connection._attempt;
+    if (attempt == null) return false;
+    if (attempt.abort(cause)) {
+      unawaited(_invokeSafely('lsp.disconnect', {'id': connection.id}));
     }
-    if (connection._finalized || connection._userDisconnected) {
-      throw StateError(
-        'LSP connection "${connection.id}" was disconnected during connect.',
-      );
-    }
+    return true;
   }
 
   // ─── Bridged transport pump (Dart -> JS direction) ───────────────────────
@@ -332,6 +453,19 @@ class MonacoLspManager {
   /// The bridged server stream ended or errored: the server is gone.
   void _handleServerGone(LanguageServerConnection connection, Object? error) {
     if (_disposed || connection._finalized || connection._userDisconnected) {
+      return;
+    }
+    // During the handshake fail the connect now, with the real cause (for
+    // an `LspServerProcess`, a ProcessException with exit code and stderr).
+    if (_abortHandshake(
+      connection,
+      error ??
+          StateError(
+            'Language server "${connection.id}" ended its message stream '
+            'before completing the LSP initialize handshake (the server '
+            'process exited or its transport closed).',
+          ),
+    )) {
       return;
     }
     unawaited(() async {
@@ -412,9 +546,21 @@ class MonacoLspManager {
     if (_disposed || connection._finalized || connection._userDisconnected) {
       return;
     }
-    // While connecting/reconnecting the connect flow owns error handling;
-    // transient close events during the handshake are surfaced there.
-    if (connection._state.status == LspConnectionStatus.connecting) return;
+    // While connecting/reconnecting the connect flow owns error handling: a
+    // close during the handshake fails that attempt with the cause (the page
+    // never answers a connect whose transport died). A close between
+    // reconnect attempts is the teardown of the previous client.
+    if (connection._state.status == LspConnectionStatus.connecting) {
+      _abortHandshake(
+        connection,
+        error ??
+            StateError(
+              'The transport of language server "${connection.id}" closed '
+              'during the LSP initialize handshake.',
+            ),
+      );
+      return;
+    }
 
     if (connection.reconnectPolicy.enabled) {
       _scheduleReconnect(connection, error);
@@ -506,6 +652,14 @@ class MonacoLspManager {
   }) {
     if (connection._finalized) return;
     connection._finalized = true;
+    // Settle a handshake still in flight with the reason the connection
+    // ended instead of letting it wait for the initialization timeout.
+    connection._attempt?.abort(
+      error ??
+          (_disposed
+              ? _disposedDuringConnect()
+              : _disconnectedDuringConnect(connection)),
+    );
     connection._reconnectTimer?.cancel();
     connection._pumpSubscription?.cancel();
     if (identical(_connections[connection.id], connection)) {
@@ -528,15 +682,39 @@ class MonacoLspManager {
       // Started here without awaiting (this runs from synchronous dispose
       // paths); stored on the connection so an explicit disconnect() can
       // await the local shutdown.
-      final shutdown = Future<void>.sync(() => transport.onClose!()).catchError(
-        (Object closeError) {
-          debugPrint(
-            '[MonacoLsp] onClose for "${connection.id}" threw: $closeError',
-          );
-        },
-      );
+      final shutdown = Future<void>.sync(() => transport.onClose!())
+          .catchError((Object closeError) {
+            debugPrint(
+              '[MonacoLsp] onClose for "${connection.id}" threw: $closeError',
+            );
+          });
       connection._transportShutdown = shutdown;
       unawaited(shutdown);
+    }
+  }
+
+  /// The page document reloaded: the in-page LSP clients and any page-owned
+  /// sockets are gone with it, so no connection can keep serving features.
+  ///
+  /// Every connection (including one still connecting) ends as failed with
+  /// [MonacoPageReloadedError]; no `lsp.*` command is sent because the new
+  /// page has no record of them. Bridged transports get their `onClose` so
+  /// the owner can respawn the server; the application reconnects from
+  /// `MonacoController.onPageReloaded` after restoring its documents.
+  void _onPageReloaded(MonacoPageReload reload) {
+    if (_disposed) return;
+    for (final connection in List.of(_connections.values)) {
+      _finalize(
+        connection,
+        LspConnectionStatus.failed,
+        error: MonacoPageReloadedError(
+          message:
+              'The Monaco page reloaded and discarded the in-page LSP client '
+              'of "${connection.id}". Reconnect after the editor recovers '
+              '(MonacoController.onPageReloaded).',
+          operation: 'lsp:${connection.id}',
+        ),
+      );
     }
   }
 
@@ -566,6 +744,8 @@ class MonacoLspManager {
     _connections.clear();
     _eventsSubscription?.cancel();
     _eventsSubscription = null;
+    _reloadSubscription?.cancel();
+    _reloadSubscription = null;
   }
 
   // ─── Power-user escape hatches ────────────────────────────────────────────
@@ -636,5 +816,29 @@ class MonacoLspManager {
       // know the connection anymore.
       debugPrint('[MonacoLsp] $method(${params['id']}) failed: $error');
     }
+  }
+}
+
+/// One in-flight `lsp.connect` handshake that can be failed early.
+class _ConnectAttempt {
+  _ConnectAttempt() {
+    // The abort may land after the attempt settled, with nobody listening.
+    _aborted.future.ignore();
+  }
+
+  final Completer<Object?> _aborted = Completer<Object?>();
+
+  /// The reason the attempt was aborted, or null.
+  Object? error;
+
+  /// Completes with [error] once the attempt is aborted; never succeeds.
+  Future<Object?> get aborted => _aborted.future;
+
+  /// Aborts with [cause]; returns false when already aborted.
+  bool abort(Object cause) {
+    if (error != null) return false;
+    error = cause;
+    _aborted.completeError(cause);
+    return true;
   }
 }

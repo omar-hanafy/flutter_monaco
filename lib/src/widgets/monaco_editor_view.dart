@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_monaco/src/widgets/monaco_status_bar.dart';
 import 'package:flutter_monaco/src/widgets/scroll_handoff_driver.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// An enumeration representing the connection state of the Monaco Editor.
 enum _ConnectionState {
@@ -406,6 +406,11 @@ class _MonacoEditorState extends State<MonacoEditor> {
 
     // If the content change callback has been updated, we need to rewire the listener.
     if (widget.onContentChanged != oldWidget.onContentChanged) {
+      if (widget.onContentChanged == null) {
+        // Nobody wants the text any more: drop a pending debounced pull.
+        _contentDebounceTimer?.cancel();
+        _contentDebounceTimer = null;
+      }
       _wireContentListener();
     }
   }
@@ -521,7 +526,9 @@ class _MonacoEditorState extends State<MonacoEditor> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!_isBootstrapCurrent(bootstrapToken)) return;
           _webFocusNode.requestFocus();
-          unawaited(_controller!.requestFocus());
+          // Nobody awaits this request; a failure (native focus error, or a
+          // page reload that could not be recovered) goes to onError.
+          _ignoreAsync(_controller!.requestFocus());
         });
       }
 
@@ -659,12 +666,12 @@ class _MonacoEditorState extends State<MonacoEditor> {
     _teardownListeners();
 
     _wireContentListener();
-    if (widget.onSelectionChanged != null) {
-      final selectionSub = _controller!.onSelectionChanged.listen(
-        (r) => widget.onSelectionChanged?.call(r),
-      );
-      _streamSubscriptions.add(selectionSub);
-    }
+    // Always subscribed: the callback is read at event time, so one
+    // supplied (or cleared) by a rebuild after readiness takes effect.
+    final selectionSub = _controller!.onSelectionChanged.listen(
+      (r) => widget.onSelectionChanged?.call(r),
+    );
+    _streamSubscriptions.add(selectionSub);
     final focusSub = _controller!.onFocusChanged.listen((focused) {
       _monacoReportsFocused = focused;
       if (focused) {
@@ -811,7 +818,9 @@ class _MonacoEditorState extends State<MonacoEditor> {
             !identical(controller, _controller)) {
           return;
         }
-        widget.onContentChanged!(text);
+        // Read at delivery time: the callback may have been cleared or
+        // replaced while the pull was in flight.
+        widget.onContentChanged?.call(text);
       }
 
       if (isFlush) {

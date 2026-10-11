@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Example demonstrating custom font usage with flutter_monaco
 class CustomFontExample extends StatefulWidget {
@@ -146,7 +146,7 @@ const features = {
           theme: MonacoTheme.vsDark,
           language: MonacoLanguage.javascript,
         ),
-        page: MonacoPageConfig(
+        page: const MonacoPageConfig(
           customCss:
               '''
           @font-face {

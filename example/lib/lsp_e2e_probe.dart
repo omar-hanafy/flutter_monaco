@@ -1,7 +1,7 @@
 // End-to-end LSP verification probe. NOT a demo - run by maintainers to
 // prove the full loop against a real language server:
 //
-//   real WebView -> Monaco 0.55 -> flutterMonaco.lsp bridge -> bridged
+//   real WebView -> Monaco 0.57 -> flutterMonaco.lsp bridge -> bridged
 //   transport -> LspServerProcess (pyright) -> publishDiagnostics -> markers
 //
 // Usage:
@@ -13,8 +13,8 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:material_ui/material_ui.dart';
 
 const String _pyrightBin = String.fromEnvironment(
   'PYRIGHT_BIN',
@@ -52,7 +52,6 @@ class _ProbeAppState extends State<ProbeApp> {
   }
 
   void _log(String message) {
-    // ignore: avoid_print
     print('PROBE: $message');
     if (mounted) setState(() => _status = message);
   }
@@ -137,7 +136,6 @@ class _ProbeAppState extends State<ProbeApp> {
   }
 
   void _finish(bool pass, String detail) {
-    // ignore: avoid_print
     print('PROBE_RESULT: ${pass ? 'PASS' : 'FAIL'} - $detail');
     exit(pass ? 0 : 1);
   }

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../helpers/generate_index_html.dart';
 
 import '../helpers/bridge_sources.dart';
+import '../helpers/generate_index_html.dart';
 
 /// Source-level tests for the edge scroll handoff JS bridge module. These
 /// assert the contract Dart depends on: the toggle entry point, listener

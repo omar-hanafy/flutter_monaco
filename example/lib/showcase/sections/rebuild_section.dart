@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../data/migration_diff.dart';
 import '../data/showcase_metadata.dart';
@@ -251,7 +251,7 @@ class _DiffCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.showcaseColors;
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(Radii.lg),

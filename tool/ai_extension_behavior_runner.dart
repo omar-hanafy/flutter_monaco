@@ -514,10 +514,8 @@ Future<ProcessResult> runBehaviorProcess(
   );
   var outputDrainTimedOut = false;
   try {
-    await Future.wait([
-      stdoutDone.future,
-      stderrDone.future,
-    ]).timeout(outputDrainTimeout);
+    await Future.wait([stdoutDone.future, stderrDone.future])
+        .timeout(outputDrainTimeout);
   } on TimeoutException {
     outputDrainTimedOut = true;
     await Future.wait([
@@ -814,9 +812,8 @@ Map<String, Object?>? _stringKeyedMap(Object? value) {
 }
 
 String _packageVersion(Directory repositoryRoot) {
-  final pubspec = File.fromUri(
-    repositoryRoot.uri.resolve('pubspec.yaml'),
-  ).readAsStringSync();
+  final pubspec = File.fromUri(repositoryRoot.uri.resolve('pubspec.yaml'))
+      .readAsStringSync();
   final match = RegExp(
     r'^version:\s*([^\s#]+)',
     multiLine: true,
@@ -915,7 +912,7 @@ Future<void> prepareEvaluationFixture(
     _writeFixtureFile(
       fixture,
       'lib/settings_form.dart',
-      "import 'package:flutter/material.dart';\n\n"
+      "import 'package:material_ui/material_ui.dart';\n\n"
           'class SettingsForm extends StatelessWidget {\n'
           '  const SettingsForm({super.key});\n\n'
           '  @override\n'
@@ -932,7 +929,7 @@ Future<void> prepareEvaluationFixture(
       ? '^3.4.1'
       : legacy
       ? '^2.3.0'
-      : '^3.4.3';
+      : '^4.0.0';
   _writeFixtureFile(
     fixture,
     'pubspec.yaml',
@@ -966,8 +963,8 @@ Future<void> prepareEvaluationFixture(
         '${kind != 'execution'
             ? ''
             : legacy
-            ? 'The dependency starts on the 2.3.0 API stub at vendor/flutter_monaco_legacy. After rewriting the app, change the dependency override to vendor/flutter_monaco_current for 3.4.3 validation. Do not edit either vendor tree.\n'
-            : 'The 3.4.3 package at vendor/flutter_monaco_current is a read-only fixture dependency. Do not edit it.\n'}',
+            ? 'The dependency starts on the 2.3.0 API stub at vendor/flutter_monaco_legacy. After rewriting the app, change the dependency override to vendor/flutter_monaco_current for 4.0.0 validation. Do not edit either vendor tree.\n'
+            : 'The 4.0.0 package at vendor/flutter_monaco_current is a read-only fixture dependency. Do not edit it.\n'}',
   );
   if (kind == 'execution') {
     _writeFixtureFile(fixture, 'analysis_options.yaml', '''analyzer:
@@ -983,18 +980,19 @@ void _seedBridgeMismatch(Directory fixture) {
   final controller = File.fromUri(
     fixture.uri.resolve('lib/src/editor/controller.dart'),
   );
-  const anchor = '''  Future<MonacoTheme?> getTheme() async {
-    final result = await _invoke('editor.getTheme', {});
-    return result is String && result.isNotEmpty ? MonacoTheme(result) : null;
-  }
+  // The fixture command goes in front of getTheme's doc comment, a stable
+  // anchor that does not depend on the method body.
+  const anchor =
+      '''  /// Returns the theme the editor last applied through this package.
 ''';
-  const mismatch = '''$anchor
-  /// Evaluation fixture: the JavaScript handler and harness are missing.
+  const mismatch =
+      '''  /// Evaluation fixture: the JavaScript handler and harness are missing.
   Future<String> evalFixturePing() async {
     final result = await _invoke('editor.evalFixturePing', {});
     return result! as String;
   }
-''';
+
+$anchor''';
   final source = controller.readAsStringSync();
   if (!source.contains(anchor)) {
     throw StateError('Could not seed the bridge mismatch fixture.');
@@ -1163,10 +1161,7 @@ Future<List<Map<String, Object?>>> _captureUntrackedArtifacts(
       'git ls-files --others failed in ${fixture.path}: ${result.stderr}',
     );
   }
-  final output = utf8.decode(
-    (result.stdout! as List<int>),
-    allowMalformed: true,
-  );
+  final output = utf8.decode(result.stdout! as List<int>, allowMalformed: true);
   final paths = output.split('\u0000').where((path) => path.isNotEmpty).toList()
     ..sort();
   final artifacts = <Map<String, Object?>>[];
@@ -1276,18 +1271,20 @@ String _consumerPubspec({
   return '''name: flutter_monaco_eval_app
 publish_to: none
 environment:
-  sdk: ^3.12.0
+  sdk: ^3.13.5
 dependencies:
   flutter:
     sdk: flutter
+  material_ui: ^1.6.0
 ${includeMonaco ? '  flutter_monaco: $monacoConstraint\n' : ''}${localOverridePath == null ? '' : '''dependency_overrides:
   flutter_monaco:
     path: $localOverridePath
 '''}''';
 }
 
-const _currentEditorSource = '''import 'package:flutter/material.dart';
-import 'package:flutter_monaco/flutter_monaco.dart';
+const _currentEditorSource =
+    '''import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:material_ui/material_ui.dart';
 
 class EditorScreen extends StatelessWidget {
   const EditorScreen({super.key, required this.controller});
@@ -1311,8 +1308,9 @@ const _lspFixtureContract = '''LSP contract:
 
 ''';
 
-const _jsonEditorSource = '''import 'package:flutter/material.dart';
-import 'package:flutter_monaco/flutter_monaco.dart';
+const _jsonEditorSource =
+    '''import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:material_ui/material_ui.dart';
 
 class JsonEditorScreen extends StatelessWidget {
   const JsonEditorScreen({super.key, required this.controller});
@@ -1332,8 +1330,8 @@ class JsonEditorScreen extends StatelessWidget {
 
 const _focusFailureSource = '''import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:material_ui/material_ui.dart';
 
 class EditorScreen extends StatefulWidget {
   const EditorScreen({super.key, required this.controller});

@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Real-boot smoke for the v3 request channel and document registry.
 ///
@@ -39,12 +39,10 @@ void main() {
     // run() calls back into Dart over the request channel.
     final actionRan = Completer<void>();
     final action = await controller.addAction(
-      MonacoActionDescriptor(
-        id: const MonacoAction('probe.save'),
+      const MonacoActionDescriptor(
+        id: MonacoAction('probe.save'),
         label: 'Probe Save',
-        keybindings: const [
-          MonacoKeybinding(key: MonacoKey.keyS, ctrlCmd: true),
-        ],
+        keybindings: [MonacoKeybinding(key: MonacoKey.keyS, ctrlCmd: true)],
       ),
       () async {
         if (!actionRan.isCompleted) actionRan.complete();

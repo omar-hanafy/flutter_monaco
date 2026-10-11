@@ -90,7 +90,34 @@ window.__FMB = window.__FMB || {};
                 return;
               }
 
-              monaco.editor.onDidCreateEditor(function (editor) {
+              // onDidCreateEditor fires for EVERY code editor in the page,
+              // not just the one created below: the peek widget's embedded
+              // editor (Peek Definition, Shift+F12 references, multi-result
+              // go-to-definition) and the inner editors of any diff editor
+              // page code creates. Re-running the installers for those
+              // would retarget window.editor at a short-lived editor, post
+              // a second ready lifecycle, and replace every registry (LSP
+              // connections, decoration sets, actions, providers). The
+              // bridge therefore binds once, to the editor created in
+              // #editor-container. The hook fires from the editor
+              // constructor - before monaco.editor.create returns and
+              // before the boot model is attached - which the installers
+              // below rely on.
+              var primaryContainer = document.getElementById('editor-container');
+              var bridgeInstalled = false;
+              var createEditorHook = null;
+              createEditorHook = monaco.editor.onDidCreateEditor(function (editor) {
+              if (bridgeInstalled) return;
+              if (typeof editor.getParentEditor === 'function') return;
+              if (editor.getContainerDomNode &&
+                  editor.getContainerDomNode() !== primaryContainer) {
+                return;
+              }
+              bridgeInstalled = true;
+              if (createEditorHook) {
+                try { createEditorHook.dispose(); } catch (_) {}
+                createEditorHook = null;
+              }
               window.editor = editor;
 
               var FMB = window.__FMB || {};

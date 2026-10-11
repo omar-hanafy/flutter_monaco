@@ -3,11 +3,13 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:flutter_monaco/src/assets/asset_storage_io.dart';
 import 'package:flutter_monaco/src/assets/html_builder.dart';
 import 'package:flutter_monaco/src/assets/monaco_assets.dart';
+import 'package:flutter_monaco/src/assets/native_page.dart';
 import 'package:flutter_monaco/src/platform/platform_webview.dart';
 import 'package:path/path.dart' as p;
 import 'package:webview_flutter/webview_flutter.dart' as wf;
@@ -30,9 +32,10 @@ part 'webview_windows.dart';
 ///
 /// ### Shared Behavior
 ///
-/// The [_ensureHtmlFile] method is shared across all native implementations.
-/// It generates platform-specific HTML (with correct paths for Monaco assets)
-/// and caches it to disk for faster subsequent loads.
+/// The [_ensureHtmlFile] method generates the page that Android, iOS and
+/// macOS load from disk next to the extracted assets. Windows serves the
+/// page from a WebView2 virtual host instead and falls back to that file
+/// page only when the virtual host is unavailable.
 ///
 /// See also:
 /// - [FlutterWebViewController] for Android/iOS/macOS implementation.
@@ -68,64 +71,49 @@ abstract class WebViewController implements PlatformWebViewController {
   @override
   Future<void> releaseNativeFocus() async {}
 
-  /// Generates the Monaco editor HTML file for native platforms.
+  /// Generates the Monaco editor HTML file for loading from disk.
   ///
-  /// The file is rewritten on every load: it is KB-sized, and always
-  /// rewriting makes stale-page bugs structurally impossible (the 2.x
-  /// exists-check fast path required a manual cache-bust constant). The
-  /// [customCss]/[allowCdnFonts]/[allowedConnectSources] tuple still keys the
-  /// file name so differently configured editors in one app do not clobber
-  /// each other's page while running.
+  /// The file is regenerated on every load: it is KB-sized, and always
+  /// regenerating makes stale-page bugs structurally impossible (the 2.x
+  /// exists-check fast path required a manual cache-bust constant). The page
+  /// configuration ([MonacoPageConfig.customCss],
+  /// [MonacoPageConfig.allowCdnFonts] and
+  /// [MonacoPageConfig.allowedConnectSources]) still keys the file name so
+  /// differently configured editors in one app do not clobber each other's
+  /// page while running. It is replaced atomically, and only
+  /// when its content changed, because another editor with the same
+  /// configuration may be loading it at that moment.
   ///
-  /// **Platform differences:**
-  /// - Windows uses absolute `file://` paths since HTML is loaded via URL
-  /// - macOS/iOS/Android use relative paths since HTML sits next to the
-  ///   extracted assets
+  /// **Platform differences** (see `buildFileMonacoPage`):
+  /// - macOS/iOS/Android reference the assets relative to the page, which
+  ///   sits next to them.
+  /// - Windows uses absolute `file://` asset URLs; it loads from disk only
+  ///   when its virtual host cannot be used (see [WindowsWebViewController]).
+  ///   That page gets its own `monaco_<key>.file.html` name: the virtual
+  ///   host page for the same configuration is `monaco_<key>.html`, and a
+  ///   WebView reloading one must never be served the other.
   ///
   /// Returns the absolute path to the generated HTML file.
-  Future<String> _ensureHtmlFile(MonacoPageConfig page) async {
-    final htmlFilePath = await monacoIndexHtmlPath(
-      cacheKey: page.stableCacheKey(),
+  Future<String> _ensureHtmlFile(
+    MonacoPageConfig page, {
+    bool isWindows = false,
+  }) async {
+    final pagePath = await monacoIndexHtmlPath(cacheKey: page.stableCacheKey());
+    final htmlFilePath = isWindows
+        ? '${p.withoutExtension(pagePath)}.file.html'
+        : pagePath;
+    final built = buildFileMonacoPage(
+      htmlFilePath: htmlFilePath,
+      monacoVersion: MonacoAssets.monacoVersion,
+      isWindows: isWindows,
+      isIosOrMacOS: !isWindows && (Platform.isIOS || Platform.isMacOS),
+      customCss: page.customCss,
+      allowCdnFonts: page.allowCdnFonts,
+      allowedConnectSources: page.allowedConnectSources,
     );
+    await writeFileAtomically(htmlFilePath, utf8.encode(built.html));
 
-    final htmlFile = File(htmlFilePath);
-
-    // Generate platform-specific HTML
-    String htmlContent;
-
-    if (Platform.isWindows) {
-      final targetDir = p.dirname(htmlFilePath);
-
-      // Windows needs absolute paths since we load from file://
-      final vsPath = p.join(targetDir, 'min', 'vs');
-      final absoluteVsPath = Uri.file(vsPath).toString();
-      final bridgeBase = Uri.file(p.join(targetDir, 'bridge')).toString();
-      htmlContent = buildMonacoIndexHtml(
-        vsPath: absoluteVsPath,
-        bridgeBase: bridgeBase,
-        monacoVersion: MonacoAssets.monacoVersion,
-        isWindows: true,
-        customCss: page.customCss,
-        allowCdnFonts: page.allowCdnFonts,
-        allowedConnectSources: page.allowedConnectSources,
-      );
-    } else {
-      // macOS uses relative paths since HTML is in the same directory
-      htmlContent = buildMonacoIndexHtml(
-        vsPath: p.join('min', 'vs'),
-        bridgeBase: 'bridge',
-        monacoVersion: MonacoAssets.monacoVersion,
-        isIosOrMacOS: Platform.isIOS || Platform.isMacOS,
-        customCss: page.customCss,
-        allowCdnFonts: page.allowCdnFonts,
-        allowedConnectSources: page.allowedConnectSources,
-      );
-    }
-
-    // Write the HTML file
-    await htmlFile.writeAsString(htmlContent);
-
-    debugPrint('[MonacoAssets] HTML file created at: ${htmlFile.path}');
+    debugPrint('[MonacoAssets] HTML file ready at: $htmlFilePath');
     return htmlFilePath;
   }
 }
@@ -144,14 +132,14 @@ abstract class WebViewController implements PlatformWebViewController {
 ///
 /// Communication with Monaco uses `JavaScriptChannel` which creates a
 /// `window.[channelName]` object in JavaScript. Messages sent via
-/// `window.flutterChannel.postMessage(msg)` are received in the [onMessage]
+/// `window.flutterChannel.postMessage(msg)` are received in the `onMessage`
 /// callback passed to [addJavaScriptChannel].
 ///
 /// ### File Loading
 ///
-/// Monaco HTML is loaded from the local filesystem using [loadFile]. The HTML
-/// file is generated by [_ensureHtmlFile] with platform-appropriate paths
-/// for Monaco assets.
+/// Monaco HTML is loaded from the local filesystem using
+/// [wf.WebViewController.loadFile]. The HTML file is generated by
+/// [_ensureHtmlFile] with platform-appropriate paths for Monaco assets.
 ///
 /// See also:
 /// - [WindowsWebViewController] for Windows-specific implementation.
@@ -277,7 +265,7 @@ class FlutterWebViewController extends WebViewController {
     });
 
     /// Sets the navigation delegate for the WebView.
-    _controller.setNavigationDelegate(
+    await _controller.setNavigationDelegate(
       wf.NavigationDelegate(
         onPageFinished: (url) {
           debugPrint('[MonacoController] WebView Page Finished: $url');

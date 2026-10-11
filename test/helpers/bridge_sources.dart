@@ -7,9 +7,8 @@ import 'package:path/path.dart' as p;
 /// The 3.0 bridge lives in real files under `assets/monaco/bridge/`; source
 /// contract tests read them directly instead of scraping generated HTML.
 String bridgeSource(String fileName) {
-  return File(
-    p.join('assets', 'monaco', 'bridge', fileName),
-  ).readAsStringSync();
+  return File(p.join('assets', 'monaco', 'bridge', fileName))
+      .readAsStringSync();
 }
 
 /// Names of every bridge JavaScript file, in page load order.

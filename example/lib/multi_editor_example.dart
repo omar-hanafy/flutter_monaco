@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'monaco_observer.dart';
 
@@ -334,7 +334,7 @@ class _MultiEditorExampleState extends State<MultiEditorExample> {
 
   static const String _dartCode = '''
 // main.dart - opened as file:///demo/main.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() => runApp(const DemoApp());
 

@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
-import 'package:flutter_monaco/src/platform/platform_webview.dart';
 import 'package:flutter_monaco/src/common/monaco_page_config.dart';
+import 'package:flutter_monaco/src/platform/platform_webview.dart';
 
 /// Fallback stub implementation for unsupported platforms.
 ///
@@ -17,9 +17,10 @@ import 'package:flutter_monaco/src/common/monaco_page_config.dart';
 /// 2. The `webview_flutter` or `webview_flutter_windows` dependencies are properly configured
 ///
 /// See also:
-/// - [web_view_controller.dart] for the conditional export logic.
-/// - [native.dart] for Android/iOS/macOS/Windows implementations.
-/// - [web.dart] for the web implementation.
+/// - `platform_webview.dart` for the platform interface.
+/// - `webview_native.dart` and `webview_windows.dart` for the
+///   Android/iOS/macOS and Windows implementations.
+/// - `webview_web.dart` for the web implementation.
 class WebViewController implements PlatformWebViewController {
   @override
   Widget get widget =>

@@ -34,6 +34,16 @@ final class AiExtensionValidationReport {
   bool get isValid => errors.isEmpty;
 }
 
+/// The package's own license: the root `LICENSE` up to the first line of 80
+/// hyphens, which introduces the licenses of bundled third-party code (the
+/// format Flutter's license collector reads). The assistant plugin ships no
+/// third-party code, so only this part must match its `LICENSE`.
+String packageOwnLicense(String rootLicense) {
+  final separator = '\n${'-' * 80}\n';
+  final index = rootLicense.indexOf(separator);
+  return index < 0 ? rootLicense : rootLicense.substring(0, index + 1);
+}
+
 List<String> validatePluginTreeHygiene(
   Directory pluginDirectory, {
   String pathPrefix = '',
@@ -558,9 +568,8 @@ final class _AiExtensionValidator {
         final values = <String, String>{};
         for (final line in frontmatter.split('\n')) {
           if (line.trim().isEmpty) continue;
-          final match = RegExp(
-            r'^([A-Za-z][A-Za-z0-9_-]*):\s*(.+)$',
-          ).firstMatch(line);
+          final match = RegExp(r'^([A-Za-z][A-Za-z0-9_-]*):\s*(.+)$')
+              .firstMatch(line);
           if (match == null) {
             errors.add('$skillPath: invalid frontmatter line "$line"');
             continue;
@@ -617,9 +626,10 @@ final class _AiExtensionValidator {
       );
     }
 
-    final references = RegExp(
-      r'\]\((references/[^)#]+\.md)(?:#[^)]+)?\)',
-    ).allMatches(normalized).map((match) => match.group(1)!).toSet();
+    final references = RegExp(r'\]\((references/[^)#]+\.md)(?:#[^)]+)?\)')
+        .allMatches(normalized)
+        .map((match) => match.group(1)!)
+        .toSet();
     if (references.isEmpty) {
       errors.add(
         '$skillPath: must link at least one package-specific reference',
@@ -783,8 +793,12 @@ final class _AiExtensionValidator {
     final pluginLicense = _file('plugins/flutter-monaco/LICENSE');
     if (rootLicense.existsSync() &&
         pluginLicense.existsSync() &&
-        rootLicense.readAsStringSync() != pluginLicense.readAsStringSync()) {
-      errors.add('plugins/flutter-monaco/LICENSE must match the root LICENSE');
+        packageOwnLicense(rootLicense.readAsStringSync()) !=
+            pluginLicense.readAsStringSync()) {
+      errors.add(
+        "plugins/flutter-monaco/LICENSE must match the root LICENSE's "
+        'package license',
+      );
     }
   }
 

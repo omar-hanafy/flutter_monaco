@@ -1,3 +1,6 @@
+/// @docImport 'package:flutter_monaco/src/editor/controller.dart';
+library;
+
 import 'package:flutter_monaco/src/options/language.dart';
 import 'package:flutter_monaco/src/options/option_enums.dart';
 import 'package:flutter_monaco/src/options/sub_options.dart';
@@ -49,12 +52,26 @@ sealed class EditorOptions with _$EditorOptions {
     /// Letter spacing in pixels.
     double? letterSpacing,
 
+    /// Width used to render full-width (e.g. CJK) characters. Monaco
+    /// defaults to [MonacoFullwidthCharacterWidth.font];
+    /// [MonacoFullwidthCharacterWidth.twoCells] keeps columns aligned in
+    /// monospace fonts. Added in Monaco 0.57.
+    MonacoFullwidthCharacterWidth? fullwidthCharacterWidth,
+
     /// Word wrapping behavior.
     MonacoWordWrap? wordWrap,
 
     /// Wrap column used by [MonacoWordWrap.wordWrapColumn] and
     /// [MonacoWordWrap.bounded].
     int? wordWrapColumn,
+
+    /// Whether an indicator is rendered at the wrapping column of
+    /// soft-wrapped lines. Only has an effect while [wordWrap] wraps lines.
+    /// With viewport wrapping ([MonacoWordWrap.on] and
+    /// [MonacoWordWrap.bounded]) Monaco reserves the rightmost column for
+    /// the indicator, so lines wrap one column earlier. Monaco defaults to
+    /// `false`. Added in Monaco 0.57.
+    bool? wordWrapIndicator,
 
     /// Minimap (code overview strip) configuration.
     MonacoMinimapOptions? minimap,
@@ -143,7 +160,9 @@ sealed class EditorOptions with _$EditorOptions {
     /// Whether parameter hints appear in call sites.
     bool? parameterHints,
 
-    /// Whether hover tooltips appear.
+    /// Whether hover tooltips appear. Sent as Monaco's `hover.enabled`
+    /// `'on'`/`'off'`; for `'onKeyboardModifier'` or other hover settings
+    /// use [extra] (e.g. `{'hover': {'enabled': 'onKeyboardModifier'}}`).
     bool? hover,
 
     /// Whether the right-click context menu is enabled.
@@ -158,6 +177,11 @@ sealed class EditorOptions with _$EditorOptions {
     /// Whether selections render with rounded corners.
     bool? roundedSelection,
 
+    /// Whether double-clicking just inside a bracket or quote selects the
+    /// enclosed content instead of the word under the pointer. On by
+    /// default since Monaco 0.56; set `false` to keep plain word selection.
+    bool? doubleClickSelectsBlock,
+
     /// Whether code folding is enabled.
     bool? folding,
 
@@ -166,6 +190,9 @@ sealed class EditorOptions with _$EditorOptions {
 
     /// Whether links in the document are clickable.
     bool? links,
+
+    /// Find widget behavior.
+    MonacoFindOptions? find,
 
     /// Sticky scroll (pinned enclosing scopes) configuration.
     MonacoStickyScroll? stickyScroll,
@@ -202,8 +229,10 @@ sealed class EditorOptions with _$EditorOptions {
       'fontLigatures',
       'lineHeight',
       'letterSpacing',
+      'fullwidthCharacterWidth',
       'wordWrap',
       'wordWrapColumn',
+      'wordWrapIndicator',
       'minimap',
       'lineNumbers',
       'rulers',
@@ -238,9 +267,11 @@ sealed class EditorOptions with _$EditorOptions {
       'selectionHighlight',
       'occurrencesHighlight',
       'roundedSelection',
+      'doubleClickSelectsBlock',
       'folding',
       'showFoldingControls',
       'links',
+      'find',
       'stickyScroll',
       'overviewRulerBorder',
       'disableLayerHinting',
@@ -263,8 +294,15 @@ sealed class EditorOptions with _$EditorOptions {
       fontLigatures: _optBool(json, 'fontLigatures'),
       lineHeight: _optDouble(json, 'lineHeight'),
       letterSpacing: _optDouble(json, 'letterSpacing'),
+      fullwidthCharacterWidth: _optEnum(
+        json,
+        'fullwidthCharacterWidth',
+        MonacoFullwidthCharacterWidth.values,
+        (e) => e.id,
+      ),
       wordWrap: _optEnum(json, 'wordWrap', MonacoWordWrap.values, (e) => e.id),
       wordWrapColumn: _optInt(json, 'wordWrapColumn'),
+      wordWrapIndicator: _optBool(json, 'wordWrapIndicator'),
       minimap: _optSub(json, 'minimap', MonacoMinimapOptions.fromJson),
       lineNumbers: _optEnum(
         json,
@@ -334,6 +372,7 @@ sealed class EditorOptions with _$EditorOptions {
       selectionHighlight: _optBool(json, 'selectionHighlight'),
       occurrencesHighlight: _optBool(json, 'occurrencesHighlight'),
       roundedSelection: _optBool(json, 'roundedSelection'),
+      doubleClickSelectsBlock: _optBool(json, 'doubleClickSelectsBlock'),
       folding: _optBool(json, 'folding'),
       showFoldingControls: _optEnum(
         json,
@@ -342,6 +381,7 @@ sealed class EditorOptions with _$EditorOptions {
         (e) => e.id,
       ),
       links: _optBool(json, 'links'),
+      find: _optSub(json, 'find', MonacoFindOptions.fromJson),
       stickyScroll: _optSub(json, 'stickyScroll', MonacoStickyScroll.fromJson),
       overviewRulerBorder: _optBool(json, 'overviewRulerBorder'),
       disableLayerHinting: _optBool(json, 'disableLayerHinting'),
@@ -364,8 +404,11 @@ sealed class EditorOptions with _$EditorOptions {
       if (fontLigatures != null) 'fontLigatures': fontLigatures,
       if (lineHeight != null) 'lineHeight': lineHeight,
       if (letterSpacing != null) 'letterSpacing': letterSpacing,
+      if (fullwidthCharacterWidth != null)
+        'fullwidthCharacterWidth': fullwidthCharacterWidth!.id,
       if (wordWrap != null) 'wordWrap': wordWrap!.id,
       if (wordWrapColumn != null) 'wordWrapColumn': wordWrapColumn,
+      if (wordWrapIndicator != null) 'wordWrapIndicator': wordWrapIndicator,
       if (minimap != null) 'minimap': minimap!.toJson(),
       if (lineNumbers != null) 'lineNumbers': lineNumbers!.id,
       if (rulers != null) 'rulers': rulers,
@@ -407,10 +450,13 @@ sealed class EditorOptions with _$EditorOptions {
       if (occurrencesHighlight != null)
         'occurrencesHighlight': occurrencesHighlight,
       if (roundedSelection != null) 'roundedSelection': roundedSelection,
+      if (doubleClickSelectsBlock != null)
+        'doubleClickSelectsBlock': doubleClickSelectsBlock,
       if (folding != null) 'folding': folding,
       if (showFoldingControls != null)
         'showFoldingControls': showFoldingControls!.id,
       if (links != null) 'links': links,
+      if (find != null) 'find': find!.toJson(),
       if (stickyScroll != null) 'stickyScroll': stickyScroll!.toJson(),
       if (overviewRulerBorder != null)
         'overviewRulerBorder': overviewRulerBorder,
@@ -424,7 +470,7 @@ sealed class EditorOptions with _$EditorOptions {
 
   /// Returns a copy where non-null fields of [other] override this
   /// instance's fields. Structured options ([minimap], [padding],
-  /// [scrollbar], [guides], [stickyScroll]) merge field-wise, so a partial
+  /// [scrollbar], [guides], [find], [stickyScroll]) merge field-wise, so a partial
   /// override (e.g. only `minimap.side`) keeps this instance's other nested
   /// values instead of resetting them to Monaco's defaults. [extra] maps are
   /// merged key-wise, [other]'s keys winning. Returns `this` when [other]
@@ -439,8 +485,11 @@ sealed class EditorOptions with _$EditorOptions {
       fontLigatures: other.fontLigatures ?? fontLigatures,
       lineHeight: other.lineHeight ?? lineHeight,
       letterSpacing: other.letterSpacing ?? letterSpacing,
+      fullwidthCharacterWidth:
+          other.fullwidthCharacterWidth ?? fullwidthCharacterWidth,
       wordWrap: other.wordWrap ?? wordWrap,
       wordWrapColumn: other.wordWrapColumn ?? wordWrapColumn,
+      wordWrapIndicator: other.wordWrapIndicator ?? wordWrapIndicator,
       minimap: minimap?.merge(other.minimap) ?? other.minimap,
       lineNumbers: other.lineNumbers ?? lineNumbers,
       rulers: other.rulers ?? rulers,
@@ -478,9 +527,12 @@ sealed class EditorOptions with _$EditorOptions {
       selectionHighlight: other.selectionHighlight ?? selectionHighlight,
       occurrencesHighlight: other.occurrencesHighlight ?? occurrencesHighlight,
       roundedSelection: other.roundedSelection ?? roundedSelection,
+      doubleClickSelectsBlock:
+          other.doubleClickSelectsBlock ?? doubleClickSelectsBlock,
       folding: other.folding ?? folding,
       showFoldingControls: other.showFoldingControls ?? showFoldingControls,
       links: other.links ?? links,
+      find: find?.merge(other.find) ?? other.find,
       stickyScroll:
           stickyScroll?.merge(other.stickyScroll) ?? other.stickyScroll,
       overviewRulerBorder: other.overviewRulerBorder ?? overviewRulerBorder,
@@ -505,8 +557,11 @@ sealed class EditorOptions with _$EditorOptions {
       if (fontLigatures != null) 'fontLigatures': fontLigatures,
       if (lineHeight != null) 'lineHeight': lineHeight,
       if (letterSpacing != null) 'letterSpacing': letterSpacing,
+      if (fullwidthCharacterWidth != null)
+        'fullwidthCharacterWidth': fullwidthCharacterWidth!.id,
       if (wordWrap != null) 'wordWrap': wordWrap!.id,
       if (wordWrapColumn != null) 'wordWrapColumn': wordWrapColumn,
+      if (wordWrapIndicator != null) 'wordWrapIndicator': wordWrapIndicator,
       if (minimap != null) 'minimap': minimap!.toMonacoJson(),
       if (lineNumbers != null) 'lineNumbers': lineNumbers!.id,
       if (rulers != null) 'rulers': rulers,
@@ -543,17 +598,23 @@ sealed class EditorOptions with _$EditorOptions {
       if (suggestOnTriggerCharacters != null)
         'suggestOnTriggerCharacters': suggestOnTriggerCharacters,
       if (parameterHints != null) 'parameterHints': {'enabled': parameterHints},
-      if (hover != null) 'hover': {'enabled': hover},
+      if (hover != null)
+        // Monaco expects 'on' | 'off' | 'onKeyboardModifier' and ignores
+        // a boolean.
+        'hover': {'enabled': hover! ? 'on' : 'off'},
       if (contextMenu != null) 'contextmenu': contextMenu,
       if (selectionHighlight != null) 'selectionHighlight': selectionHighlight,
       if (occurrencesHighlight != null)
-        // Monaco 0.55 expects 'off' | 'singleFile' | 'multiFile'.
+        // Monaco expects 'off' | 'singleFile' | 'multiFile'.
         'occurrencesHighlight': occurrencesHighlight! ? 'singleFile' : 'off',
       if (roundedSelection != null) 'roundedSelection': roundedSelection,
+      if (doubleClickSelectsBlock != null)
+        'doubleClickSelectsBlock': doubleClickSelectsBlock,
       if (folding != null) 'folding': folding,
       if (showFoldingControls != null)
         'showFoldingControls': showFoldingControls!.id,
       if (links != null) 'links': links,
+      if (find != null) 'find': find!.toMonacoJson(),
       if (stickyScroll != null) 'stickyScroll': stickyScroll!.toMonacoJson(),
       if (overviewRulerBorder != null)
         'overviewRulerBorder': overviewRulerBorder,
@@ -587,9 +648,13 @@ double? _optDouble(Map<String, dynamic> json, String key) {
 int? _optInt(Map<String, dynamic> json, String key) {
   final value = json[key];
   if (value == null) return null;
-  if (value is num) return value.toInt();
+  // Web numbers are doubles: `2.0 is int` and `double.infinity is int` hold.
+  if (value is int && value.isFinite) return value;
+  if (value is double && value.isFinite && value == value.truncateToDouble()) {
+    return value.toInt();
+  }
   throw FormatException(
-    'EditorOptions.fromJson: "$key" must be a number, got $value',
+    'EditorOptions.fromJson: "$key" must be an integer, got $value',
   );
 }
 
@@ -607,9 +672,12 @@ List<int>? _optIntList(Map<String, dynamic> json, String key) {
   if (value == null) return null;
   if (value is List) {
     return value.map((e) {
-      if (e is num) return e.toInt();
+      if (e is int && e.isFinite) return e;
+      if (e is double && e.isFinite && e == e.truncateToDouble()) {
+        return e.toInt();
+      }
       throw FormatException(
-        'EditorOptions.fromJson: "$key" entries must be numbers, got $e',
+        'EditorOptions.fromJson: "$key" entries must be integers, got $e',
       );
     }).toList();
   }

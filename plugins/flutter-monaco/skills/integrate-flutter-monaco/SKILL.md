@@ -1,23 +1,23 @@
 ---
 name: integrate-flutter-monaco
-description: Integrate flutter_monaco 3.x into a Flutter application, including editor lifecycle, documents, platform setup, focus, overlays, and disposal. Use when adding MonacoEditor or MonacoController, designing an editor screen, or reviewing a new flutter_monaco integration. Do not use for a 2.x migration, LSP-only work, package bridge maintenance, or a bundled Monaco engine upgrade.
+description: Integrate flutter_monaco 3.x or 4.x into a Flutter application, including editor lifecycle, documents, platform setup, focus, overlays, and disposal. Use when adding MonacoEditor or MonacoController, designing an editor screen, or reviewing a new flutter_monaco integration. Do not use for a 2.x migration, LSP-only work, package bridge maintenance, or a bundled Monaco engine upgrade.
 ---
 
 # Integrate Flutter Monaco
 
-Build the integration against the installed package version and its public API. Read `pubspec.yaml`, `pubspec.lock`, the consuming screen, and the current `flutter_monaco` README before changing code. Never invent a bridge method or copy a 2.x example into a 3.x app.
+Build the integration against the installed package version and its public API. Read `pubspec.yaml`, `pubspec.lock`, the consuming screen, and the current `flutter_monaco` README before changing code. Never invent a bridge method or copy a 2.x example into a 3.x or 4.x app.
 
 Read [references/integration-patterns.md](references/integration-patterns.md) before implementation.
 
 ## Operating contract
 
-- **Audience:** Engineers integrating `flutter_monaco` 3.x into a consuming Flutter application.
+- **Audience:** Engineers integrating `flutter_monaco` 3.x or 4.x into a consuming Flutter application.
 - **Expected inputs:** The resolved dependency, target platforms and SDK floors, owning screen/state pattern, content and save source of truth, required editor features, and relevant tests.
 - **Realistic scenario:** Add a three-tab editor with stable file URIs, app-owned persistence, clickable Web overlays, and keyboard recovery after route return.
 
 ## Workflow
 
-1. Confirm the dependency version and target platforms. Flutter Monaco 3.x supports Android 7/API 24+, iOS 13+, macOS 10.15+, Windows, and Web. Linux is unsupported.
+1. Confirm the dependency version and target platforms. Flutter Monaco 4.x requires Flutter 3.47.7 and Dart 3.13.5 and supports Android 7/API 24+, iOS 15+, macOS 12+, Windows with the WebView2 Runtime, and Web; 3.x supported iOS 13+ and macOS 10.15+. Linux is unsupported. A sandboxed macOS app needs the `com.apple.security.network.client` entitlement.
 2. Choose ownership deliberately:
    - Prefer `MonacoEditor` for a screen that wants widget-owned creation, loading, errors, and disposal.
    - Create a `MonacoController` when the app must prepare, share, or coordinate the controller outside the widget.
@@ -30,7 +30,8 @@ Read [references/integration-patterns.md](references/integration-patterns.md) be
 
 ## Decision points and safety invariants
 
-- Use `controller.document.setText`, `getText`, and `setLanguage`; content operations are not controller methods in 3.x.
+- Use `controller.document.setText`, `getText`, and `setLanguage`; content operations are not controller methods since 3.0.
+- On 4.x, Material comes from `package:material_ui`. The editor chrome reads its `Theme`, and `MonacoScaffold` and `MonacoEditorThemeData` take its types. Migrate an app that still imports `package:flutter/material.dart` with `dart fix --apply --code=migrate_design_widgets` rather than mixing the two libraries.
 - Await `controller.whenReady` before treating a self-created controller as live.
 - Keep the Web platform view painted under loading UI. `Offstage`, `Visibility(visible: false)`, or inserting the widget only after readiness prevents boot.
 - Use sparse `EditorOptions` updates. Do not reconstruct all defaults to change one option.

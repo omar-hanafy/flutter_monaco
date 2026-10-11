@@ -121,4 +121,6 @@ On Web, an iframe receives browser pointer input before a visually higher Flutte
 
 ## Platform floors
 
-The transitive WebView implementations set the effective deployment floors: Android API 24, iOS 13, and macOS 10.15. Windows and Web are supported. Linux is not supported.
+Flutter 3.47 and the transitive WebView implementations set the effective deployment floors for 4.x: Android API 24, iOS 15, and macOS 12 (3.x: iOS 13 and macOS 10.15). Windows needs the WebView2 Runtime. Web is supported. Linux is not supported.
+
+A sandboxed macOS app (the `flutter create` default) must enable `com.apple.security.network.client` in both `DebugProfile.entitlements` and `Release.entitlements`. Without it, WKWebView cannot load the editor page and boot times out.

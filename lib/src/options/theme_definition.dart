@@ -12,7 +12,8 @@ part 'theme_definition.freezed.dart';
 /// Mirrors the Monaco editor theme schema while keeping the surface
 /// idiomatic for Dart callers: an enum [base], strongly-typed [rules], and a
 /// Monaco token-color [colors] map. Use [toMonacoThemeData] when forwarding
-/// to the JS bridge and [toJson]/[fromJson] for app-level persistence (the
+/// to the JS bridge and [toJson]/[MonacoThemeDefinition.fromJson] for
+/// app-level persistence (the
 /// JSON shape includes [id] so loaded themes round-trip cleanly).
 @freezed
 sealed class MonacoThemeDefinition with _$MonacoThemeDefinition {
@@ -41,8 +42,8 @@ sealed class MonacoThemeDefinition with _$MonacoThemeDefinition {
 
   /// Creates a definition from JSON produced by [toJson].
   ///
-  /// Requires a non-empty `id` and a valid built-in `base` id; throws
-  /// [FormatException] otherwise. Raw Monaco `IStandaloneThemeData`
+  /// Requires a non-empty `id`, a valid built-in `base` id, and string
+  /// `colors` values; throws [FormatException] otherwise. Raw Monaco `IStandaloneThemeData`
   /// payloads (which don't carry the registration id) should be loaded via
   /// [MonacoThemeDefinition.fromMonacoThemeData].
   factory MonacoThemeDefinition.fromJson(Map<String, dynamic> json) {
@@ -95,10 +96,19 @@ sealed class MonacoThemeDefinition with _$MonacoThemeDefinition {
         'MonacoThemeDefinition.fromJson: "colors" must be a map',
       );
     }
+    // Monaco paints an unparsable color red without reporting anything, so
+    // a non-string value (including `null`) is rejected here instead of
+    // being stringified into "null" or a bare digit string.
     final colors = rawColors is Map
-        ? rawColors.map(
-            (key, value) => MapEntry(key.toString(), value.toString()),
-          )
+        ? rawColors.map((key, value) {
+            if (value is! String) {
+              throw FormatException(
+                'MonacoThemeDefinition.fromJson: "colors" value for '
+                '"$key" must be a string, got $value',
+              );
+            }
+            return MapEntry(key.toString(), value);
+          })
         : const <String, String>{};
 
     final rawEncoded = json['encodedTokensColors'];
@@ -121,7 +131,7 @@ sealed class MonacoThemeDefinition with _$MonacoThemeDefinition {
     return MonacoThemeDefinition(
       id: id,
       base: base,
-      inherit: rawInherit is bool ? rawInherit : true,
+      inherit: rawInherit is! bool || rawInherit,
       rules: rules,
       colors: colors,
       encodedTokensColors: encodedTokensColors,
@@ -143,7 +153,8 @@ sealed class MonacoThemeDefinition with _$MonacoThemeDefinition {
 
   /// Serializes this theme for app persistence.
   ///
-  /// The shape includes [id] so [fromJson] can rebuild a complete
+  /// The shape includes [id] so [MonacoThemeDefinition.fromJson] can rebuild
+  /// a complete
   /// definition. Use [toMonacoThemeData] when forwarding to the JS bridge.
   Map<String, dynamic> toJson() {
     return {'id': id, ...toMonacoThemeData()};

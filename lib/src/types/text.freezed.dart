@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'text.dart';
@@ -9,6 +9,7 @@ part of 'text.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -28,16 +29,21 @@ $EditOperationCopyWith<EditOperation> get copyWith => _$EditOperationCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EditOperation&&(identical(other.range, range) || other.range == range)&&(identical(other.text, text) || other.text == text)&&(identical(other.forceMoveMarkers, forceMoveMarkers) || other.forceMoveMarkers == forceMoveMarkers));
+  final _this = this as EditOperation;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EditOperation&&(identical(other.range, _this.range) || other.range == _this.range)&&(identical(other.text, _this.text) || other.text == _this.text)&&(identical(other.forceMoveMarkers, _this.forceMoveMarkers) || other.forceMoveMarkers == _this.forceMoveMarkers));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,range,text,forceMoveMarkers);
+int get hashCode {
+  final _this = this as EditOperation;
+  return Object.hash(runtimeType,_this.range,_this.text,_this.forceMoveMarkers);
+}
 
 @override
 String toString() {
-  return 'EditOperation(range: $range, text: $text, forceMoveMarkers: $forceMoveMarkers)';
+  final _this = this as EditOperation;
+  return 'EditOperation(range: ${_this.range}, text: ${_this.text}, forceMoveMarkers: ${_this.forceMoveMarkers})';
 }
 
 
@@ -66,7 +72,7 @@ class _$EditOperationCopyWithImpl<$Res>
 /// Create a copy of EditOperation
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? range = null,Object? text = null,Object? forceMoveMarkers = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(EditOperation(
 range: null == range ? _self.range : range // ignore: cast_nullable_to_non_nullable
 as Range,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
 as String,forceMoveMarkers: freezed == forceMoveMarkers ? _self.forceMoveMarkers : forceMoveMarkers // ignore: cast_nullable_to_non_nullable
@@ -234,16 +240,18 @@ _$EditOperationCopyWith<_EditOperation> get copyWith => __$EditOperationCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EditOperation&&(identical(other.range, range) || other.range == range)&&(identical(other.text, text) || other.text == text)&&(identical(other.forceMoveMarkers, forceMoveMarkers) || other.forceMoveMarkers == forceMoveMarkers));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _EditOperation&&(identical(other.range, range) || other.range == range)&&(identical(other.text, text) || other.text == text)&&(identical(other.forceMoveMarkers, forceMoveMarkers) || other.forceMoveMarkers == forceMoveMarkers));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,range,text,forceMoveMarkers);
+int get hashCode {
+    return Object.hash(runtimeType,range,text,forceMoveMarkers);
+}
 
 @override
 String toString() {
-  return 'EditOperation(range: $range, text: $text, forceMoveMarkers: $forceMoveMarkers)';
+    return 'EditOperation(range: $range, text: $text, forceMoveMarkers: $forceMoveMarkers)';
 }
 
 
@@ -308,16 +316,21 @@ $MonacoTextChangeCopyWith<MonacoTextChange> get copyWith => _$MonacoTextChangeCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoTextChange&&(identical(other.range, range) || other.range == range)&&(identical(other.text, text) || other.text == text));
+  final _this = this as MonacoTextChange;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MonacoTextChange&&(identical(other.range, _this.range) || other.range == _this.range)&&(identical(other.text, _this.text) || other.text == _this.text));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,range,text);
+int get hashCode {
+  final _this = this as MonacoTextChange;
+  return Object.hash(runtimeType,_this.range,_this.text);
+}
 
 @override
 String toString() {
-  return 'MonacoTextChange(range: $range, text: $text)';
+  final _this = this as MonacoTextChange;
+  return 'MonacoTextChange(range: ${_this.range}, text: ${_this.text})';
 }
 
 
@@ -346,7 +359,7 @@ class _$MonacoTextChangeCopyWithImpl<$Res>
 /// Create a copy of MonacoTextChange
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? range = null,Object? text = null,}) {
-  return _then(_self.copyWith(
+  return _then(MonacoTextChange(
 range: null == range ? _self.range : range // ignore: cast_nullable_to_non_nullable
 as Range,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
 as String,
@@ -511,16 +524,18 @@ _$MonacoTextChangeCopyWith<_MonacoTextChange> get copyWith => __$MonacoTextChang
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoTextChange&&(identical(other.range, range) || other.range == range)&&(identical(other.text, text) || other.text == text));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MonacoTextChange&&(identical(other.range, range) || other.range == range)&&(identical(other.text, text) || other.text == text));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,range,text);
+int get hashCode {
+    return Object.hash(runtimeType,range,text);
+}
 
 @override
 String toString() {
-  return 'MonacoTextChange(range: $range, text: $text)';
+    return 'MonacoTextChange(range: $range, text: $text)';
 }
 
 
@@ -584,16 +599,21 @@ $FindMatchCopyWith<FindMatch> get copyWith => _$FindMatchCopyWithImpl<FindMatch>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FindMatch&&(identical(other.range, range) || other.range == range)&&(identical(other.match, match) || other.match == match));
+  final _this = this as FindMatch;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FindMatch&&(identical(other.range, _this.range) || other.range == _this.range)&&(identical(other.match, _this.match) || other.match == _this.match));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,range,match);
+int get hashCode {
+  final _this = this as FindMatch;
+  return Object.hash(runtimeType,_this.range,_this.match);
+}
 
 @override
 String toString() {
-  return 'FindMatch(range: $range, match: $match)';
+  final _this = this as FindMatch;
+  return 'FindMatch(range: ${_this.range}, match: ${_this.match})';
 }
 
 
@@ -622,7 +642,7 @@ class _$FindMatchCopyWithImpl<$Res>
 /// Create a copy of FindMatch
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? range = null,Object? match = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(FindMatch(
 range: null == range ? _self.range : range // ignore: cast_nullable_to_non_nullable
 as Range,match: freezed == match ? _self.match : match // ignore: cast_nullable_to_non_nullable
 as String?,
@@ -787,16 +807,18 @@ _$FindMatchCopyWith<_FindMatch> get copyWith => __$FindMatchCopyWithImpl<_FindMa
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FindMatch&&(identical(other.range, range) || other.range == range)&&(identical(other.match, match) || other.match == match));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FindMatch&&(identical(other.range, range) || other.range == range)&&(identical(other.match, match) || other.match == match));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,range,match);
+int get hashCode {
+    return Object.hash(runtimeType,range,match);
+}
 
 @override
 String toString() {
-  return 'FindMatch(range: $range, match: $match)';
+    return 'FindMatch(range: $range, match: $match)';
 }
 
 
@@ -863,16 +885,21 @@ $FindOptionsCopyWith<FindOptions> get copyWith => _$FindOptionsCopyWithImpl<Find
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FindOptions&&(identical(other.isRegex, isRegex) || other.isRegex == isRegex)&&(identical(other.matchCase, matchCase) || other.matchCase == matchCase)&&(identical(other.wholeWord, wholeWord) || other.wholeWord == wholeWord)&&(identical(other.searchOnlyEditableRange, searchOnlyEditableRange) || other.searchOnlyEditableRange == searchOnlyEditableRange)&&(identical(other.limitResultCount, limitResultCount) || other.limitResultCount == limitResultCount));
+  final _this = this as FindOptions;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FindOptions&&(identical(other.isRegex, _this.isRegex) || other.isRegex == _this.isRegex)&&(identical(other.matchCase, _this.matchCase) || other.matchCase == _this.matchCase)&&(identical(other.wholeWord, _this.wholeWord) || other.wholeWord == _this.wholeWord)&&(identical(other.searchOnlyEditableRange, _this.searchOnlyEditableRange) || other.searchOnlyEditableRange == _this.searchOnlyEditableRange)&&(identical(other.limitResultCount, _this.limitResultCount) || other.limitResultCount == _this.limitResultCount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isRegex,matchCase,wholeWord,searchOnlyEditableRange,limitResultCount);
+int get hashCode {
+  final _this = this as FindOptions;
+  return Object.hash(runtimeType,_this.isRegex,_this.matchCase,_this.wholeWord,_this.searchOnlyEditableRange,_this.limitResultCount);
+}
 
 @override
 String toString() {
-  return 'FindOptions(isRegex: $isRegex, matchCase: $matchCase, wholeWord: $wholeWord, searchOnlyEditableRange: $searchOnlyEditableRange, limitResultCount: $limitResultCount)';
+  final _this = this as FindOptions;
+  return 'FindOptions(isRegex: ${_this.isRegex}, matchCase: ${_this.matchCase}, wholeWord: ${_this.wholeWord}, searchOnlyEditableRange: ${_this.searchOnlyEditableRange}, limitResultCount: ${_this.limitResultCount})';
 }
 
 
@@ -901,7 +928,7 @@ class _$FindOptionsCopyWithImpl<$Res>
 /// Create a copy of FindOptions
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? isRegex = null,Object? matchCase = null,Object? wholeWord = null,Object? searchOnlyEditableRange = freezed,Object? limitResultCount = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(FindOptions(
 isRegex: null == isRegex ? _self.isRegex : isRegex // ignore: cast_nullable_to_non_nullable
 as bool,matchCase: null == matchCase ? _self.matchCase : matchCase // ignore: cast_nullable_to_non_nullable
 as bool,wholeWord: null == wholeWord ? _self.wholeWord : wholeWord // ignore: cast_nullable_to_non_nullable
@@ -1066,16 +1093,18 @@ _$FindOptionsCopyWith<_FindOptions> get copyWith => __$FindOptionsCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FindOptions&&(identical(other.isRegex, isRegex) || other.isRegex == isRegex)&&(identical(other.matchCase, matchCase) || other.matchCase == matchCase)&&(identical(other.wholeWord, wholeWord) || other.wholeWord == wholeWord)&&(identical(other.searchOnlyEditableRange, searchOnlyEditableRange) || other.searchOnlyEditableRange == searchOnlyEditableRange)&&(identical(other.limitResultCount, limitResultCount) || other.limitResultCount == limitResultCount));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FindOptions&&(identical(other.isRegex, isRegex) || other.isRegex == isRegex)&&(identical(other.matchCase, matchCase) || other.matchCase == matchCase)&&(identical(other.wholeWord, wholeWord) || other.wholeWord == wholeWord)&&(identical(other.searchOnlyEditableRange, searchOnlyEditableRange) || other.searchOnlyEditableRange == searchOnlyEditableRange)&&(identical(other.limitResultCount, limitResultCount) || other.limitResultCount == limitResultCount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isRegex,matchCase,wholeWord,searchOnlyEditableRange,limitResultCount);
+int get hashCode {
+    return Object.hash(runtimeType,isRegex,matchCase,wholeWord,searchOnlyEditableRange,limitResultCount);
+}
 
 @override
 String toString() {
-  return 'FindOptions(isRegex: $isRegex, matchCase: $matchCase, wholeWord: $wholeWord, searchOnlyEditableRange: $searchOnlyEditableRange, limitResultCount: $limitResultCount)';
+    return 'FindOptions(isRegex: $isRegex, matchCase: $matchCase, wholeWord: $wholeWord, searchOnlyEditableRange: $searchOnlyEditableRange, limitResultCount: $limitResultCount)';
 }
 
 

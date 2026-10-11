@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:flutter_monaco/src/editor/boot_timeout.dart';
 import 'package:flutter_monaco/src/platform/platform_webview.dart';
 import 'package:flutter_monaco/src/protocol/envelope.dart';
 import 'package:flutter_monaco/src/protocol/protocol.dart';
@@ -45,6 +45,19 @@ class MonacoDiffController {
   /// when the page document reloads (see [onPageReloaded]).
   Map<String, Object?>? _bootPayload;
   final _pageReloaded = StreamController<void>.broadcast();
+
+  /// Page-reload recovery gate, awaited by [_ensureReady]: same contract as
+  /// `MonacoController`'s. A reloaded page shell only knows `page.boot` and
+  /// `page.eval` until the diff editor exists, so commands issued during
+  /// recovery queue here (FIFO) instead of reaching it. A failed recovery
+  /// leaves the gate failed with a [MonacoPageReloadedError] until a newer
+  /// reload recovers the editor.
+  Completer<void>? _recoveryGate;
+  int _recoveryGeneration = 0;
+
+  /// The boot deadline ([create]'s `readyTimeout`), which also bounds each
+  /// page-reload re-boot so commands waiting on the gate cannot hang.
+  Duration _readyTimeout = MonacoDefaults.readyTimeout;
   StreamSubscription<MonacoPageReload>? _reloadSubscription;
 
   /// Completes when the diff editor is fully initialized and ready to
@@ -52,8 +65,10 @@ class MonacoDiffController {
   /// fails.
   Future<void> get whenReady => _onReady.future;
 
-  /// Returns `true` if the diff editor finished initializing successfully.
-  bool get isReady => _onReady.isCompleted && _readyCompletedOk;
+  /// Returns `true` if the diff editor finished initializing successfully
+  /// and is not recovering from a page reload (see [onPageReloaded]).
+  bool get isReady =>
+      _onReady.isCompleted && _readyCompletedOk && _recoveryGate == null;
 
   /// Fires after the controller recovered from a page reload.
   ///
@@ -63,13 +78,17 @@ class MonacoDiffController {
   /// controller re-booted the diff editor with its ORIGINAL boot payload
   /// (original/modified text, language, options, theme), and the editor
   /// accepts commands again. Content and configuration applied after
-  /// [create] must be restored by the app from this stream; commands that
-  /// were in flight failed with [MonacoPageReloadedError]. A failed
-  /// recovery surfaces as an error event on this stream.
+  /// [create] must be restored by the app from this stream (the
+  /// `MonacoDiffEditor` widget re-applies its own texts and configuration);
+  /// commands that were in flight failed with [MonacoPageReloadedError], and
+  /// commands issued during the recovery wait for it and then run in issue
+  /// order. A failed recovery (including a re-boot that misses [create]'s
+  /// `readyTimeout`) surfaces as an error event on this stream, and
+  /// waiting and later commands fail with [MonacoPageReloadedError].
   Stream<void> get onPageReloaded => _pageReloaded.stream;
 
-  /// Converges a freshly reloaded diff page back to a booted editor. See
-  /// [onPageReloaded].
+  /// Converges a freshly reloaded diff page back to a booted editor, then
+  /// opens the command gate. See [onPageReloaded].
   Future<void> _recoverFromPageReload(MonacoPageReload reload) async {
     if (_disposed) return;
     final bootPayload = _bootPayload;
@@ -81,19 +100,64 @@ class MonacoDiffController {
       return;
     }
     debugPrint('[MonacoDiffController] Page reloaded; re-booting the editor.');
+    final generation = ++_recoveryGeneration;
+    final gate = _openRecoveryGate();
     try {
-      await _protocol.invoke('page.boot', bootPayload, timeout: null);
-      await reload.editorReady;
-      if (_disposed) return;
+      final readyTimeout = _readyTimeout;
+      await () async {
+        await _protocol.invoke('page.boot', bootPayload, timeout: null);
+        await reload.editorReady;
+      }().timeout(
+        readyTimeout,
+        onTimeout: () => throw MonacoTimeoutError(
+          message:
+              'The reloaded Monaco diff editor did not report ready in '
+              '${readyTimeout.inSeconds} seconds.',
+          timeout: readyTimeout,
+          operation: 'boot',
+        ),
+      );
+      if (_disposed || generation != _recoveryGeneration) return;
+      _recoveryGate = null;
+      gate.complete();
       _pageReloaded.add(null);
-    } on MonacoPageReloadedError {
-      // Superseded by an even newer reload; its recovery takes over.
     } on MonacoDisposedError {
-      // Disposed mid-recovery; nothing to announce.
+      // Disposed mid-recovery; dispose settles the gate.
+    } on MonacoPageReloadedError catch (e, st) {
+      // Normally superseded by a newer reload whose recovery takes over the
+      // gate; a skewed reload interrupts without starting a new recovery.
+      await Future<void>.delayed(Duration.zero);
+      if (_disposed || generation != _recoveryGeneration) return;
+      _failRecovery(gate, e, st);
     } catch (e, st) {
       debugPrint('[MonacoDiffController] Page reload recovery failed: $e');
-      if (!_disposed) _pageReloaded.addError(e, st);
+      if (_disposed || generation != _recoveryGeneration) return;
+      _failRecovery(gate, e, st);
     }
+  }
+
+  Completer<void> _openRecoveryGate() {
+    final current = _recoveryGate;
+    if (current != null && !current.isCompleted) return current;
+    final gate = Completer<void>();
+    gate.future.ignore();
+    _recoveryGate = gate;
+    return gate;
+  }
+
+  void _failRecovery(Completer<void> gate, Object error, StackTrace st) {
+    if (!gate.isCompleted) {
+      gate.completeError(
+        MonacoPageReloadedError(
+          message:
+              'The Monaco page reloaded and the diff editor could not be '
+              'recovered: $error',
+          operation: 'page.boot',
+        ),
+        st,
+      );
+    }
+    _pageReloaded.addError(error, st);
   }
 
   /// The platform-specific WebView widget hosting the diff editor.
@@ -169,6 +233,7 @@ class MonacoDiffController {
   }) {
     final bootOptions = MonacoDefaults.editorOptions.merge(options);
     final bootTheme = bootOptions.theme ?? MonacoDefaults.darkTheme;
+    _readyTimeout = readyTimeout;
     _onReady.future.ignore();
     unawaited(() async {
       try {
@@ -186,23 +251,28 @@ class MonacoDiffController {
             'theme': bootTheme.id,
           };
           _bootPayload = bootPayload;
-          await _protocol.invoke('page.boot', bootPayload, timeout: null);
+          try {
+            await _protocol.invoke('page.boot', bootPayload, timeout: null);
+          } on MonacoPageReloadedError {
+            // The page reloaded before answering. Page-reload recovery
+            // re-boots the new page with this payload, and that page's
+            // ready lifecycle completes editorReady below; a fatal or
+            // skewed reload fails it instead.
+          }
           await _protocol.editorReady;
         }().timeout(
           readyTimeout,
           onTimeout: () => throw MonacoTimeoutError(
-            message:
-                'Monaco diff editor did not report ready in '
-                '${readyTimeout.inSeconds} seconds.'
-                '${kIsWeb ? ' On web the first load downloads the editor '
-                          'bundle; a slow connection can exceed this deadline. '
-                          'Retrying resumes from the browser cache.' : ''}',
+            message: monacoBootTimeoutMessage(
+              subject: 'Monaco diff editor',
+              timeout: readyTimeout,
+            ),
             timeout: readyTimeout,
             operation: 'boot',
           ),
         );
-        _readyCompletedOk = true;
         if (!_onReady.isCompleted) {
+          _readyCompletedOk = true;
           _onReady.complete();
         }
       } catch (e, st) {
@@ -215,11 +285,24 @@ class MonacoDiffController {
 
   /// Create a diff controller for tests without touching assets or
   /// platform views.
+  ///
+  /// When [runBoot] is true, the REAL boot pipeline runs against the fake
+  /// WebView instead ([markReady] is ignored): `load()` is expected to emit
+  /// `pageReady`, `page.boot` carries the boot arguments, and readiness
+  /// follows the fake's `ready` lifecycle. Use this to exercise flows that
+  /// depend on boot state, like page-reload recovery.
   @visibleForTesting
   static Future<MonacoDiffController> createForTesting({
     required PlatformWebViewController webViewController,
     bool markReady = true,
     String channelName = 'flutterChannel',
+    bool runBoot = false,
+    EditorOptions? bootOptions,
+    MonacoDiffOptions bootDiffOptions = const MonacoDiffOptions(),
+    String bootOriginal = '',
+    String bootModified = '',
+    MonacoLanguage bootLanguage = MonacoLanguage.plaintext,
+    Duration readyTimeout = const Duration(seconds: 20),
   }) async {
     final protocol = MonacoProtocol(webView: webViewController);
 
@@ -231,7 +314,17 @@ class MonacoDiffController {
     );
 
     final controller = MonacoDiffController._(protocol, webViewController);
-    if (markReady) {
+    if (runBoot) {
+      controller._startBoot(
+        options: bootOptions,
+        diff: bootDiffOptions,
+        original: bootOriginal,
+        modified: bootModified,
+        language: bootLanguage,
+        page: const MonacoPageConfig(),
+        readyTimeout: readyTimeout,
+      );
+    } else if (markReady) {
       controller.completeReadyForTesting();
     }
     return controller;
@@ -276,15 +369,24 @@ class MonacoDiffController {
   /// still `isCompleted`, so an isCompleted fast path would let commands skip
   /// the boot error and enter the protocol of a dead page. Every command
   /// after a failed boot must keep rethrowing the ORIGINAL boot error.
-  Future<void> _ensureReady() {
+  ///
+  /// After readiness, a page-reload recovery in progress holds the command
+  /// until the re-booted diff editor accepts commands again.
+  Future<void> _ensureReady() async {
     if (_disposed) {
-      return Future.error(
-        const MonacoDisposedError(
-          message: 'MonacoDiffController has been disposed.',
-        ),
+      throw const MonacoDisposedError(
+        message: 'MonacoDiffController has been disposed.',
       );
     }
-    return _onReady.future;
+    await _onReady.future;
+    for (var gate = _recoveryGate; gate != null; gate = _recoveryGate) {
+      await gate.future;
+    }
+    if (_disposed) {
+      throw const MonacoDisposedError(
+        message: 'MonacoDiffController has been disposed.',
+      );
+    }
   }
 
   Future<Object?> _invoke(String method, Map<String, Object?> params) async {
@@ -415,6 +517,27 @@ class MonacoDiffController {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+    // Settle readiness now: the boot may be parked in a page load that only
+    // gives up at its deadline (web waits for the iframe to attach), and
+    // whenReady and every command queued behind it must not wait that long.
+    if (!_onReady.isCompleted) {
+      _onReady.future.ignore();
+      _onReady.completeError(
+        const MonacoDisposedError(
+          message:
+              'MonacoDiffController disposed before the editor became ready.',
+        ),
+      );
+    }
+    final gate = _recoveryGate;
+    if (gate != null && !gate.isCompleted) {
+      gate.completeError(
+        const MonacoDisposedError(
+          message:
+              'MonacoDiffController disposed while recovering a page reload.',
+        ),
+      );
+    }
     _reloadSubscription?.cancel();
     _pageReloaded.close();
     _protocol.dispose();

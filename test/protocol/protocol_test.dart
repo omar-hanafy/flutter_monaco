@@ -19,7 +19,7 @@ void main() {
           'kind': 'lifecycle',
           'name': 'pageReady',
           'protocolVersion': 3,
-          'monacoVersion': '0.55.1',
+          'monacoVersion': '0.57.0',
           'capabilities': ['lsp'],
         }),
       );
@@ -28,7 +28,7 @@ void main() {
         (envelope! as LifecycleEnvelope).json,
       );
       expect(handshake.protocolVersion, 3);
-      expect(handshake.monacoVersion, '0.55.1');
+      expect(handshake.monacoVersion, '0.57.0');
       expect(handshake.capabilities, {'lsp'});
     });
 
@@ -216,12 +216,12 @@ void main() {
           'kind': 'lifecycle',
           'name': 'pageReady',
           'protocolVersion': 3,
-          'monacoVersion': '0.55.1',
+          'monacoVersion': '0.57.0',
           'capabilities': ['lsp'],
         }),
       );
       final handshake = await protocol.pageReady;
-      expect(handshake.monacoVersion, '0.55.1');
+      expect(handshake.monacoVersion, '0.57.0');
 
       final skewed = MonacoProtocol(webView: webview);
       skewed.handleChannelMessage(

@@ -32,6 +32,101 @@ window.__FMB.editorApi = function (ctx) {
                   }
                   return model;
                 };
+                // Programmatic edits as ONE undo step of their own.
+                // model.applyEdits bypasses the undo stack, so a later undo
+                // replays stale inverse edits over the shifted text and
+                // corrupts the document; pushEditOperations alone would
+                // merge into the user's still-open typing element. The
+                // surrounding stack elements close that element and this
+                // one. Model-level, so pinned inactive documents get the
+                // same undo semantics as the attached one. For the attached
+                // model, the editor's selections are the before-cursor
+                // state, as editor.executeEdits passes them: with an EMPTY
+                // cursor state Monaco trims every auto-indent-only line
+                // the edit does not touch, deleting the indentation the
+                // user just got from pressing Enter.
+                const applyUndoableEdits = (model, edits) => {
+                  // No edits, no undo step: an empty pushEditOperations
+                  // between two stack elements still records an element,
+                  // and the user's next undo would appear to do nothing.
+                  if (!edits || edits.length === 0) return;
+                  const ed = E();
+                  const beforeCursorState =
+                    ed && ed.getModel && ed.getModel() === model
+                      ? (ed.getSelections() || [])
+                      : [];
+                  model.pushStackElement();
+                  model.pushEditOperations(beforeCursorState, edits, () => null);
+                  model.pushStackElement();
+                };
+                // Dart's MarkerData wire shape -> Monaco IMarkerData. Dart
+                // sends tags by name ('unnecessary', 'deprecated') and
+                // relatedInformation[].resource as a URI string; Monaco
+                // ignores string tags and needs a monaco.Uri resource
+                // (the marker hover reads resource.path). Numeric tags
+                // pass through; unknown tag names are dropped, as Monaco
+                // would ignore them anyway.
+                const markerTagByName = (name) => {
+                  const tags = monaco.MarkerTag || { Unnecessary: 1, Deprecated: 2 };
+                  switch (String(name).toLowerCase()) {
+                    case 'unnecessary': return tags.Unnecessary;
+                    case 'deprecated': return tags.Deprecated;
+                    default: return undefined;
+                  }
+                };
+                const toMonacoMarkers = (markers) => (markers || []).map((marker) => {
+                  if (!marker || typeof marker !== 'object') return marker;
+                  const mapped = Object.assign({}, marker);
+                  if (Array.isArray(marker.tags)) {
+                    mapped.tags = marker.tags
+                      .map((tag) => (typeof tag === 'number' ? tag : markerTagByName(tag)))
+                      .filter((tag) => typeof tag === 'number');
+                  }
+                  if (Array.isArray(marker.relatedInformation)) {
+                    mapped.relatedInformation = marker.relatedInformation.map((info) =>
+                      info && typeof info.resource === 'string'
+                        ? Object.assign({}, info, { resource: monaco.Uri.parse(info.resource) })
+                        : info);
+                  }
+                  return mapped;
+                });
+                // Monaco has no public theme getter (monaco.editor.getTheme
+                // does not exist in 0.57), so the bridge tracks the theme it
+                // applied: the boot theme (boot.js creates the editor with
+                // page.boot's theme, default 'vs'), then every setTheme and
+                // updateOptions({theme}). A theme set behind the bridge's
+                // back (page.eval) is not observed.
+                const DEFAULT_THEME = 'vs';
+                let currentTheme = (window.__FM_BOOT && window.__FM_BOOT.theme) || DEFAULT_THEME;
+                // Replace-all must see every match: Monaco's findMatches
+                // stops at its limit argument (999 when omitted), and the
+                // old 9999 cap silently left later matches unreplaced.
+                const ALL_MATCHES = Number.MAX_SAFE_INTEGER;
+                // Find with Monaco's own semantics. Whole word is Monaco's
+                // wordSeparators argument - the editor's wordSeparators
+                // option, exactly what the find widget passes - not a
+                // \b...\b regex: \b never matches next to a non-word
+                // character ($x, @foo) and could not apply to regex
+                // queries at all.
+                const findModelMatches = (model, q, opts, searchScope, limit) => {
+                  let wordSeparators = null;
+                  if (opts && opts.wholeWord) {
+                    wordSeparators = requireEditor().getOption(
+                      monaco.editor.EditorOption.wordSeparators);
+                    if (typeof wordSeparators !== 'string') {
+                      throw new Error(
+                        'Monaco editor did not report its wordSeparators option.');
+                    }
+                  }
+                  return model.findMatches(
+                    String(q ?? ''),
+                    searchScope,
+                    !!(opts && opts.isRegex),
+                    !!(opts && opts.matchCase),
+                    wordSeparators,
+                    false,                // captureMatches
+                    limit);
+                };
 
                 window.flutterMonaco = {
 
@@ -121,24 +216,22 @@ window.__FMB.editorApi = function (ctx) {
                       throw new Error('Theme id must be a non-empty string.');
                     }
                     monaco.editor.setTheme(theme);
+                    currentTheme = theme;
                     return true;
                   },
-                  getTheme: () => {
-                    if (!window.monaco || !monaco.editor ||
-                        typeof monaco.editor.getTheme !== 'function') {
-                      return null;
-                    }
-                    const theme = monaco.editor.getTheme();
-                    if (!theme) return null;
-                    if (typeof theme === 'string') return theme;
-                    return theme.themeName || theme.id || null;
-                  },
+                  getTheme: () => currentTheme,
                   setLanguage: (lang) => {
                     monaco.editor.setModelLanguage(requireModel(), lang);
                     return true;
                   },
                   updateOptions: (opts) => {
                     requireEditor().updateOptions(opts);
+                    // The standalone editor forwards a string theme option
+                    // to the global theme service (an empty one selects
+                    // the default theme).
+                    if (opts && typeof opts.theme === 'string') {
+                      currentTheme = opts.theme || DEFAULT_THEME;
+                    }
                     return true;
                   },
                   executeAction: (actionId, args) => {
@@ -155,13 +248,55 @@ window.__FMB.editorApi = function (ctx) {
                       return Promise.resolve(action.run(args))
                         .then(function () { return true; });
                     }
-                    ed.trigger('flutter-bridge', actionId, args);
-                    return true;
+                    // Not an editor action: trigger() handles its built-in
+                    // handlers (type, paste, ...) and editor commands
+                    // itself, and otherwise falls through to the command
+                    // service - whose promise it DROPS, so an unknown id
+                    // ("command '...' not found") or a failing command
+                    // used to report success here and leak an unhandled
+                    // rejection. Capture that promise for this id during
+                    // the synchronous trigger and settle the response on
+                    // it. _commandService is the editor's injected
+                    // ICommandService (verified against Monaco 0.57.0).
+                    // Without a model, Monaco's trigger() returns before
+                    // dispatching anything, so the id would silently "succeed".
+                    requireModel();
+                    const service = ed._commandService;
+                    if (!service || typeof service.executeCommand !== 'function') {
+                      ed.trigger('flutter-bridge', actionId, args);
+                      return true;
+                    }
+                    const original = service.executeCommand;
+                    const hadOwn = Object.prototype.hasOwnProperty.call(
+                      service, 'executeCommand');
+                    let claimed = false;
+                    let pending = null;
+                    service.executeCommand = function (id) {
+                      // Claim the FIRST call for this id before running it,
+                      // so a nested same-id dispatch from inside the command
+                      // cannot stand in for the outer one.
+                      const outer = !claimed && id === actionId;
+                      if (outer) claimed = true;
+                      const result = original.apply(this, arguments);
+                      if (outer) pending = Promise.resolve(result);
+                      return result;
+                    };
+                    try {
+                      ed.trigger('flutter-bridge', actionId, args);
+                    } finally {
+                      if (hadOwn) {
+                        service.executeCommand = original;
+                      } else {
+                        delete service.executeCommand;
+                      }
+                    }
+                    if (pending === null) return true;
+                    return pending.then(function () { return true; });
                   },
 
                   // Selection
                   getSelection: () => {
-                    const s = E().getSelection();
+                    const s = requireEditor().getSelection();
                     return s ? {
                       startLineNumber: s.startLineNumber, startColumn: s.startColumn,
                       endLineNumber: s.endLineNumber, endColumn: s.endColumn
@@ -174,7 +309,7 @@ window.__FMB.editorApi = function (ctx) {
 
                   // Cursor
                   getCursorPosition: () => {
-                    const p = E().getPosition();
+                    const p = requireEditor().getPosition();
                     return p ? { lineNumber: p.lineNumber, column: p.column } : null;
                   },
                   setCursorPosition: (line, column) => {
@@ -201,8 +336,8 @@ window.__FMB.editorApi = function (ctx) {
                   },
 
                   // Edits
-                  applyEdits: (edits, opts) => {
-                    requireModel().applyEdits(edits || [], opts || {});
+                  applyEdits: (edits) => {
+                    applyUndoableEdits(requireModel(), edits || []);
                     return true;
                   },
 
@@ -227,7 +362,7 @@ window.__FMB.editorApi = function (ctx) {
 
                   // Markers (diagnostics)
                   setModelMarkers: (owner, markers) => {
-                    monaco.editor.setModelMarkers(requireModel(), owner || 'flutter', markers || []);
+                    monaco.editor.setModelMarkers(requireModel(), owner || 'flutter', toMonacoMarkers(markers));
                     return true;
                   },
 
@@ -235,54 +370,17 @@ window.__FMB.editorApi = function (ctx) {
                   findMatches: (q, options, limit) => {
                     const m = E().getModel();
                     if (!m) return [];
-                    const isRegex = !!(options && options.isRegex);
-                    const matchCase = !!(options && options.matchCase);
-                    const wholeWord = !!(options && options.wholeWord);
-
-                    let search = q ?? '';
-                    let useRegex = isRegex;
-                    if (wholeWord && !isRegex) {
-                      search = '\\b' + escapeRegExp(String(q ?? '')) + '\\b';
-                      useRegex = true;
-                    }
-
-                    const matches = m.findMatches(
-                      search,
-                      null,                 // searchScope: null = whole model (FIX: was 'false')
-                      useRegex,
-                      matchCase,
-                      null,
-                      false,                // captureMatches
-                      limit || 9999
-                    );
+                    // searchScope null = whole model.
+                    const matches = findModelMatches(m, q, options, null, limit || 9999);
                     return matches.map(mm => ({ range: mm.range, match: m.getValueInRange(mm.range) }));
                   },
 
                   replaceMatches: (q, repl, options) => {
                     const m = E().getModel();
                     if (!m) return 0;
-                    const isRegex = !!(options && options.isRegex);
-                    const matchCase = !!(options && options.matchCase);
-                    const wholeWord = !!(options && options.wholeWord);
-
-                    let search = q ?? '';
-                    let useRegex = isRegex;
-                    if (wholeWord && !isRegex) {
-                      search = '\\b' + escapeRegExp(String(q ?? '')) + '\\b';
-                      useRegex = true;
-                    }
-
-                    const matches = m.findMatches(
-                      search,
-                      null,                 // searchScope: null = whole model (FIX: was 'false')
-                      useRegex,
-                      matchCase,
-                      null,
-                      false,                // captureMatches
-                      9999
-                    );
+                    const matches = findModelMatches(m, q, options, null, ALL_MATCHES);
                     const edits = matches.map(mm => ({ range: mm.range, text: repl }));
-                    m.pushEditOperations([], edits, () => null);
+                    applyUndoableEdits(m, edits);
                     return edits.length;
                   },
 
@@ -362,25 +460,11 @@ window.__FMB.editorApi = function (ctx) {
                   };
                   const modelLanguage = (model) =>
                     model.getLanguageId ? model.getLanguageId() : monaco.editor.getModelLanguage(model);
-                  const searchSpec = (q, opts) => {
-                    const isRegex = !!(opts && opts.isRegex);
-                    const wholeWord = !!(opts && opts.wholeWord);
-                    let search = q ?? '';
-                    let useRegex = isRegex;
-                    if (wholeWord && !isRegex) {
-                      search = '\\b' + escapeRegExp(String(q ?? '')) + '\\b';
-                      useRegex = true;
-                    }
-                    return { search, useRegex, matchCase: !!(opts && opts.matchCase) };
-                  };
-                  const findMatchesIn = (model, q, opts, limit) => {
-                    const s = searchSpec(q, opts);
+                  const findMatchesIn = (model, q, opts, limit) =>
                     // Second argument selects Monaco's searchOnlyEditableRange
                     // overload; false/null both mean "whole model".
-                    return model.findMatches(
-                      s.search, !!(opts && opts.searchOnlyEditableRange),
-                      s.useRegex, s.matchCase, null, false, limit || 9999);
-                  };
+                    findModelMatches(model, q, opts,
+                      !!(opts && opts.searchOnlyEditableRange), limit || 9999);
                   const markDirtyBaseline = (model) => {
                     if (model && model.uri) {
                       api._baselines.set(model.uri.toString(), model.getAlternativeVersionId());
@@ -501,7 +585,7 @@ window.__FMB.editorApi = function (ctx) {
                   });
                   FM.register('document.getLanguage', (p) => modelLanguage(resolveModel(p.uri)));
                   FM.register('document.applyEdits', (p) => {
-                    resolveModel(p.uri).applyEdits(p.edits || []);
+                    applyUndoableEdits(resolveModel(p.uri), p.edits || []);
                     return true;
                   });
                   FM.register('document.findMatches', (p) => {
@@ -515,9 +599,9 @@ window.__FMB.editorApi = function (ctx) {
                     const model = resolveModel(p.uri);
                     const matches = findMatchesIn(model, p.query,
                       { isRegex: p.isRegex, matchCase: p.matchCase, wholeWord: p.wholeWord,
-                        searchOnlyEditableRange: p.searchOnlyEditableRange }, 9999);
+                        searchOnlyEditableRange: p.searchOnlyEditableRange }, ALL_MATCHES);
                     const edits = matches.map((mm) => ({ range: mm.range, text: p.replacement }));
-                    model.pushEditOperations([], edits, () => null);
+                    applyUndoableEdits(model, edits);
                     return edits.length;
                   });
                   FM.register('document.getWordAt', (p) => {
@@ -531,7 +615,7 @@ window.__FMB.editorApi = function (ctx) {
                     return true;
                   });
                   FM.register('document.setMarkers', (p) => {
-                    monaco.editor.setModelMarkers(resolveModel(p.uri), p.owner || 'flutter', p.markers || []);
+                    monaco.editor.setModelMarkers(resolveModel(p.uri), p.owner || 'flutter', toMonacoMarkers(p.markers));
                     return true;
                   });
                   FM.register('docs.open', (p) => {
@@ -592,15 +676,15 @@ window.__FMB.editorApi = function (ctx) {
                     return api.revealRange(range, !!p.center);
                   });
                   FM.register('editor.scrollToEdge', (p) => {
-                    const ed = E();
-                    if (!ed) return false;
+                    // Dart ignores this command's result, so a missing
+                    // editor or model must be an error, not false.
+                    const model = requireModel();
+                    const ed = requireEditor();
                     if (p.edge === 'top') {
                       ed.setScrollPosition({ scrollTop: 0, scrollLeft: 0 });
                       ed.setPosition({ lineNumber: 1, column: 1 });
                       ed.revealLineInCenterIfOutsideViewport(1);
                     } else {
-                      const model = ed.getModel();
-                      if (!model) return false;
                       const lineCount = model.getLineCount();
                       ed.revealLineInCenterIfOutsideViewport(lineCount);
                       ed.setPosition({ lineNumber: lineCount, column: 1 });

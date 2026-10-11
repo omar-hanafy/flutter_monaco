@@ -1,9 +1,18 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_monaco/src/assets/html_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 
 import '../helpers/csp.dart';
+import '../helpers/page_scripts.dart';
+
+/// Identifies the worker safety net among the page's inline scripts.
+const _safetyNetMarker = "Object.defineProperty(self, 'MonacoEnvironment'";
+
+/// Identifies the editor.main gate among the page's inline scripts.
+const _gateMarker = 'window.require = gated';
 
 String _build({
   String? customCss,
@@ -15,7 +24,7 @@ String _build({
   return buildMonacoIndexHtml(
     vsPath: vsPath,
     bridgeBase: bridgeBase,
-    monacoVersion: '0.55.1',
+    monacoVersion: '0.57.0',
     isWeb: isWeb,
     messageToken: messageToken,
     customCss: customCss,
@@ -158,6 +167,391 @@ void main() {
         contains('window.flutterMonacoToken = ${jsonEncode(token)};'),
       );
       expect(html, isNot(contains("window.flutterMonacoToken = 'tok';")));
+    });
+  });
+
+  group('asset paths reach the page intact', () {
+    // Uri.file leaves an apostrophe unescaped, so a Windows profile such as
+    // O'Brien, or an app named "Bob's Editor", puts one in every asset URL.
+    // Pasted into a single-quoted JavaScript literal it ended the string:
+    // the require config became a SyntaxError and the editor never loaded.
+    const windowsDir =
+        r"C:\Users\O'Brien\AppData\Roaming\Bob's Tools\Bob's Editor"
+        r'\monaco_editor_cache\monaco-0.57.0';
+    final cases = <String, ({String vsPath, String bridgeBase, bool isWeb})>{
+      'Windows file page': (
+        vsPath: Uri.file('$windowsDir\\min\\vs', windows: true).toString(),
+        bridgeBase: Uri.file('$windowsDir\\bridge', windows: true).toString(),
+        isWeb: false,
+      ),
+      'web page': (
+        vsPath: "https://app.example/Bob's/assets/monaco/min/vs",
+        bridgeBase: "https://app.example/Bob's/assets/monaco/bridge",
+        isWeb: true,
+      ),
+      'path that tries to close the script element': (
+        vsPath: 'file:///C:/x/</script><script>alert(1)//"\'/min/vs',
+        bridgeBase: 'file:///C:/x/bridge',
+        isWeb: false,
+      ),
+    };
+
+    cases.forEach((name, paths) {
+      String build() => buildMonacoIndexHtml(
+        vsPath: paths.vsPath,
+        bridgeBase: paths.bridgeBase,
+        monacoVersion: '0.57.0',
+        isWindows: !paths.isWeb,
+        isWeb: paths.isWeb,
+        messageToken: paths.isWeb ? 'token' : null,
+      );
+
+      test('$name: every inline script parses', () async {
+        final html = build();
+        expect(html, contains('var require'));
+        expect(await jsSyntaxErrors(inlineScriptsIn(html)), isEmpty);
+      }, skip: nodeUnavailableReason);
+
+      test('$name: Monaco is configured with the exact vs path', () async {
+        final requireScript = inlineScriptsIn(build())
+            .singleWhere((script) => script.contains('var require'));
+        expect(
+          await evaluateInNode(requireScript, 'require.paths.vs'),
+          paths.vsPath,
+        );
+      }, skip: nodeUnavailableReason);
+
+      test('$name: script elements load the exact asset URLs', () {
+        final urls = scriptUrlsIn(build());
+        expect(urls, contains('${paths.vsPath}/loader.js'));
+        for (final script in monacoBridgeScripts) {
+          expect(urls, contains('${paths.bridgeBase}/$script'));
+        }
+      });
+    });
+  });
+
+  group('allowedConnectSources', () {
+    test('character references cannot smuggle a directive into the CSP', () {
+      // The attribute decodes &#32; to a space and &#59; to ";", so this
+      // entry used to widen connect-src to * and append frame-src *.
+      expect(
+        () =>
+            sanitizeConnectSources(['wss://a.example&#32*&#59frame-src&#32*']),
+        throwsArgumentError,
+      );
+    });
+
+    test('only CSP source expressions are accepted', () {
+      for (final invalid in [
+        'wss://a.example&amp;',
+        'wss://a.example/#fragment',
+        'wss://a.example/?query=1',
+        'ws://a.example,ws://b.example',
+        r'ws://a\b',
+        'wss://a.example/%ZZ',
+        'wss://a.example:80a',
+        "'self'",
+        'wss://',
+      ]) {
+        expect(
+          () => sanitizeConnectSources([invalid]),
+          throwsArgumentError,
+          reason: 'should reject: $invalid',
+        );
+      }
+    });
+
+    test('valid scheme and host sources are kept verbatim', () {
+      const valid = [
+        '*',
+        'https:',
+        'wss:',
+        'ws://127.0.0.1:3000',
+        'wss://lsp.example.com',
+        'wss://*.example.com',
+        'https://example.com:*',
+        'https://example.com/lsp/',
+        'https://example.com/a%20b',
+        'lsp.example.com',
+        'ws://[::1]:8080',
+      ];
+      expect(sanitizeConnectSources(valid), valid);
+
+      final csp = PageCsp.fromHtml(
+        buildMonacoIndexHtml(
+          vsPath: 'min/vs',
+          bridgeBase: 'bridge',
+          monacoVersion: '0.57.0',
+          allowedConnectSources: valid,
+        ),
+      );
+      expect(csp.directives['connect-src'], containsAllInOrder(valid));
+    });
+  });
+
+  group('WebView2 virtual host page', () {
+    const base = 'https://flutter-monaco.example/monaco-0.57.0';
+
+    String build({String? bridgeVersion}) => buildMonacoIndexHtml(
+      vsPath: '$base/min/vs',
+      bridgeBase: '$base/bridge',
+      monacoVersion: '0.57.0',
+      isWindows: true,
+      bridgeVersion: bridgeVersion,
+    );
+
+    test('the policy admits the virtual host and blob workers only', () {
+      final csp = PageCsp.fromHtml(build());
+      const asset = '$base/min/vs/editor/editor.main.js';
+      for (final directive in csp.fetchDirectives) {
+        expect(
+          csp.admitsWithoutSelf(directive, asset),
+          isTrue,
+          reason: '$directive does not admit $asset',
+        );
+        // Served over https, the page has no reason to reach the disk.
+        expect(csp.directives[directive], isNot(contains('file:')));
+        expect(csp.directives[directive], isNot(contains('https:')));
+      }
+      expect(csp.directives['default-src'], isNot(contains('file:')));
+      expect(csp.admitsWithoutSelf('worker-src', 'blob:https://x/1'), isTrue);
+    });
+
+    test('bridge scripts carry the bridge fingerprint, loader.js does not', () {
+      final urls = scriptUrlsIn(build(bridgeVersion: 'abc123'));
+      expect(urls, contains('$base/min/vs/loader.js'));
+      for (final script in monacoBridgeScripts) {
+        expect(urls, contains('$base/bridge/$script?v=abc123'));
+      }
+      expect(scriptUrlsIn(build()), contains('$base/bridge/boot.js'));
+    });
+
+    test('the page carries no worker safety net', () {
+      final html = build();
+      expect(html, isNot(contains('__FM_WORKERS')));
+      expect(html, isNot(contains('MonacoEnvironment')));
+    });
+  });
+
+  group('worker safety net', () {
+    final windowsFileBase = Uri.file(
+      r"C:\Users\O'Brien\cache\monaco-0.57.0",
+      windows: true,
+    ).toString();
+    final pages = <String, String>{
+      'Android': buildMonacoIndexHtml(
+        vsPath: 'min/vs',
+        bridgeBase: 'bridge',
+        monacoVersion: '0.57.0',
+      ),
+      'Apple': buildMonacoIndexHtml(
+        vsPath: 'min/vs',
+        bridgeBase: 'bridge',
+        monacoVersion: '0.57.0',
+        isIosOrMacOS: true,
+      ),
+      'Windows file fallback': buildMonacoIndexHtml(
+        vsPath: '$windowsFileBase/min/vs',
+        bridgeBase: '$windowsFileBase/bridge',
+        monacoVersion: '0.57.0',
+        isWindows: true,
+      ),
+    };
+
+    pages.forEach((name, html) {
+      // Where the loader.js script element is (the safety net's probe also
+      // names loader.js, single-quoted).
+      final loaderTag = html.indexOf('/loader.js"');
+
+      test('$name: installed once, before Monaco can load', () {
+        final scripts = inlineScriptsIn(html);
+        final safetyNet = scripts.where((s) => s.contains(_safetyNetMarker));
+        expect(safetyNet, hasLength(1));
+        expect(safetyNet.single, contains("location.protocol !== 'file:'"));
+        final netIndex = html.indexOf(_safetyNetMarker);
+        expect(netIndex, greaterThan(html.indexOf('window.__FM_PAGE')));
+        expect(loaderTag, isPositive);
+        expect(netIndex, lessThan(loaderTag));
+      });
+
+      test('$name: editor.main waits for the probe', () {
+        // The gate wraps the global require that loader.js defines, so it
+        // must sit between loader.js and boot.js, which calls require.
+        final gates = inlineScriptsIn(html)
+            .where((s) => s.contains(_gateMarker));
+        expect(gates, hasLength(1));
+        final gateIndex = html.indexOf(_gateMarker);
+        expect(gateIndex, greaterThan(loaderTag));
+        expect(gateIndex, lessThan(html.indexOf('bridge/core.js')));
+      });
+    });
+
+    test('is absent from web pages', () {
+      final html = _build(
+        isWeb: true,
+        vsPath: 'https://app.example/assets/monaco/min/vs',
+        bridgeBase: 'https://app.example/assets/monaco/bridge',
+      );
+      expect(html, isNot(contains('__FM_WORKERS')));
+      expect(html, isNot(contains('MonacoEnvironment')));
+    });
+
+    test('no page keeps the dead worker shims', () {
+      // editor.main.js replaces MonacoEnvironment wholesale while it loads,
+      // and vs/base/worker/workerMain.js does not exist in Monaco 0.57.
+      for (final html in [
+        ...pages.values,
+        _build(
+          isWeb: true,
+          vsPath: 'https://app.example/assets/monaco/min/vs',
+          bridgeBase: 'https://app.example/assets/monaco/bridge',
+        ),
+      ]) {
+        expect(html, isNot(contains('getWorkerUrl')));
+        expect(html, isNot(contains('workerMain.js')));
+        expect(html, isNot(contains('baseUrl')));
+        expect(html, isNot(contains('MonacoEnvironment = {')));
+      }
+    });
+
+    group('in a simulated page', () {
+      Future<Map<String, Object?>> run(Map<String, Object?> scenario) async {
+        final scripts = inlineScriptsIn(pages['Android']!);
+        final script = scripts.singleWhere((s) => s.contains(_safetyNetMarker));
+        final gate = scripts.singleWhere((s) => s.contains(_gateMarker));
+        final dir = await Directory.systemTemp.createTemp('fm_safety_net_');
+        try {
+          final scriptFile = File(p.join(dir.path, 'net.js'))
+            ..writeAsStringSync(script);
+          final gateFile = File(p.join(dir.path, 'gate.js'))
+            ..writeAsStringSync(gate);
+          final scenarioFile = File(p.join(dir.path, 'scenario.json'))
+            ..writeAsStringSync(
+              jsonEncode({
+                'protocol': 'file:',
+                'href': "file:///C:/Users/O'Brien/cache/monaco-0.57.0/monaco_x.html",
+                'vsPath': 'min/vs',
+                ...scenario,
+              }),
+            );
+          final result = await Process.run('node', [
+            p.join('test', 'helpers', 'worker_safety_net_runner.cjs'),
+            scriptFile.path,
+            scenarioFile.path,
+            gateFile.path,
+          ]);
+          expect(result.exitCode, 0, reason: '${result.stderr}');
+          return jsonDecode(result.stdout as String) as Map<String, Object?>;
+        } finally {
+          await dir.delete(recursive: true);
+        }
+      }
+
+      Map<String, Object?> outcome(Map<String, Object?> run, String label) =>
+          (run['results']! as Map<String, Object?>)[label]!
+              as Map<String, Object?>;
+
+      test('keeps Monaco\'s workers where a worker can load scripts', () async {
+        final result = await run({'worker': 'loads'});
+        expect(result['mode'], 'workers');
+        // The probe imported the real bundled loader, resolved like the page.
+        expect(result['imported'], [
+          "file:///C:/Users/O'Brien/cache/monaco-0.57.0/min/vs/loader.js",
+        ]);
+        for (final label in ['editorWorkerService', 'json', 'typescript']) {
+          expect(outcome(result, label), {'value': 'real worker for $label'});
+        }
+        expect(result['warnings'], isEmpty);
+        expect(result['sameObject'], isTrue);
+      }, skip: nodeUnavailableReason);
+
+      test('fails fast where a worker cannot load scripts', () async {
+        final result = await run({'worker': 'fails'});
+        expect(result['mode'], 'main-thread');
+        expect(result['detail'], contains('NetworkError'));
+        // Throwing makes Monaco run the editor worker on the main thread.
+        expect(outcome(result, 'editorWorkerService'), {
+          'threw': {
+            'name': 'Error',
+            'message': contains('editorWorkerService'),
+          },
+        });
+        // Language services have no main-thread version: Monaco's
+        // cancellation shape makes it treat the refusal as "no result".
+        for (final label in [
+          'json',
+          'css',
+          'html',
+          'typescript',
+          'javascript',
+        ]) {
+          expect(outcome(result, label), {
+            'threw': {'name': 'Canceled', 'message': 'Canceled'},
+          }, reason: label);
+        }
+        // One page-level warning plus one per refused label, never repeated.
+        expect(result['warnings'], hasLength(7));
+      }, skip: nodeUnavailableReason);
+
+      test('holds the editor.main load until the probe answers', () async {
+        // A refusal while the answer is unknown would stick: Monaco's
+        // TypeScript client caches it for the life of the page.
+        final result = await run({'worker': 'loads'});
+        expect(result['gate'], {
+          'deferredWhileProbing': true,
+          'configPassedThrough': true,
+          'propertiesKept': true,
+          'loadedAfterProbe': true,
+          'callbackKept': true,
+        });
+      }, skip: nodeUnavailableReason);
+
+      test('keeps holding while the probe is unanswered', () async {
+        final result = await run({'worker': 'silent'});
+        expect(result['mode'], 'probing');
+        expect(
+          (result['gate']! as Map<String, Object?>)['loadedAfterProbe'],
+          isFalse,
+        );
+      }, skip: nodeUnavailableReason);
+
+      test('does not hold once the probe has failed', () async {
+        final result = await run({'worker': 'throws'});
+        expect(
+          (result['gate']! as Map<String, Object?>)['deferredWhileProbing'],
+          isFalse,
+        );
+      }, skip: nodeUnavailableReason);
+
+      test('fails fast while the probe has not answered', () async {
+        final result = await run({'worker': 'silent', 'requestEarly': true});
+        expect(result['mode'], 'probing');
+        expect(result['early'], {
+          'threw': {'name': 'Error', 'message': contains('main thread')},
+        });
+      }, skip: nodeUnavailableReason);
+
+      test('fails fast when no worker can be created', () async {
+        final result = await run({'worker': 'throws'});
+        expect(result['mode'], 'main-thread');
+        expect(result['detail'], contains('could not start'));
+        expect(outcome(result, 'json'), {
+          'threw': {'name': 'Canceled', 'message': 'Canceled'},
+        });
+      }, skip: nodeUnavailableReason);
+
+      test('leaves pages served over http(s) untouched', () async {
+        final result = await run({
+          'protocol': 'https:',
+          'href': 'https://flutter-monaco.example/monaco-0.57.0/monaco_x.html',
+          'worker': 'fails',
+        });
+        expect(result['mode'], isNull);
+        expect(result['workers'], 0);
+        expect(result['descriptor'], 'data');
+        expect(outcome(result, 'json'), {'value': 'real worker for json'});
+      }, skip: nodeUnavailableReason);
     });
   });
 }

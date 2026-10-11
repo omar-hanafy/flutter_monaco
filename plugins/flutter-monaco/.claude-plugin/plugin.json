@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "flutter-monaco",
   "displayName": "Flutter Monaco",
-  "version": "3.4.3",
+  "version": "4.0.0",
   "description": "Package-specific Claude Code skills and a read-only bridge reviewer for flutter_monaco.",
   "author": {
     "name": "Omar Hanafy",

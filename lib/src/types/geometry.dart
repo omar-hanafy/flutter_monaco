@@ -161,9 +161,13 @@ Never _fail(String type, String key, String expected, Object? value) {
   );
 }
 
-/// Reads a required integer at [key], accepting any [num] wire value.
+/// Reads a required integer at [key], accepting integral [num] wire values.
 int _requireInt(Map<String, dynamic> json, String type, String key) {
   final value = json[key];
-  if (value is num) return value.toInt();
+  // Web numbers are doubles: `2.0 is int` and `double.infinity is int` hold.
+  if (value is int && value.isFinite) return value;
+  if (value is double && value.isFinite && value == value.truncateToDouble()) {
+    return value.toInt();
+  }
   _fail(type, key, 'int', value);
 }

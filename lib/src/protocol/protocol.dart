@@ -233,6 +233,22 @@ class MonacoProtocol {
           // with the new page.
           _failPendingForReload();
           _lastEventSeq = 0;
+          // The previous reload's editor died with its document too: a
+          // recovery still waiting for it must fail instead of waiting for a
+          // `ready` that page can no longer post (a skewed page is never
+          // booted, so nothing else would ever settle it).
+          final previousReloadReady = _reloadEditorReady;
+          _reloadEditorReady = null;
+          if (previousReloadReady != null && !previousReloadReady.isCompleted) {
+            previousReloadReady.completeError(
+              const MonacoPageReloadedError(
+                message:
+                    'The Monaco page reloaded again before the re-booted '
+                    'editor reported ready.',
+                operation: 'page.boot',
+              ),
+            );
+          }
         }
         if (handshake.protocolVersion != kMonacoProtocolVersion) {
           final error = MonacoProtocolError(
@@ -343,7 +359,7 @@ class MonacoProtocol {
         );
       }
       return true;
-    }());
+    }(), 'debug-only event sequence check');
     if (seq > _lastEventSeq) _lastEventSeq = seq;
   }
 
@@ -400,9 +416,9 @@ class MonacoProtocol {
   /// escaping them keeps `runJavaScript(dispatch(...))` payloads intact.
   /// (Same treatment the 2.3.0 LSP manager applied.)
   static String _jsJson(Object? value) {
-    return jsonEncode(
-      value,
-    ).replaceAll('\u2028', r'\u2028').replaceAll('\u2029', r'\u2029');
+    return jsonEncode(value)
+        .replaceAll('\u2028', r'\u2028')
+        .replaceAll('\u2029', r'\u2029');
   }
 }
 

@@ -1,6 +1,6 @@
-// ignore_for_file: public_member_api_docs
 // MonacoKey is a catalog enum: one self-describing entry per Monaco KeyCode
 // member; per-entry docs would only restate the names.
+// ignore_for_file: public_member_api_docs
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_monaco/src/options/action.dart';

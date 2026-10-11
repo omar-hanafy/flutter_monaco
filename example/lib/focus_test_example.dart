@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'monaco_observer.dart';
 
@@ -92,7 +92,7 @@ class _FocusTestExampleState extends State<FocusTestExample> {
       // MonacoScaffold wraps this in a MonacoOverlayBoundary on Web.
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          showDialog(
+          showDialog<void>(
             context: context,
             builder: (context) {
               String dialogText = '';

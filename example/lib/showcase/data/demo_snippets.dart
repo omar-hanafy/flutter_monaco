@@ -5,10 +5,10 @@ const String kMidnightThemeId = 'flutter-monaco-midnight';
 
 /// A custom theme registered via [MonacoController.defineTheme], proving that
 /// apps can ship their own Monaco themes (not just the built-in four).
-final MonacoThemeDefinition kMidnightTheme = MonacoThemeDefinition(
+final MonacoThemeDefinition kMidnightTheme = const MonacoThemeDefinition(
   id: kMidnightThemeId,
   base: MonacoBaseTheme.vsDark,
-  rules: const [
+  rules: [
     MonacoThemeRule(
       token: 'comment',
       foreground: '6E7681',
@@ -20,7 +20,7 @@ final MonacoThemeDefinition kMidnightTheme = MonacoThemeDefinition(
     MonacoThemeRule(token: 'type', foreground: '0098FF'),
     MonacoThemeRule(token: 'function', foreground: 'D2A8FF'),
   ],
-  colors: const {
+  colors: {
     'editor.background': '#0D1117',
     'editor.foreground': '#E6EDF3',
     'editorLineNumber.foreground': '#484F58',

@@ -444,9 +444,9 @@ void main() {
         _emitCompletionRequest(webview, providerId: 'p1');
         await pumpEventQueue();
 
-        final serializedKinds = _suggestionsOf(
-          _singleRespond(webview),
-        ).map((item) => (item! as Map<String, Object?>)['kind']).toList();
+        final serializedKinds = _suggestionsOf(_singleRespond(webview))
+            .map((item) => (item! as Map<String, Object?>)['kind'])
+            .toList();
         expect(serializedKinds, [for (final kind in allKinds) kind.jsonValue]);
       });
     });
@@ -468,9 +468,9 @@ void main() {
         _emitCompletionRequest(webview, providerId: 'static1');
         await pumpEventQueue();
 
-        final labels = _suggestionsOf(
-          _singleRespond(webview),
-        ).map((item) => (item! as Map<String, Object?>)['label']).toList();
+        final labels = _suggestionsOf(_singleRespond(webview))
+            .map((item) => (item! as Map<String, Object?>)['label'])
+            .toList();
         expect(labels, ['static1', 'static2']);
       });
 

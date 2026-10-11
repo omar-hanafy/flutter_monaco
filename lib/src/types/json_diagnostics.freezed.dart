@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'json_diagnostics.dart';
@@ -9,6 +9,7 @@ part of 'json_diagnostics.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -63,16 +64,21 @@ $JsonDiagnosticsOptionsCopyWith<JsonDiagnosticsOptions> get copyWith => _$JsonDi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is JsonDiagnosticsOptions&&(identical(other.allowComments, allowComments) || other.allowComments == allowComments)&&(identical(other.enableSchemaRequest, enableSchemaRequest) || other.enableSchemaRequest == enableSchemaRequest)&&(identical(other.validate, validate) || other.validate == validate)&&(identical(other.schemaRequest, schemaRequest) || other.schemaRequest == schemaRequest)&&(identical(other.schemaValidation, schemaValidation) || other.schemaValidation == schemaValidation)&&(identical(other.trailingCommas, trailingCommas) || other.trailingCommas == trailingCommas)&&(identical(other.comments, comments) || other.comments == comments)&&const DeepCollectionEquality().equals(other.schemas, schemas));
+  final _this = this as JsonDiagnosticsOptions;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is JsonDiagnosticsOptions&&(identical(other.allowComments, _this.allowComments) || other.allowComments == _this.allowComments)&&(identical(other.enableSchemaRequest, _this.enableSchemaRequest) || other.enableSchemaRequest == _this.enableSchemaRequest)&&(identical(other.validate, _this.validate) || other.validate == _this.validate)&&(identical(other.schemaRequest, _this.schemaRequest) || other.schemaRequest == _this.schemaRequest)&&(identical(other.schemaValidation, _this.schemaValidation) || other.schemaValidation == _this.schemaValidation)&&(identical(other.trailingCommas, _this.trailingCommas) || other.trailingCommas == _this.trailingCommas)&&(identical(other.comments, _this.comments) || other.comments == _this.comments)&&const DeepCollectionEquality().equals(other.schemas, _this.schemas));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,allowComments,enableSchemaRequest,validate,schemaRequest,schemaValidation,trailingCommas,comments,const DeepCollectionEquality().hash(schemas));
+int get hashCode {
+  final _this = this as JsonDiagnosticsOptions;
+  return Object.hash(runtimeType,_this.allowComments,_this.enableSchemaRequest,_this.validate,_this.schemaRequest,_this.schemaValidation,_this.trailingCommas,_this.comments,const DeepCollectionEquality().hash(_this.schemas));
+}
 
 @override
 String toString() {
-  return 'JsonDiagnosticsOptions(allowComments: $allowComments, enableSchemaRequest: $enableSchemaRequest, validate: $validate, schemaRequest: $schemaRequest, schemaValidation: $schemaValidation, trailingCommas: $trailingCommas, comments: $comments, schemas: $schemas)';
+  final _this = this as JsonDiagnosticsOptions;
+  return 'JsonDiagnosticsOptions(allowComments: ${_this.allowComments}, enableSchemaRequest: ${_this.enableSchemaRequest}, validate: ${_this.validate}, schemaRequest: ${_this.schemaRequest}, schemaValidation: ${_this.schemaValidation}, trailingCommas: ${_this.trailingCommas}, comments: ${_this.comments}, schemas: ${_this.schemas})';
 }
 
 
@@ -101,7 +107,7 @@ class _$JsonDiagnosticsOptionsCopyWithImpl<$Res>
 /// Create a copy of JsonDiagnosticsOptions
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? allowComments = freezed,Object? enableSchemaRequest = freezed,Object? validate = freezed,Object? schemaRequest = freezed,Object? schemaValidation = freezed,Object? trailingCommas = freezed,Object? comments = freezed,Object? schemas = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(JsonDiagnosticsOptions(
 allowComments: freezed == allowComments ? _self.allowComments : allowComments // ignore: cast_nullable_to_non_nullable
 as bool?,enableSchemaRequest: freezed == enableSchemaRequest ? _self.enableSchemaRequest : enableSchemaRequest // ignore: cast_nullable_to_non_nullable
 as bool?,validate: freezed == validate ? _self.validate : validate // ignore: cast_nullable_to_non_nullable
@@ -245,7 +251,7 @@ return $default(_that.allowComments,_that.enableSchemaRequest,_that.validate,_th
 
 
 class _JsonDiagnosticsOptions extends JsonDiagnosticsOptions {
-  const _JsonDiagnosticsOptions({this.allowComments, this.enableSchemaRequest, this.validate, this.schemaRequest, this.schemaValidation, this.trailingCommas, this.comments, final  List<JsonDiagnosticsSchema>? schemas}): _schemas = schemas,super._();
+  const _JsonDiagnosticsOptions({this.allowComments, this.enableSchemaRequest, this.validate, this.schemaRequest, this.schemaValidation, this.trailingCommas, this.comments,  List<JsonDiagnosticsSchema>? schemas}): _schemas = schemas,super._();
   
 
 /// Whether to tolerate comments inside JSON.
@@ -317,16 +323,18 @@ _$JsonDiagnosticsOptionsCopyWith<_JsonDiagnosticsOptions> get copyWith => __$Jso
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _JsonDiagnosticsOptions&&(identical(other.allowComments, allowComments) || other.allowComments == allowComments)&&(identical(other.enableSchemaRequest, enableSchemaRequest) || other.enableSchemaRequest == enableSchemaRequest)&&(identical(other.validate, validate) || other.validate == validate)&&(identical(other.schemaRequest, schemaRequest) || other.schemaRequest == schemaRequest)&&(identical(other.schemaValidation, schemaValidation) || other.schemaValidation == schemaValidation)&&(identical(other.trailingCommas, trailingCommas) || other.trailingCommas == trailingCommas)&&(identical(other.comments, comments) || other.comments == comments)&&const DeepCollectionEquality().equals(other._schemas, _schemas));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _JsonDiagnosticsOptions&&(identical(other.allowComments, allowComments) || other.allowComments == allowComments)&&(identical(other.enableSchemaRequest, enableSchemaRequest) || other.enableSchemaRequest == enableSchemaRequest)&&(identical(other.validate, validate) || other.validate == validate)&&(identical(other.schemaRequest, schemaRequest) || other.schemaRequest == schemaRequest)&&(identical(other.schemaValidation, schemaValidation) || other.schemaValidation == schemaValidation)&&(identical(other.trailingCommas, trailingCommas) || other.trailingCommas == trailingCommas)&&(identical(other.comments, comments) || other.comments == comments)&&const DeepCollectionEquality().equals(other.schemas, _schemas));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,allowComments,enableSchemaRequest,validate,schemaRequest,schemaValidation,trailingCommas,comments,const DeepCollectionEquality().hash(_schemas));
+int get hashCode {
+    return Object.hash(runtimeType,allowComments,enableSchemaRequest,validate,schemaRequest,schemaValidation,trailingCommas,comments,const DeepCollectionEquality().hash(_schemas));
+}
 
 @override
 String toString() {
-  return 'JsonDiagnosticsOptions(allowComments: $allowComments, enableSchemaRequest: $enableSchemaRequest, validate: $validate, schemaRequest: $schemaRequest, schemaValidation: $schemaValidation, trailingCommas: $trailingCommas, comments: $comments, schemas: $schemas)';
+    return 'JsonDiagnosticsOptions(allowComments: $allowComments, enableSchemaRequest: $enableSchemaRequest, validate: $validate, schemaRequest: $schemaRequest, schemaValidation: $schemaValidation, trailingCommas: $trailingCommas, comments: $comments, schemas: $schemas)';
 }
 
 
@@ -398,16 +406,21 @@ $JsonDiagnosticsSchemaCopyWith<JsonDiagnosticsSchema> get copyWith => _$JsonDiag
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is JsonDiagnosticsSchema&&(identical(other.uri, uri) || other.uri == uri)&&const DeepCollectionEquality().equals(other.fileMatch, fileMatch)&&const DeepCollectionEquality().equals(other.schema, schema));
+  final _this = this as JsonDiagnosticsSchema;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is JsonDiagnosticsSchema&&(identical(other.uri, _this.uri) || other.uri == _this.uri)&&const DeepCollectionEquality().equals(other.fileMatch, _this.fileMatch)&&const DeepCollectionEquality().equals(other.schema, _this.schema));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,uri,const DeepCollectionEquality().hash(fileMatch),const DeepCollectionEquality().hash(schema));
+int get hashCode {
+  final _this = this as JsonDiagnosticsSchema;
+  return Object.hash(runtimeType,_this.uri,const DeepCollectionEquality().hash(_this.fileMatch),const DeepCollectionEquality().hash(_this.schema));
+}
 
 @override
 String toString() {
-  return 'JsonDiagnosticsSchema(uri: $uri, fileMatch: $fileMatch, schema: $schema)';
+  final _this = this as JsonDiagnosticsSchema;
+  return 'JsonDiagnosticsSchema(uri: ${_this.uri}, fileMatch: ${_this.fileMatch}, schema: ${_this.schema})';
 }
 
 
@@ -436,7 +449,7 @@ class _$JsonDiagnosticsSchemaCopyWithImpl<$Res>
 /// Create a copy of JsonDiagnosticsSchema
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? uri = null,Object? fileMatch = freezed,Object? schema = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(JsonDiagnosticsSchema(
 uri: null == uri ? _self.uri : uri // ignore: cast_nullable_to_non_nullable
 as Uri,fileMatch: freezed == fileMatch ? _self.fileMatch : fileMatch // ignore: cast_nullable_to_non_nullable
 as List<String>?,schema: freezed == schema ? _self.schema : schema // ignore: cast_nullable_to_non_nullable
@@ -575,7 +588,7 @@ return $default(_that.uri,_that.fileMatch,_that.schema);case _:
 
 
 class _JsonDiagnosticsSchema extends JsonDiagnosticsSchema {
-  const _JsonDiagnosticsSchema({required this.uri, final  List<String>? fileMatch, final  Map<String, dynamic>? schema}): _fileMatch = fileMatch,_schema = schema,super._();
+  const _JsonDiagnosticsSchema({required this.uri,  List<String>? fileMatch,  Map<String, dynamic>? schema}): _fileMatch = fileMatch,_schema = schema,super._();
   
 
 /// Identifier for this schema. When [schema] is `null` and
@@ -631,16 +644,18 @@ _$JsonDiagnosticsSchemaCopyWith<_JsonDiagnosticsSchema> get copyWith => __$JsonD
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _JsonDiagnosticsSchema&&(identical(other.uri, uri) || other.uri == uri)&&const DeepCollectionEquality().equals(other._fileMatch, _fileMatch)&&const DeepCollectionEquality().equals(other._schema, _schema));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _JsonDiagnosticsSchema&&(identical(other.uri, uri) || other.uri == uri)&&const DeepCollectionEquality().equals(other.fileMatch, _fileMatch)&&const DeepCollectionEquality().equals(other.schema, _schema));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,uri,const DeepCollectionEquality().hash(_fileMatch),const DeepCollectionEquality().hash(_schema));
+int get hashCode {
+    return Object.hash(runtimeType,uri,const DeepCollectionEquality().hash(_fileMatch),const DeepCollectionEquality().hash(_schema));
+}
 
 @override
 String toString() {
-  return 'JsonDiagnosticsSchema(uri: $uri, fileMatch: $fileMatch, schema: $schema)';
+    return 'JsonDiagnosticsSchema(uri: $uri, fileMatch: $fileMatch, schema: $schema)';
 }
 
 

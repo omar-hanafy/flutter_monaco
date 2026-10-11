@@ -43,7 +43,7 @@ void main() {
       final frame = LspStdioMessageEncoder.encode({
         'jsonrpc': '2.0',
         'id': 42,
-        'result': {'capabilities': {}},
+        'result': {'capabilities': <String, Object?>{}},
       });
 
       final collected = <Map<String, Object?>>[];

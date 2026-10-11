@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'flutter_monaco'
-  s.version          = '3.4.3'
+  s.version          = '4.0.0'
   s.summary          = 'Native macOS focus integration for flutter_monaco.'
   s.description      = <<-DESC
 Performs the NSWindow first-responder handoff between the Flutter view and the
@@ -19,7 +19,7 @@ this plugin over the flutter_monaco/native_focus method channel.
   s.dependency 'FlutterMacOS'
   s.frameworks       = 'WebKit'
 
-  s.platform = :osx, '10.15'
+  s.platform = :osx, '12.0'
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
   s.swift_version = '5.0'
 end

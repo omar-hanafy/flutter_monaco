@@ -17,6 +17,54 @@ void main() {
       );
     });
 
+    test('find and fullwidth enums use Monaco ids and default fallbacks', () {
+      expect(MonacoFullwidthCharacterWidth.values.map((e) => e.id), [
+        'font',
+        'twoCells',
+      ]);
+      expect(MonacoFindSeedSearchString.values.map((e) => e.id), [
+        'never',
+        'always',
+        'selection',
+      ]);
+      expect(MonacoAutoFindInSelection.values.map((e) => e.id), [
+        'never',
+        'always',
+        'multiline',
+      ]);
+
+      // Fallbacks are Monaco's own defaults.
+      expect(
+        MonacoFullwidthCharacterWidth.fromId('unknown'),
+        MonacoFullwidthCharacterWidth.font,
+      );
+      expect(
+        MonacoFindSeedSearchString.fromId(null),
+        MonacoFindSeedSearchString.always,
+      );
+      expect(
+        MonacoAutoFindInSelection.fromId('unknown'),
+        MonacoAutoFindInSelection.never,
+      );
+      expect(
+        MonacoAutoFindInSelection.fromId(
+          'unknown',
+          orElse: MonacoAutoFindInSelection.multiline,
+        ),
+        MonacoAutoFindInSelection.multiline,
+      );
+
+      for (final value in MonacoFullwidthCharacterWidth.values) {
+        expect(MonacoFullwidthCharacterWidth.fromId(value.id), value);
+      }
+      for (final value in MonacoFindSeedSearchString.values) {
+        expect(MonacoFindSeedSearchString.fromId(value.id), value);
+      }
+      for (final value in MonacoAutoFindInSelection.values) {
+        expect(MonacoAutoFindInSelection.fromId(value.id), value);
+      }
+    });
+
     test('theme and language ids are open sets with no fallback', () {
       const theme = MonacoTheme('unknown');
       expect(theme.id, 'unknown');

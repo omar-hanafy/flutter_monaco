@@ -1,35 +1,14 @@
-# analysis_options.yaml — publishable packages focus
-# Conservative defaults + strict import/pubspec hygiene for pub.dev
+# analysis_options.yaml - flutter_monaco, a public Flutter plugin on pub.dev.
+# Strict lib/, quiet test/ (test/analysis_options.yaml), relaxed example/
+# (example/analysis_options.yaml): the analyzer applies the nearest file.
+# Rule names validated against the Dart 3.13.5 linter rule list (2026-10-11).
 
 include: package:flutter_lints/flutter.yaml
 
-linter:
-  rules:
-    # --- Hygiene that directly affects publishability / maintainability ---
-    always_use_package_imports: true
-    avoid_relative_lib_imports: true
-    depend_on_referenced_packages: true
-    implementation_imports: true
-    public_member_api_docs: true
-    secure_pubspec_urls: true               # https:// URLs in pubspec
-
-    library_private_types_in_public_api: true
-
-    # --- Sensible preferences that rarely cause churn ---
-    prefer_single_quotes: true
-    prefer_const_constructors: true
-    sort_pub_dependencies: true
-
-    # --- Turn OFF chatty / conflicting style nits ---
-    prefer_relative_imports: false          # conflicts with package imports
-    lines_longer_than_80_chars: false       # let formatter/IDE handle this
-    constant_identifier_names: false        # don’t fight existing APIs
-    avoid_print: false                      # allow prints in packages by default
-    avoid_redundant_argument_values: false
-
-    # You can re-enable more rules later per repo as you like.
-
 analyzer:
+  language:
+    strict-inference: true
+
   # Keep analyzer from touching codegen / tool output
   exclude:
     - "**/*.g.dart"
@@ -42,6 +21,7 @@ analyzer:
     - "lib/**/generated/**"
     - "build/**"
     - ".dart_tool/**"
+    - "macos/**"
 
   # Escalate only the things that matter for publish; keep noise low.
   errors:
@@ -65,3 +45,71 @@ analyzer:
     constant_identifier_names: ignore
     lines_longer_than_80_chars: ignore
     prefer_relative_imports: ignore
+
+linter:
+  rules:
+    # --- Publishability and import hygiene ---
+    always_use_package_imports: true
+    avoid_relative_lib_imports: true
+    depend_on_referenced_packages: true
+    implementation_imports: true
+    secure_pubspec_urls: true               # https:// URLs in pubspec
+    sort_pub_dependencies: true
+    directives_ordering: true
+    combinators_ordering: true
+
+    # --- Typing (the lint forms of strict-casts and strict-raw-types) ---
+    no_dynamic_casts: true
+    no_raw_types: true
+
+    # --- Async and resource safety ---
+    unawaited_futures: true
+    avoid_slow_async_io: true
+    cancel_subscriptions: true
+
+    # --- Correctness ---
+    avoid_type_to_string: true
+    test_types_in_equals: true
+    throw_in_finally: true
+    only_throw_errors: true
+    unnecessary_statements: true
+    no_self_assignments: true
+    no_literal_bool_comparisons: true
+
+    # --- Style consistency ---
+    prefer_single_quotes: true
+    unnecessary_parenthesis: true
+    avoid_multiple_declarations_per_line: true
+    avoid_bool_literals_in_conditional_expressions: true
+    matching_super_parameters: true
+    use_string_buffers: true
+    use_enums: true
+    document_ignores: true                  # every `// ignore:` says why
+
+    # --- Flutter widgets ---
+    prefer_const_constructors: true
+    prefer_const_literals_to_create_immutables: true
+    use_colored_box: true
+    use_decorated_box: true
+    sized_box_shrink_expand: true
+
+    # --- Public API quality ---
+    public_member_api_docs: true
+    comment_references: true
+    library_private_types_in_public_api: true
+    avoid_equals_and_hash_code_on_mutable_classes: true
+    use_setters_to_change_properties: true
+    avoid_returning_this: true
+    prefer_asserts_with_message: true
+    deprecated_member_use_from_same_package: true
+
+    # --- Turn OFF chatty / conflicting style nits ---
+    # why: the 3.x API that 4.0 keeps source compatible takes positional
+    # booleans (MonacoController.setInteractionEnabled and the platform
+    # WebView interfaces); renaming them would break callers.
+    avoid_positional_boolean_parameters: false
+    prefer_relative_imports: false          # conflicts with package imports
+    lines_longer_than_80_chars: false       # let formatter/IDE handle this
+    constant_identifier_names: false        # don't fight existing APIs
+    avoid_print: false                      # tool/ scripts print by design
+    avoid_redundant_argument_values: false

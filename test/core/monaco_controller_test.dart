@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_monaco/src/platform/platform_webview.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../fakes/fake_platform_webview_controller.dart';
 
@@ -256,7 +256,7 @@ void main() {
         final bundle = await _createBundle();
         bundle.webview.injectCommandFailure(
           'editor.getTheme',
-          message: 'monaco.editor.getTheme is not a function',
+          message: 'Monaco editor is not ready.',
         );
         await expectLater(
           bundle.controller.getTheme(),
@@ -268,6 +268,15 @@ void main() {
         final bundle = await _createBundle();
         bundle.webview.injectCommandSuccess('editor.getTheme', value: '');
         expect(await bundle.controller.getTheme(), isNull);
+      });
+
+      test('getTheme rejects a malformed result', () async {
+        final bundle = await _createBundle();
+        bundle.webview.injectCommandSuccess('editor.getTheme', value: 42);
+        await expectLater(
+          bundle.controller.getTheme(),
+          throwsA(isA<MonacoProtocolError>()),
+        );
       });
 
       test(
@@ -498,6 +507,18 @@ void main() {
         expect(selection.startColumn, 2);
         expect(selection.endLine, 3);
         expect(selection.endColumn, 4);
+      });
+
+      test('getSelection rejects a malformed result', () async {
+        final bundle = await _createBundle();
+        bundle.webview.injectCommandSuccess(
+          'editor.getSelection',
+          value: 'not a selection',
+        );
+        await expectLater(
+          bundle.controller.getSelection(),
+          throwsA(isA<MonacoProtocolError>()),
+        );
       });
 
       test('getSelection rethrows bridge errors', () async {
@@ -1261,6 +1282,15 @@ void main() {
         expect(pos.column, 10);
       });
 
+      test('getCursorPosition rejects a malformed result', () async {
+        final bundle = await _createBundle();
+        bundle.webview.injectCommandSuccess('editor.getCursor', value: [5, 10]);
+        await expectLater(
+          bundle.controller.getCursorPosition(),
+          throwsA(isA<MonacoProtocolError>()),
+        );
+      });
+
       test('setCursorPosition calls JS with coordinates', () async {
         final bundle = await _createBundle();
         await bundle.controller.setCursorPosition(
@@ -1321,10 +1351,13 @@ void main() {
         );
       });
 
-      test('toggleWordWrap action id reaches the wire', () async {
+      test('toggleStickyScroll action id reaches the wire', () async {
         final bundle = await _createBundle();
-        await bundle.controller.executeAction(MonacoAction.toggleWordWrap);
-        expect(bundle.webview.executed.join('\n'), contains('toggleWordWrap'));
+        await bundle.controller.executeAction(MonacoAction.toggleStickyScroll);
+        expect(
+          bundle.webview.executed.join('\n'),
+          contains('toggleStickyScroll'),
+        );
       });
 
       test('undo/redo action ids reach the wire', () async {
@@ -1978,6 +2011,40 @@ void main() {
           expect(result, isA<String>());
         },
       );
+
+      for (final MapEntry(key: kind, :value) in <String, Object>{
+        'map': {'count': 2},
+        'list': [1, 2, 3],
+      }.entries) {
+        test('throws MonacoProtocolError for a $kind result '
+            'when T is String', () async {
+          final bundle = await _createBundle();
+          bundle.webview.injectCommandSuccess('page.eval', value: value);
+
+          await expectLater(
+            bundle.controller.evaluateJavaScript<String>('someObject'),
+            throwsA(
+              isA<MonacoProtocolError>().having(
+                (e) => e.operation,
+                'operation',
+                'page.eval',
+              ),
+            ),
+          );
+        });
+      }
+
+      test('converts numeric and boolean scalars when T is String', () async {
+        final bundle = await _createBundle();
+        bundle.webview.injectCommandSuccess('page.eval', value: 42);
+        bundle.webview.injectCommandSuccess('page.eval', value: true);
+
+        expect(await bundle.controller.evaluateJavaScript<String>('42'), '42');
+        expect(
+          await bundle.controller.evaluateJavaScript<String>('true'),
+          'true',
+        );
+      });
 
       test('returns maps', () async {
         final bundle = await _createBundle();

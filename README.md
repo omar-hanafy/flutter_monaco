@@ -63,7 +63,7 @@ mobile. Codex project agents require a checkout of this repository. See
 [AI assistant support](doc/ai-assistant-support.md) for the full inventory,
 compatibility, updates, removal, security model, validation, and example prompts.
 
-The consumer skills target `flutter_monaco` 3.x after inspecting the resolved dependency; the dedicated migration skill covers released 2.x applications and 1.7.1 applications after a toolchain/platform prerequisite audit. Useful natural-language requests include "Integrate flutter_monaco with three tabs and stable file URIs" and "Diagnose why this Web editor never becomes ready."
+The consumer skills target `flutter_monaco` 3.x and 4.x after inspecting the resolved dependency; the dedicated migration skill covers released 2.x applications and 1.7.1 applications after a toolchain/platform prerequisite audit. Useful natural-language requests include "Integrate flutter_monaco with three tabs and stable file URIs" and "Diagnose why this Web editor never becomes ready."
 
 Update or remove the Claude Code installation:
 
@@ -144,17 +144,20 @@ Add `flutter_monaco` to your `pubspec.yaml`:
 ```yaml
 dependencies:
   flutter_monaco: ^<latest version>
+  material_ui: ^1.6.0
 ```
 
-> Upgrading from 2.x? See [Migrating from 2.x to 3.0](#migrating-from-2x-to-30).
+Flutter 3.47 moved Material out of the SDK into the [`material_ui`](https://pub.dev/packages/material_ui) package. The editor's loading, error, and status-bar chrome is built with it and follows your app's `material_ui` theme, so build your app's Material UI with `material_ui` too (`dart fix --apply --code=migrate_design_widgets` converts existing imports).
+
+> Upgrading from 3.x? See [Migrating from 3.x to 4.0](#migrating-from-3x-to-40). From 2.x? See [Migrating from 2.x to 3.x](#migrating-from-2x-to-3x) first.
 
 ## Quick Start
 
 The `MonacoEditor` widget owns the whole lifecycle: it creates a controller, shows loading and error chrome, and hands you the ready controller via `onReady`. This works the same on every platform, including web.
 
 ```dart
-import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   runApp(
@@ -512,9 +515,14 @@ MonacoEditor(
 )
 ```
 
+Each `allowedConnectSources` entry must be one CSP source expression: a scheme such as `wss:`, or a host source such as `wss://lsp.example.com:443/path`. An entry with a query string, a fragment, whitespace, quotes, `;`, `,` or `&` is rejected, and `whenReady` fails with an `ArgumentError`.
+
 > Browser WebSockets cannot carry custom headers. If your server needs auth,
 > pass a token in the URL query string or build an authenticated socket with
 > `LspCustomTransport`.
+
+> On Windows the WebSocket handshake carries `Origin: https://flutter-monaco.example`.
+> Allow that origin if your server checks it.
 
 **Local stdio server (desktop)** - the killer feature for desktop apps: spawn the server as a child process and relay JSON-RPC through the Flutter bridge. No port, no proxy, no CSP changes:
 
@@ -557,10 +565,11 @@ final connection = await controller.connectLanguageServer(
 - `connection.state` / `stateChanges` report `connecting → open → closed/failed`; `whenClosed` completes when the connection permanently ends.
 - Unexpected drops can auto-reconnect with `reconnectPolicy: LspReconnectPolicy.exponentialBackoff(...)` (WebSocket/custom transports only - a bridged server process must be respawned by your code).
 - `MonacoController.dispose()` tears down all connections and stops bridged server processes.
-- Experimental `connection.sendRequest` / `sendNotification` forward raw JSON-RPC for non-standard server extensions (e.g. `pyright/createConfigFile`). They rely on Monaco internals verified against 0.55.1 and may break on future Monaco upgrades.
+- Experimental `connection.sendRequest` / `sendNotification` forward raw JSON-RPC for non-standard server extensions (e.g. `pyright/createConfigFile`). They rely on Monaco internals verified against 0.57.0 and may break on future Monaco upgrades.
 
 ### Good to know
 
+- **Server markdown is untrusted.** Since Monaco 0.56, hovers, completion documentation, signature help, and inlay-hint tooltips from a language server render `command:` links as plain text and strip inline HTML styling; `http`, `https`, `mailto`, and `file` links still work.
 - **Document URIs matter.** Language servers key their state on document URIs - open documents with stable `file:///...` URIs (`openDocument(..., uri: ...)`) instead of relying on Monaco's default `inmemory://` model.
 - **Diagnostics owner.** LSP diagnostics appear as Monaco markers under the owner `'lsp'`; they're cleared automatically when the last connection closes.
 - **Multiple servers.** Allowed, but Monaco synchronizes *all* models to every connected server and all LSP diagnostics share one marker owner - prefer one server per editor unless your servers handle disjoint files.
@@ -627,6 +636,37 @@ Touch forwarding is a separate, **experimental** opt-in (`mobileTouch: true`). I
 
 See `example/lib/scroll_handoff_example.dart` for a full page with short, long, and handoff-disabled editors.
 
+## Migrating from 3.x to 4.0
+
+Every 3.x editor API carries over; only seven `MonacoAction` constants for actions that standalone Monaco does not register are deprecated. Two things move underneath the API:
+
+1. **Flutter 3.47.7 and Dart 3.13.5 are the minimum.** Apple targets follow Flutter 3.47's own floors: iOS 15 and macOS 12.
+2. **Material comes from `material_ui`.** Flutter 3.47 moved Material out of the SDK, and the package's Material types are now `material_ui`'s. Migrate the app:
+
+   ```sh
+   flutter pub add material_ui
+   dart fix --apply --code=migrate_design_widgets
+   ```
+
+   - `MonacoScaffold` (`floatingActionButtonLocation`, `floatingActionButtonAnimator`) and `MonacoEditorThemeData.retryButtonStyle` take `material_ui` types. A value built with `package:flutter/material.dart` no longer type-checks there.
+   - The editor chrome and the brightness-following default theme read `material_ui`'s `Theme`. An app that keeps `package:flutter/material.dart` for now still compiles, but the editor sees `material_ui`'s default (light) theme: set `EditorOptions.theme` explicitly until the app migrates. `MaterialUiCompatibilityBridge` only helps in the other direction (legacy widgets inside a migrated app).
+
+Calls that used to fail silently now throw, so review code that relied on a quiet no-op:
+
+- `executeAction` throws for an id Monaco does not register and for a command that fails. The deprecated catalog constants are the ones standalone Monaco never registers; replace `MonacoAction.toggleWordWrap` with `updateOptions(EditorOptions(wordWrap: ...))`.
+- `scrollToTop`, `scrollToBottom`, and `executeAction` with a command id throw when no document is attached. `getTheme`, `getSelection`, `getCursorPosition`, `document.isDirty()`, and `getWordAt()` throw `MonacoProtocolError` on a malformed bridge result.
+- `evaluateJavaScript<String>` throws `MonacoProtocolError` for an object or array result instead of returning Dart's `toString()` of it. Return `JSON.stringify(...)` from the expression when you want its JSON text.
+- `fromJson` parsers reject fractional integers such as `2.5` instead of truncating them, and `MonacoThemeDefinition.fromJson` rejects non-string `colors` values.
+- After an editor page reload, language server connections end as `failed` with `MonacoPageReloadedError` and free their id. Reconnect from `onPageReloaded`; disconnecting the stale handle first is no longer needed.
+- An `allowedConnectSources` entry that is not a single CSP source expression, such as one with a query string, a fragment, or `&`, fails `whenReady` with an `ArgumentError` instead of reaching the page's policy.
+
+Engine changes that reach apps without code changes (Monaco 0.55.1 to 0.57.0):
+
+- Double-clicking just inside brackets or quotes selects the enclosed block. Opt out with `EditorOptions(doubleClickSelectsBlock: false)`.
+- Language-server markdown is untrusted: `command:` links render as plain text.
+
+On Windows the editor page moves from `file://` to the WebView2 virtual host `https://flutter-monaco.example/`, which makes the diff editor and Monaco's language services work there. Language-server WebSockets see that origin, and `ws://` or `http://` endpoints that are not on loopback (or a bare `*`) keep the `file://` page; see the [Windows requirements](#windows).
+
 ## Migrating from 2.x to 3.x
 
 3.x is a ground-up rebuild of the package's spine: one wire protocol, a document/editor split, sparse options, typed errors, and typed events. The LSP signatures and supporting overlay widgets remain source compatible. Scroll handoff keeps its source shape but changes its default boundary policy, and focus controller methods were renamed. The table below is complete against the 2.3.0 public barrel; the `(Dxx)` tags reference the numbered design decisions recorded in the v3 blueprint (`upcoming/v3.md` in the repository).
@@ -666,7 +706,7 @@ See `example/lib/scroll_handoff_example.dart` for a full page with short, long, 
 | `getWordAtPosition(position)` | `document.getWordAt(position)` | content queries live on the document |
 | `executeBatch(operations)` | deleted | await the operations in an explicit sequential loop; the old helper did not combine them into one bridge round trip |
 | `revealLine(line)` with Dart-side clamp | same source signature, no v2 clamp | validate or clamp against `await document.lineCount()` if the input can be out of range |
-| `format()/find()/replace()/toggleWordWrap()/selectAll()/undo()/redo()/cut()/copy()/paste()/foldAll()/unfoldAll()/toggleLineComment()/indentLines()/outdentLines()` | deleted (D19) | use `executeAction`: format -> `.formatDocument`, find -> `.find`, replace -> `.startFindReplaceAction`, cut/copy/paste -> `.clipboardCutAction`/`.clipboardCopyAction`/`.clipboardPasteAction`, toggleLineComment -> `.commentLine`, and the remaining helpers map to same-named constants |
+| `format()/find()/replace()/toggleWordWrap()/selectAll()/undo()/redo()/cut()/copy()/paste()/foldAll()/unfoldAll()/toggleLineComment()/indentLines()/outdentLines()` | deleted (D19) | use `executeAction`: format -> `.formatDocument`, find -> `.find`, replace -> `.startFindReplaceAction`, cut/copy/paste -> `.clipboardCutAction`/`.clipboardCopyAction`/`.clipboardPasteAction`, toggleLineComment -> `.commentLine`, and the remaining helpers map to same-named constants. `toggleWordWrap()` never worked, because standalone Monaco has no such action: set `EditorOptions(wordWrap: ...)` with `updateOptions` instead |
 | `focus()` / `ensureEditorFocus({attempts, interval, intent})` | `requestFocus({intent})` (D20) | retry tuning stays available as optional parameters (same defaults) |
 | `releaseNativeInputFocus()` | `releaseNativeFocus()` | rename |
 | `liveStats` (`ValueNotifier<LiveStats>`) | `stats` (`ValueListenable<MonacoLiveStats>`) | labeled records become ints, cursor becomes `Position?`, language becomes `MonacoLanguage?`, and labels move to UI |
@@ -745,7 +785,7 @@ Closed sets stay enums: `CursorBlinking`, `CursorStyle`, `RenderWhitespace`, `Au
 final controller = await MonacoController.create();
 await controller.whenReady;
 print(controller.isReady);                      // true
-print(controller.capabilities.monacoVersion);   // '0.55.1'
+print(controller.capabilities.monacoVersion);   // '0.57.0'
 
 // Content and models: controller.document (see Documents section above)
 await controller.document.setText('const x = 42;');
@@ -977,6 +1017,30 @@ await controller.updateOptions(const EditorOptions(fontSize: 16));
 - `theme: null` follows the ambient Flutter brightness and reacts to platform dark-mode changes; an explicit theme always wins.
 - `merge(other)` layers options (non-null fields of `other` win) - useful for settings screens.
 - `MonacoFontStacks` provides ready-made monospace font stack strings (`jetBrainsMono`, `firaCodePrimary`, `cascadiaCodePrimary`, `sfMono`, ...).
+- `hover: false` turns hovers off. For Monaco's keyboard-modifier mode, pass `extra: {'hover': {'enabled': 'onKeyboardModifier'}}`.
+
+Options for features added in Monaco 0.56 and 0.57:
+
+```dart
+const options = EditorOptions(
+  wordWrap: MonacoWordWrap.on,
+  // Draw a marker where soft-wrapped lines break. With `on` or `bounded`
+  // wrapping, lines wrap one column earlier to make room for it.
+  wordWrapIndicator: true,
+  // Render full-width (e.g. CJK) characters exactly two cells wide.
+  // Takes effect with monospace fonts only.
+  fullwidthCharacterWidth: MonacoFullwidthCharacterWidth.twoCells,
+  // Since Monaco 0.56, double-clicking just inside brackets or quotes
+  // selects the enclosed block. `false` keeps plain word selection.
+  doubleClickSelectsBlock: false,
+  find: MonacoFindOptions(
+    closeOnResult: true, // Enter/F3 on a match closes the find widget
+    loop: false,
+    seedSearchStringFromSelection: MonacoFindSeedSearchString.selection,
+    autoFindInSelection: MonacoAutoFindInSelection.multiline,
+  ),
+);
+```
 
 ### Custom themes
 
@@ -1215,9 +1279,9 @@ MonacoEditor(
 
 The plugin uses a versioned cache system:
 
-- Monaco assets (~30MB) are bundled with the plugin in `assets/monaco/min/`
+- Monaco's runtime files (about 15 MB) are bundled with the plugin in `assets/monaco/min/`
 - Assets are extracted once to the app's support directory
-- Assets are versioned (e.g., `monaco-0.55.1/`) for clean updates
+- Assets are versioned (e.g., `monaco-0.57.0/`) for clean updates
 - Multiple editors share the same asset installation
 - Thread-safe initialization with re-entrant protection
 
@@ -1226,9 +1290,9 @@ The plugin uses a versioned cache system:
 **Supported Platforms:**
 
 - **Android**: WebView via `webview_flutter`
-- **iOS**: WKWebView with automatic blob worker shim for file:// protocol
-- **macOS**: WKWebView via `webview_flutter` with blob worker shim
-- **Windows**: WebView2 via `webview_flutter_windows` (requires WebView2 Runtime)
+- **iOS**: WKWebView via `webview_flutter`
+- **macOS**: WKWebView via `webview_flutter`, plus a small native helper that hands keyboard focus between Flutter and the WebView
+- **Windows**: WebView2 via `webview_flutter_windows` (requires WebView2 Runtime). The editor page is served from the WebView2 virtual host `https://flutter-monaco.example/`, mapped onto the extracted assets, so Monaco's background workers run (WebView2 does not let a worker load scripts from a `file://` page).
 - **Web**: Native iframe-based integration with Monaco assets served from Flutter's asset bundle
 
 **Not Supported:**
@@ -1240,21 +1304,23 @@ The plugin uses a versioned cache system:
 - **Memory**: Each editor instance uses ~30-100MB depending on content
 - **Startup**: First launch extracts assets (one-time ~1-2 seconds)
 - **Multiple Editors**: Tested with 4+ simultaneous editors on desktop
-- **Workers**: Web Workers run in separate threads for syntax highlighting
+- **Workers**: Monaco's language services (JSON, CSS, HTML, TypeScript/JavaScript) and diff computation run in Web Workers, off the editor's main thread. On a `file://` page whose WebView cannot start them (Windows, only when its virtual host is unavailable), diffs are computed on the main thread and the built-in language services are off.
 
 ## Requirements
 
-- Flutter 3.44 / Dart 3.12 or later
+- Flutter 3.47.7 / Dart 3.13.5 or later
 
 ### macOS
 
-- macOS 10.15 or later
+- macOS 12 or later
 - Xcode (for development)
+- **Sandboxed apps** (the `flutter create` default) must enable **Outgoing Connections (Client)**: add `com.apple.security.network.client` set to `true` to `macos/Runner/DebugProfile.entitlements` and `Release.entitlements`. Without it, WKWebView cannot load the editor page and boot times out.
 
 ### Windows
 
 - Windows 10 version 1809 or later
 - Microsoft Edge WebView2 Runtime (auto-installed on most Windows 10/11 systems)
+- The editor page's origin is `https://flutter-monaco.example`, a secure context. Endpoints in `allowedConnectSources` should use `wss://` or `https://`, or `ws://`/`http://` on loopback (`localhost`, `127.0.0.1`, `[::1]`). Listing any other `ws://` or `http://` endpoint, or a bare `*`, makes the editor load from `file://` instead, where Monaco's workers cannot run.
 
 ### Android
 
@@ -1263,7 +1329,7 @@ The plugin uses a versioned cache system:
 
 ### iOS
 
-- iOS 13.0 or later
+- iOS 15.0 or later
 - Info.plist must allow local file access
 
 ### Web
@@ -1399,12 +1465,18 @@ See the guide above for details and best practices.
 If you get a WebView2 error on Windows, install the WebView2 Runtime:
 https://developer.microsoft.com/en-us/microsoft-edge/webview2/
 
-### macOS/iOS: Workers not loading
+### macOS: the editor never loads
 
-The plugin automatically configures a blob worker shim. If you still have issues:
+A sandboxed macOS app (the `flutter create` default) needs **Outgoing Connections (Client)**. Without `com.apple.security.network.client` in `macos/Runner/DebugProfile.entitlements` and `Release.entitlements`, WKWebView cannot load the editor page and `whenReady` fails with a boot timeout.
 
-1. Check the console output for errors
-2. Ensure file:// access is allowed in your WebView configuration
+### Diff shows no changes, or JSON/CSS/HTML/TypeScript validation is missing
+
+These features run in Monaco's background workers. If they are missing:
+
+1. On Android, iOS, macOS, and Windows, read the page's worker check: `await controller.evaluateJavaScript<String>('window.__FM_WORKERS ? window.__FM_WORKERS.mode : "none"')`. `workers` means the workers run. `main-thread` means this WebView cannot start them from a `file://` page: diffs are computed on the main thread and the built-in language services are off. `none` means the page is served over https or on Web, where the check does not apply.
+2. On Windows, a `[WindowsWebViewController]` log line says when the editor loads from `file://` instead of its virtual host, and why (an `allowedConnectSources` entry, or a WebView2 runtime that cannot map the host).
+3. Check the WebView console output for worker or Content-Security-Policy errors.
+4. Report the platform, WebView version, and console output in an issue.
 
 ### Assets not loading
 
@@ -1434,7 +1506,7 @@ If performance degrades with multiple editors:
 
 - **No Linux Support**: The plugin currently supports Android, iOS, macOS, Windows, and Web. Linux is not yet supported.
 - **Performance**: While optimized, running multiple editor instances (4+) can be resource-intensive, especially on older hardware. Each instance runs in a separate WebView, consuming 30-100MB of memory depending on content.
-- **Startup Time**: The first time the app is launched, Monaco's assets (~30MB) are extracted, which can take 1-2 seconds. Subsequent launches are much faster.
+- **Startup Time**: The first time the app is launched, Monaco's assets (about 15 MB) are extracted, which can take 1-2 seconds. Subsequent launches are much faster.
 - **WebView Dependencies**: The plugin relies on platform-specific WebView implementations (WebView2 on Windows, WKWebView on Apple platforms). Ensure the target system has the necessary dependencies.
 
 ## Contributing

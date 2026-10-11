@@ -310,11 +310,121 @@ sealed class MonacoStickyScroll with _$MonacoStickyScroll {
   }
 }
 
+/// Find widget behavior (Monaco `find`).
+@freezed
+sealed class MonacoFindOptions with _$MonacoFindOptions {
+  /// Creates a find widget configuration.
+  const factory MonacoFindOptions({
+    /// Whether the find widget's search string is seeded from the editor
+    /// selection. Monaco defaults to [MonacoFindSeedSearchString.always].
+    MonacoFindSeedSearchString? seedSearchStringFromSelection,
+
+    /// When "Find in Selection" turns on automatically. Monaco defaults to
+    /// [MonacoAutoFindInSelection.never].
+    MonacoAutoFindInSelection? autoFindInSelection,
+
+    /// Whether the editor adds extra lines on top while the find widget is
+    /// visible, so content can scroll beyond the first line instead of
+    /// staying under the widget. Monaco defaults to `true`.
+    bool? addExtraSpaceOnTop,
+
+    /// Whether searching restarts from the beginning (or the end) when no
+    /// further matches are found. Monaco defaults to `true`.
+    bool? loop,
+
+    /// Whether the find widget closes after an explicit find-next or
+    /// find-previous command (Enter, F3, Shift+F3) typed in its search
+    /// input lands on a match (added in Monaco 0.56). Monaco defaults to
+    /// `false`.
+    bool? closeOnResult,
+  }) = _MonacoFindOptions;
+
+  const MonacoFindOptions._();
+
+  /// Returns a copy where non-null fields of [other] override this
+  /// instance's fields. Returns `this` when [other] is null.
+  MonacoFindOptions merge(MonacoFindOptions? other) {
+    if (other == null) return this;
+    return MonacoFindOptions(
+      seedSearchStringFromSelection:
+          other.seedSearchStringFromSelection ?? seedSearchStringFromSelection,
+      autoFindInSelection: other.autoFindInSelection ?? autoFindInSelection,
+      addExtraSpaceOnTop: other.addExtraSpaceOnTop ?? addExtraSpaceOnTop,
+      loop: other.loop ?? loop,
+      closeOnResult: other.closeOnResult ?? closeOnResult,
+    );
+  }
+
+  /// Parses a find options map produced by [toJson].
+  ///
+  /// Strict: unknown keys, unknown enum ids, and wrongly-typed values throw
+  /// a [FormatException].
+  factory MonacoFindOptions.fromJson(Map<String, dynamic> json) {
+    const knownKeys = {
+      'seedSearchStringFromSelection',
+      'autoFindInSelection',
+      'addExtraSpaceOnTop',
+      'loop',
+      'closeOnResult',
+    };
+    for (final key in json.keys) {
+      if (!knownKeys.contains(key)) {
+        throw FormatException('MonacoFindOptions.fromJson: unknown key "$key"');
+      }
+    }
+    return MonacoFindOptions(
+      seedSearchStringFromSelection: _optEnum(
+        json,
+        'seedSearchStringFromSelection',
+        'MonacoFindOptions',
+        MonacoFindSeedSearchString.values,
+        (e) => e.id,
+      ),
+      autoFindInSelection: _optEnum(
+        json,
+        'autoFindInSelection',
+        'MonacoFindOptions',
+        MonacoAutoFindInSelection.values,
+        (e) => e.id,
+      ),
+      addExtraSpaceOnTop: _optBool(
+        json,
+        'addExtraSpaceOnTop',
+        'MonacoFindOptions',
+      ),
+      loop: _optBool(json, 'loop', 'MonacoFindOptions'),
+      closeOnResult: _optBool(json, 'closeOnResult', 'MonacoFindOptions'),
+    );
+  }
+
+  /// Serializes for persistence; omits null fields.
+  Map<String, dynamic> toJson() => toMonacoJson();
+
+  /// Monaco `find` option payload; omits null fields.
+  Map<String, dynamic> toMonacoJson() {
+    return {
+      if (seedSearchStringFromSelection != null)
+        'seedSearchStringFromSelection': seedSearchStringFromSelection!.id,
+      if (autoFindInSelection != null)
+        'autoFindInSelection': autoFindInSelection!.id,
+      if (addExtraSpaceOnTop != null) 'addExtraSpaceOnTop': addExtraSpaceOnTop,
+      if (loop != null) 'loop': loop,
+      if (closeOnResult != null) 'closeOnResult': closeOnResult,
+    };
+  }
+}
+
 int? _optInt(Map<String, dynamic> json, String key, String type) {
   final value = json[key];
   if (value == null) return null;
-  if (value is num) return value.toInt();
-  throw FormatException('$type.fromJson: "$key" must be a number, got $value');
+  // Web numbers are doubles: `2.0 is int` and `double.infinity is int` hold.
+  if (value is int && value.isFinite) return value;
+  if (value is double && value.isFinite && value == value.truncateToDouble()) {
+    return value.toInt();
+  }
+  throw FormatException(
+    '$type.fromJson: "$key" must be an integer, got $value',
+  );
 }
 
 bool? _optBool(Map<String, dynamic> json, String key, String type) {

@@ -1,3 +1,6 @@
+/// @docImport 'package:flutter_monaco/src/widgets/monaco_focus_guard.dart';
+library;
+
 import 'package:flutter/widgets.dart';
 
 /// A specialized [RouteObserver] for applications using Monaco Editor.

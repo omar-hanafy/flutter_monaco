@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../data/showcase_metadata.dart';
 import '../theme/showcase_text.dart';
@@ -36,9 +36,9 @@ class SiteFooter extends StatelessWidget {
           ('License', metadata.licenseUrl),
         ],
       ),
-      _LinkColumn(
+      const _LinkColumn(
         title: 'More',
-        links: const [
+        links: [
           ('Other projects', Links.portfolio),
           ('Buy me a coffee', Links.buyMeACoffee),
         ],

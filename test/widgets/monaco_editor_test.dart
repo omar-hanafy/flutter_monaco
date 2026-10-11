@@ -2,12 +2,25 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_monaco/src/platform/platform_webview.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../fakes/fake_platform_webview_controller.dart';
+
+/// A WebView whose native focus handoff fails, like a platform channel
+/// error on desktop.
+class _NativeFocusFailingWebView extends FakePlatformWebViewController {
+  _NativeFocusFailingWebView()
+    : super(widget: const SizedBox(key: Key('webview')));
+
+  @override
+  Future<NativeFocusResult> requestNativeFocus() async {
+    throw PlatformException(code: 'focus', message: 'no first responder');
+  }
+}
 
 class _TestBundle {
   _TestBundle(this.controller, this.webview);
@@ -805,6 +818,136 @@ void main() {
 
         expect(calls1.length, 1); // Original not called again
         expect(calls2.length, 1); // New callback called
+      });
+    });
+
+    testWidgets('an autofocus failure is reported to onError', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      try {
+        final webview = _NativeFocusFailingWebView();
+        final controller = await MonacoController.createForTesting(
+          webViewController: webview,
+        );
+        final errors = <Object>[];
+        await tester.pumpWidget(
+          _wrap(
+            MonacoEditor(
+              controller: controller,
+              autofocus: true,
+              onError: (e, _) => errors.add(e),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(errors, [isA<PlatformException>()]);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    group('callbacks changed after readiness', () {
+      testWidgets('onSelectionChanged supplied after bootstrap fires', (
+        tester,
+      ) async {
+        final bundle = await _createBundle();
+        await tester.pumpWidget(
+          _wrap(MonacoEditor(controller: bundle.controller)),
+        );
+        await tester.pumpAndSettle();
+
+        final selections = <Range?>[];
+        await tester.pumpWidget(
+          _wrap(
+            MonacoEditor(
+              controller: bundle.controller,
+              onSelectionChanged: selections.add,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        bundle.webview.emitEvent('selectionChanged', {
+          'selection': {
+            'startLineNumber': 1,
+            'startColumn': 1,
+            'endLineNumber': 1,
+            'endColumn': 2,
+          },
+        });
+        await tester.pump();
+
+        expect(selections, hasLength(1));
+      });
+
+      testWidgets('clearing onContentChanged with a debounce pending reports '
+          'no error and emits nothing', (tester) async {
+        final bundle = await _createBundle();
+        bundle.webview.injectCommandSuccess('document.getText', value: 'abc');
+        final errors = <Object>[];
+        final calls = <String>[];
+        await tester.pumpWidget(
+          _wrap(
+            MonacoEditor(
+              controller: bundle.controller,
+              onContentChanged: calls.add,
+              onError: (e, _) => errors.add(e),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        bundle.webview.emitEvent('contentChanged', {'isFlush': false});
+        await tester.pump();
+        await tester.pumpWidget(
+          _wrap(
+            MonacoEditor(
+              controller: bundle.controller,
+              onError: (e, _) => errors.add(e),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pump();
+
+        expect(errors, isEmpty);
+        expect(calls, isEmpty);
+      });
+
+      testWidgets('clearing onContentChanged while a pull is in flight '
+          'reports no error', (tester) async {
+        final bundle = await _createBundle();
+        final errors = <Object>[];
+        await tester.pumpWidget(
+          _wrap(
+            MonacoEditor(
+              controller: bundle.controller,
+              onContentChanged: (_) {},
+              onError: (e, _) => errors.add(e),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        // Hold the text pull in flight.
+        bundle.webview.autoRespond = false;
+
+        bundle.webview.emitEvent('contentChanged', {'isFlush': true});
+        await tester.pump();
+        final pull = bundle.webview.dispatched.lastWhere(
+          (d) => d['method'] == 'document.getText',
+        );
+        await tester.pumpWidget(
+          _wrap(
+            MonacoEditor(
+              controller: bundle.controller,
+              onError: (e, _) => errors.add(e),
+            ),
+          ),
+        );
+        bundle.webview.respondTo(pull['id']! as String, value: 'abc');
+        await tester.pump();
+        await tester.pump();
+
+        expect(errors, isEmpty);
       });
     });
 
@@ -1734,7 +1877,7 @@ void main() {
 
         final backgroundCalls = bundle.webview.dispatched
             .where((d) => d['method'] == 'page.setBackground')
-            .map((d) => ((d['params']! as Map)['color']).toString())
+            .map((d) => (d['params']! as Map)['color'].toString())
             .toList();
         expect(
           backgroundCalls,

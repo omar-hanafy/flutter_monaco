@@ -249,10 +249,14 @@ bool? _optionalBool(Map<String, dynamic> json, String type, String key) {
   _fail(type, key, 'bool', value);
 }
 
-/// Reads an optional integer at [key], accepting any [num] wire value.
+/// Reads an optional integer at [key], accepting integral [num] wire values.
 int? _optionalInt(Map<String, dynamic> json, String type, String key) {
   final value = json[key];
   if (value == null) return null;
-  if (value is num) return value.toInt();
+  // Web numbers are doubles: `2.0 is int` and `double.infinity is int` hold.
+  if (value is int && value.isFinite) return value;
+  if (value is double && value.isFinite && value == value.truncateToDouble()) {
+    return value.toInt();
+  }
   _fail(type, key, 'int', value);
 }

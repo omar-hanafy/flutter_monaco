@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// UI font family (bundled variable font).
 const String kSansFamily = 'Inter';
