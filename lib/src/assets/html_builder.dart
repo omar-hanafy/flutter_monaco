@@ -157,6 +157,15 @@ const List<String> monacoBridgeScripts = [
 /// [allowCdnFonts] relaxes CSP for `https:` styles/fonts.
 /// [allowedConnectSources] extends the CSP `connect-src` list and is
 /// validated by [sanitizeConnectSources].
+/// [bridgeVersion], when given, is appended to every bridge script URL as
+/// `?v=<bridgeVersion>`. Hosts that serve the page over HTTP pass a content
+/// fingerprint of the bridge files: those files are rewritten in place under
+/// the same Monaco version directory when the package is upgraded, and an
+/// HTTP cache would otherwise keep serving the previous bridge.
+///
+/// Pages whose assets are not served over http(s) - every native page except
+/// the Windows virtual host - also carry the worker safety net described at
+/// [_workerSafetyNetScript].
 String buildMonacoIndexHtml({
   required String vsPath,
   required String bridgeBase,
@@ -168,8 +177,15 @@ String buildMonacoIndexHtml({
   String? customCss,
   bool allowCdnFonts = false,
   List<String> allowedConnectSources = const [],
+  String? bridgeVersion,
 }) {
   final extraConnectSources = sanitizeConnectSources(allowedConnectSources);
+
+  // A native page loaded from the file system (Android, Apple platforms,
+  // and Windows when its virtual host is unavailable). The WebView2 virtual
+  // host serves the same page over https, like web.
+  final servedFromFiles =
+      !isWeb && !(_isHttpUrl(vsPath) && _isHttpUrl(bridgeBase));
 
   // The page's whole fetch surface, named explicitly so nothing load-bearing
   // depends on 'self' (see _cspAssetOrigins). Both asset roots contribute:
@@ -181,6 +197,13 @@ String buildMonacoIndexHtml({
     ..._cspAssetOrigins([vsPath, bridgeBase]),
   ];
 
+  // `file:` is admitted only where assets are files. Web keeps the policy it
+  // has always had; the Windows virtual host page loads nothing from disk
+  // directly, so it does not admit `file:` at all.
+  final fileSources = servedFromFiles || isWeb
+      ? const ['file:']
+      : const <String>[];
+
   // Every directive is emitted through here, so one added later cannot
   // silently omit the asset origins. `default-src` is no safety net for
   // that: it only backstops directives that are NOT declared.
@@ -189,11 +212,11 @@ String buildMonacoIndexHtml({
 
   final contentSecurityPolicy =
       '${[
-        directive('default-src', ['file:', "'unsafe-inline'", "'unsafe-eval'"]),
-        directive('script-src', ['file:', "'unsafe-inline'", "'unsafe-eval'"]),
+        directive('default-src', [...fileSources, "'unsafe-inline'", "'unsafe-eval'"]),
+        directive('script-src', [...fileSources, "'unsafe-inline'", "'unsafe-eval'"]),
         directive('style-src', ["'unsafe-inline'", if (allowCdnFonts) 'https:']),
-        directive('font-src', ['file:', 'data:', if (allowCdnFonts) 'https:']),
-        directive('img-src', ['data:', 'blob:', 'file:']),
+        directive('font-src', [...fileSources, 'data:', if (allowCdnFonts) 'https:']),
+        directive('img-src', ['data:', 'blob:', ...fileSources]),
         directive('worker-src', ['blob:']),
         directive('connect-src', ['blob:', ...extraConnectSources]),
       ].join('; ')};';
@@ -282,6 +305,13 @@ String buildMonacoIndexHtml({
     platformScript = '';
   }
 
+  final workerSafetyNet = servedFromFiles
+      ? '<script>\n$_workerSafetyNetScript</script>\n'
+      : '';
+
+  final bridgeQuery = bridgeVersion == null
+      ? ''
+      : '?v=${Uri.encodeQueryComponent(bridgeVersion)}';
   final bridgeScriptNames = [
     ...monacoBridgeScripts.sublist(0, monacoBridgeScripts.length - 1),
     if (isWeb) 'viewport-fit.js',
@@ -290,7 +320,7 @@ String buildMonacoIndexHtml({
   final bridgeScriptTags = bridgeScriptNames
       .map(
         (name) =>
-            '    <script src="${_htmlAttribute('$bridgeBase/$name')}"></script>',
+            '    <script src="${_htmlAttribute('$bridgeBase/$name$bridgeQuery')}"></script>',
       )
       .join('\n');
 
@@ -348,6 +378,7 @@ String buildMonacoIndexHtml({
     </style>
     ${customCss != null ? '<style id="flutter-monaco-custom">\n${_escapeStyleText(customCss)}\n</style>' : ''}
     $pageConfig
+    $workerSafetyNet
     $platformScript
   </head>
   <body>
@@ -398,3 +429,129 @@ $bridgeScriptTags
 </html>
 ''';
 }
+
+/// Inline page script that keeps Monaco's web workers from hanging on hosts
+/// where a worker cannot load scripts from `file:` URLs.
+///
+/// Monaco 0.57's `editor.main.js` assigns `self.MonacoEnvironment =
+/// { getWorker }`, which starts every worker as a `blob:` worker that
+/// `importScripts` its bundle from the page's asset directory and then posts
+/// `vscode-worker-ready`. A WebView2 page loaded from `file:` (the Windows
+/// fallback when the virtual host is unavailable), like desktop Chromium,
+/// rejects that `importScripts`: the worker never reports ready, Monaco's
+/// first request to it never settles, and diffs, links, word suggestions and
+/// every language-service request wait forever. Monaco runs the editor
+/// worker on the main thread only when creating the worker *throws*
+/// (`_getOrCreateWorker` catches it); a returned worker or promise that
+/// later fails is never retried.
+///
+/// The script is a safety net for those hosts. It does nothing unless the
+/// page is a `file:` page. It then probes once whether a `blob:` worker can
+/// `importScripts` a bundled script (`vs/loader.js`: Monaco's AMD loader,
+/// always bundled, already loaded by this page and written to run inside a
+/// worker), and wraps the `getWorker` that `editor.main.js` assigns:
+///
+/// - Workers can load scripts (WKWebView, Android WebView): Monaco's own
+///   `getWorker` runs unchanged.
+/// - They cannot, or the probe has not answered yet: `getWorker` throws.
+///   The editor worker then runs on the main thread, so diffs, links and
+///   word suggestions still work. The JSON, CSS, HTML and TypeScript
+///   language services have no main-thread version; for them the error
+///   carries Monaco's cancellation shape (`name` and `message` `Canceled`),
+///   which Monaco treats as "no result" rather than rethrowing as an
+///   uncaught error on every edit and hover. One console warning per worker
+///   label says why.
+///
+/// `window.__FM_WORKERS` records the outcome (`mode` is `probing`,
+/// `workers` or `main-thread`) for diagnostics.
+const String _workerSafetyNetScript = r'''
+  (function () {
+    if (location.protocol !== 'file:') return;
+    var page = window.__FM_PAGE || {};
+    // The labels editor.main.js routes to a language-service bundle; every
+    // other label is the editor worker.
+    var languageLabels = {
+      json: true, css: true, scss: true, less: true, html: true,
+      handlebars: true, razor: true, typescript: true, javascript: true
+    };
+    var status = (window.__FM_WORKERS = { mode: 'probing', detail: null });
+    var settle = function (mode, detail) {
+      if (status.mode !== 'probing') return;
+      status.mode = mode;
+      status.detail = detail;
+      if (mode === 'main-thread') {
+        console.warn('[flutter_monaco] Web workers cannot load scripts on this page (' +
+          detail + '). The editor worker runs on the main thread; the JSON, CSS, ' +
+          'HTML and TypeScript language services are unavailable.');
+      }
+    };
+    try {
+      var probeUrl = new URL(page.vsPath + '/loader.js', document.baseURI).href;
+      var source = 'try { importScripts(' + JSON.stringify(probeUrl) + '); ' +
+        'postMessage("ok"); } catch (e) { ' +
+        'postMessage("importScripts failed: " + (e && e.name)); }';
+      var blobUrl = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+      var probe = new Worker(blobUrl);
+      var timer;
+      var finish = function (mode, detail) {
+        clearTimeout(timer);
+        probe.onmessage = null;
+        probe.onerror = null;
+        probe.terminate();
+        URL.revokeObjectURL(blobUrl);
+        settle(mode, detail);
+      };
+      timer = setTimeout(function () {
+        finish('main-thread', 'the worker check timed out');
+      }, 10000);
+      probe.onmessage = function (event) {
+        finish(event.data === 'ok' ? 'workers' : 'main-thread', String(event.data));
+      };
+      probe.onerror = function (event) {
+        if (event && event.preventDefault) event.preventDefault();
+        finish('main-thread', 'the worker check failed: ' + (event && event.message));
+      };
+    } catch (e) {
+      settle('main-thread', 'the worker check could not start: ' + e);
+    }
+
+    var warned = {};
+    var unavailable = function (label) {
+      var language = languageLabels[label] === true;
+      if (!warned[label]) {
+        warned[label] = true;
+        console.warn('[flutter_monaco] No web worker for "' + label + '" (' +
+          (status.mode === 'probing'
+            ? 'the worker check has not finished'
+            : 'workers cannot load scripts on this page') + '); ' +
+          (language
+            ? 'its language service is unavailable.'
+            : 'it runs on the main thread.'));
+      }
+      if (language) {
+        var canceled = new Error('Canceled');
+        canceled.name = 'Canceled';
+        return canceled;
+      }
+      return new Error('flutter_monaco: no web worker for "' + label +
+        '"; Monaco runs it on the main thread.');
+    };
+
+    var environment;
+    Object.defineProperty(self, 'MonacoEnvironment', {
+      configurable: true,
+      enumerable: true,
+      get: function () { return environment; },
+      set: function (value) {
+        if (value && typeof value.getWorker === 'function') {
+          var getWorker = value.getWorker;
+          value.getWorker = function (workerId, label) {
+            if (status.mode === 'workers') return getWorker.apply(this, arguments);
+            throw unavailable(label);
+          };
+        }
+        environment = value;
+      }
+    });
+  })();
+''';
