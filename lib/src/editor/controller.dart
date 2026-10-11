@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:flutter_monaco/src/editor/boot_timeout.dart';
 import 'package:flutter_monaco/src/editor/focus_coordinator.dart';
 import 'package:flutter_monaco/src/lsp/lsp_connection.dart';
 import 'package:flutter_monaco/src/platform/platform_webview.dart';
@@ -327,12 +328,10 @@ class MonacoController {
         }().timeout(
           readyTimeout,
           onTimeout: () => throw MonacoTimeoutError(
-            message:
-                'Monaco Editor did not report ready in '
-                '${readyTimeout.inSeconds} seconds.'
-                '${kIsWeb ? ' On web the first load downloads the editor '
-                          'bundle; a slow connection can exceed this deadline. '
-                          'Retrying resumes from the browser cache.' : ''}',
+            message: monacoBootTimeoutMessage(
+              subject: 'Monaco Editor',
+              timeout: readyTimeout,
+            ),
             timeout: readyTimeout,
             operation: 'boot',
           ),

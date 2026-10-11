@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'package:flutter_monaco/src/editor/boot_timeout.dart';
 import 'package:flutter_monaco/src/platform/platform_webview.dart';
 import 'package:flutter_monaco/src/protocol/envelope.dart';
 import 'package:flutter_monaco/src/protocol/protocol.dart';
@@ -238,12 +238,10 @@ class MonacoDiffController {
         }().timeout(
           readyTimeout,
           onTimeout: () => throw MonacoTimeoutError(
-            message:
-                'Monaco diff editor did not report ready in '
-                '${readyTimeout.inSeconds} seconds.'
-                '${kIsWeb ? ' On web the first load downloads the editor '
-                          'bundle; a slow connection can exceed this deadline. '
-                          'Retrying resumes from the browser cache.' : ''}',
+            message: monacoBootTimeoutMessage(
+              subject: 'Monaco diff editor',
+              timeout: readyTimeout,
+            ),
             timeout: readyTimeout,
             operation: 'boot',
           ),
