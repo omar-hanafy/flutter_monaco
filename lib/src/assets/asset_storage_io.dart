@@ -334,7 +334,10 @@ Future<void> clearMonacoAssetCache({
     await directory.rename(retired.path);
   } on FileSystemException {
     // Renaming can fail on Windows while a file inside is open; deleting in
-    // place is what 3.x always did.
+    // place is what 3.x always did. The sentinel goes first, so a delete
+    // that stops partway at another open file never leaves a tree that
+    // still passes the sentinel check.
+    await _deleteQuietly(File(p.join(targetDir, '.monaco_complete')));
     await directory.delete(recursive: true);
     debugPrint('[MonacoAssets] Monaco assets cleaned');
     return;

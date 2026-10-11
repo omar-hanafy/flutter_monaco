@@ -230,5 +230,43 @@ void main() {
       );
       expect(cacheEntries(), isEmpty);
     });
+
+    test(
+      'a clear that stops partway leaves no tree that passes as complete',
+      () async {
+        await extract(_GatedSource(_bundle('old')));
+        // The rename aside is refused (on Windows: a file inside is open),
+        // so the tree is deleted in place, and that delete stops partway.
+        final vs = p.join(target, 'min', 'vs');
+        Process.runSync('chmod', ['a-w', cacheRoot, vs]);
+        try {
+          final probe = File(p.join(cacheRoot, 'probe'));
+          try {
+            probe.writeAsStringSync('');
+            probe.deleteSync();
+            markTestSkipped('Permissions are not enforced for this user.');
+            return;
+          } on FileSystemException {
+            // Expected: the cache root is read-only.
+          }
+          await expectLater(
+            clearMonacoAssetCache(
+              assetBaseDir: _base,
+              cacheSubDir: 'cache',
+              monacoVersion: _version,
+            ),
+            throwsA(isA<FileSystemException>()),
+          );
+        } finally {
+          Process.runSync('chmod', ['u+w', cacheRoot, vs]);
+        }
+
+        // What is left is not accepted: the next extraction replaces it.
+        await extract(_GatedSource(_bundle('new')));
+        expect(complete(), isTrue);
+        expect(read('min/vs/editor.js'), 'editor new');
+      },
+      skip: Platform.isWindows ? 'POSIX permissions' : null,
+    );
   });
 }

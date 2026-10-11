@@ -110,9 +110,12 @@ class MonacoAssets {
   ///
   /// ### Error Handling
   ///
-  /// Throws [StateError] if asset extraction fails (e.g., insufficient disk
-  /// space or permission issues). The error includes details about which
-  /// files failed to copy.
+  /// Throws [StateError] if copying the assets fails (e.g., insufficient disk
+  /// space or permission issues); the error names the files that failed to
+  /// copy. Throws a `FileSystemException` (from `dart:io`) if the cache
+  /// directory cannot be created or the copied tree cannot be moved into
+  /// place, for example while another process keeps a file in an old tree
+  /// open on Windows.
   static Future<void> ensureReady() async {
     if (_initCompleter != null) return _initCompleter!.future;
 
