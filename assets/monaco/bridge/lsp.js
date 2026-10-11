@@ -325,7 +325,19 @@ window.__FMB.lsp = function (ctx) {
                           entry.bridged = createBridgedTransport(id);
                           entry.transport = entry.bridged;
                         } else {
-                          entry.transport = await buildTransport(id, transportPayload);
+                          const building = buildTransport(id, transportPayload);
+                          // A transport that never settles (a WebSocket stuck
+                          // connecting, a factory that never resolves) must not
+                          // hold this call after a disconnect; one that settles
+                          // after the disconnect is released here.
+                          building.then((transport) => {
+                            if (entry.disposed && transport) {
+                              try {
+                                transport.dispose && transport.dispose();
+                              } catch (_) {}
+                            }
+                          }, () => {});
+                          entry.transport = await Promise.race([building, abandoned]);
                           throwIfAbandoned(entry);
                         }
                         if (!entry.transport ||

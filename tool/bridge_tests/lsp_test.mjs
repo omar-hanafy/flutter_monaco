@@ -69,11 +69,38 @@ test('a disconnect during transport construction leaves no live client', async (
 
   resolveFactory(countingTransport(log));
   const connect = await connecting;
+  // The connect settled at the disconnect; the late transport is released
+  // once its factory resolves.
+  await new Promise((resolve) => setTimeout(resolve, 0));
 
   assert.equal(connect.ok, false, 'the abandoned connect must fail');
   assert.match(connect.error.message, /disposed during initialization/);
   assert.equal(log.clients, 0, 'no client may be built for a dead entry');
   assert.equal(log.transportsDisposed, 1, 'the late transport is disposed');
+  assert.deepEqual([...sandbox.flutterMonaco.lsp.listConnections()], []);
+});
+
+test('a disconnect settles a connect whose transport never resolves', async () => {
+  const { page, sandbox, log } = bootLspPage();
+  sandbox.flutterMonacoLspTransports = {
+    // A WebSocket stuck connecting, or a custom factory that never settles.
+    stuck: () => new Promise(() => {}),
+  };
+
+  const connecting = dispatch(page, 'lsp.connect', {
+    id: 'a',
+    transport: { kind: 'custom', factoryName: 'stuck', config: {} },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  await dispatch(page, 'lsp.disconnect', { id: 'a' });
+
+  const connect = await Promise.race([
+    connecting,
+    new Promise((resolve) => setTimeout(() => resolve({ ok: 'hung' }), 500)),
+  ]);
+  assert.equal(connect.ok, false, 'the abandoned connect must settle');
+  assert.match(connect.error.message, /disposed during initialization/);
+  assert.equal(log.clients, 0);
   assert.deepEqual([...sandbox.flutterMonaco.lsp.listConnections()], []);
 });
 
