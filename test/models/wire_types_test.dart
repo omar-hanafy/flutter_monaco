@@ -100,6 +100,28 @@ void main() {
       expect(const MonacoPageConfig().stableCacheKey(), '27e4515bfc9e5827');
       expect(a.stableCacheKey(), '66223b0815404914');
     });
+
+    test('stableCacheKey separates CSS that differs only above ASCII', () {
+      // Two configurations sharing a key share one generated HTML file, so
+      // whichever editor loads second silently gets the other's page. The
+      // key must hash the full text: U+0151 ("ő") and U+0051 ("Q") share
+      // their low byte, as do U+0100 and NUL.
+      const pairs = [
+        ['.x::after { content: "ő"; }', '.x::after { content: "Q"; }'],
+        ['.y { font-family: "Ā"; }', '.y { font-family: "\u0000"; }'],
+        ['/* \u{1F600} */', '/* \u{1F610} */'],
+      ];
+      for (final pair in pairs) {
+        final first = MonacoPageConfig(customCss: pair[0]);
+        final second = MonacoPageConfig(customCss: pair[1]);
+        expect(first, isNot(second));
+        expect(
+          first.stableCacheKey(),
+          isNot(second.stableCacheKey()),
+          reason: '${pair[0]} vs ${pair[1]}',
+        );
+      }
+    });
   });
 
   group('MonacoCapabilities', () {
