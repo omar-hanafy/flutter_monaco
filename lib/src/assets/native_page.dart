@@ -102,12 +102,13 @@ NativeMonacoPage buildVirtualHostMonacoPage({
 /// `ws:` and `http:` connections from it as mixed content - except to
 /// loopback hosts, which they treat as potentially trustworthy. The 3.x
 /// Windows page was loaded from `file:`, where no such check applies, so a
-/// language server at `ws://192.168.1.5:3000` worked there.
+/// language server at `ws://192.168.1.5:3000` worked there, including
+/// through a bare `*` source.
 bool connectSourcesNeedInsecurePage(List<String> connectSources) {
   final insecureHost = RegExp(r'^(?:ws|http)://(\[[^\]]*\]|[^/:]+)');
   for (final raw in connectSources) {
     final source = raw.trim().toLowerCase();
-    if (source == 'ws:' || source == 'http:') return true;
+    if (source == 'ws:' || source == 'http:' || source == '*') return true;
     final match = insecureHost.firstMatch(source);
     if (match != null && !_isLoopbackHost(match.group(1)!)) return true;
   }

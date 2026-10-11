@@ -665,7 +665,7 @@ Engine changes that reach apps without code changes (Monaco 0.55.1 to 0.57.0):
 - Double-clicking just inside brackets or quotes selects the enclosed block. Opt out with `EditorOptions(doubleClickSelectsBlock: false)`.
 - Language-server markdown is untrusted: `command:` links render as plain text.
 
-On Windows the editor page moves from `file://` to the WebView2 virtual host `https://flutter-monaco.example/`, which makes the diff editor and Monaco's language services work there. Language-server WebSockets see that origin, and `ws://` or `http://` endpoints that are not on loopback keep the `file://` page; see the [Windows requirements](#windows).
+On Windows the editor page moves from `file://` to the WebView2 virtual host `https://flutter-monaco.example/`, which makes the diff editor and Monaco's language services work there. Language-server WebSockets see that origin, and `ws://` or `http://` endpoints that are not on loopback (or a bare `*`) keep the `file://` page; see the [Windows requirements](#windows).
 
 ## Migrating from 2.x to 3.x
 
@@ -1320,7 +1320,7 @@ The plugin uses a versioned cache system:
 
 - Windows 10 version 1809 or later
 - Microsoft Edge WebView2 Runtime (auto-installed on most Windows 10/11 systems)
-- The editor page's origin is `https://flutter-monaco.example`, a secure context. Endpoints in `allowedConnectSources` should use `wss://` or `https://`, or `ws://`/`http://` on loopback (`localhost`, `127.0.0.1`, `[::1]`). Listing any other `ws://` or `http://` endpoint makes the editor load from `file://` instead, where Monaco's workers cannot run.
+- The editor page's origin is `https://flutter-monaco.example`, a secure context. Endpoints in `allowedConnectSources` should use `wss://` or `https://`, or `ws://`/`http://` on loopback (`localhost`, `127.0.0.1`, `[::1]`). Listing any other `ws://` or `http://` endpoint, or a bare `*`, makes the editor load from `file://` instead, where Monaco's workers cannot run.
 
 ### Android
 
@@ -1474,7 +1474,7 @@ A sandboxed macOS app (the `flutter create` default) needs **Outgoing Connection
 These features run in Monaco's background workers. If they are missing:
 
 1. On Android, iOS, macOS, and Windows, read the page's worker check: `await controller.evaluateJavaScript<String>('window.__FM_WORKERS ? window.__FM_WORKERS.mode : "none"')`. `workers` means the workers run. `main-thread` means this WebView cannot start them from a `file://` page: diffs are computed on the main thread and the built-in language services are off. `none` means the page is served over https or on Web, where the check does not apply.
-2. On Windows, a `[WindowsWebViewController]` log line says when the editor loads from `file://` instead of its virtual host, and why (an `allowedConnectSources` endpoint, or a WebView2 runtime that cannot map the host).
+2. On Windows, a `[WindowsWebViewController]` log line says when the editor loads from `file://` instead of its virtual host, and why (an `allowedConnectSources` entry, or a WebView2 runtime that cannot map the host).
 3. Check the WebView console output for worker or Content-Security-Policy errors.
 4. Report the platform, WebView version, and console output in an issue.
 

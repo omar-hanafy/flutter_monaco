@@ -74,6 +74,8 @@ void main() {
         ['ws:'],
         ['http:'],
         ['ws://*:3000'],
+        // `connect-src *` admitted ws: to any host from the 3.x file: page.
+        ['*'],
       ]) {
         expect(
           connectSourcesNeedInsecurePage(sources),
@@ -89,7 +91,7 @@ void main() {
         ['wss://lsp.example.com', 'https://schemas.example'],
         ['ws://127.0.0.1:3000', 'ws://localhost:3000', 'ws://[::1]:3000'],
         ['ws://dev.localhost:8080', 'http://127.0.0.2/x'],
-        ['wss:', 'https:', '*', 'lsp.example.com'],
+        ['wss:', 'https:', 'lsp.example.com', '*.example.com'],
       ]) {
         expect(
           connectSourcesNeedInsecurePage(sources),

@@ -153,9 +153,9 @@ class WindowsWebViewController extends WebViewController {
     if (connectSourcesNeedInsecurePage(page.allowedConnectSources)) {
       debugPrint(
         '[WindowsWebViewController] allowedConnectSources lists ws:/http: '
-        'endpoints that are not on loopback, which an https page may not '
-        'reach; loading the editor from file:// as before. Use wss:/https: '
-        'to keep the editor on its virtual host.',
+        'endpoints that are not on loopback (or *), which an https page may '
+        'not reach; loading the editor from file:// as before. Use '
+        'wss:/https: to keep the editor on its virtual host.',
       );
       await _loadFromFiles(page);
       return;
