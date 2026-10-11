@@ -533,3 +533,56 @@ test('getSelection and getCursor report a missing editor as not ready', async ()
   }
 });
 
+// ---- markers ----
+
+test('setMarkers maps tag names and related resources to Monaco shapes', async () => {
+  const page = bootEditorPage();
+  const response = await dispatch(page, 'document.setMarkers', {
+    uri: null,
+    owner: 'lint',
+    markers: [
+      {
+        ...range(1, 1, 1, 5),
+        message: 'unused',
+        severity: 4,
+        tags: ['unnecessary', 'Deprecated', 'not-a-tag', 2],
+        relatedInformation: [
+          {
+            resource: 'file:///other.ts',
+            ...range(2, 1, 2, 4),
+            message: 'declared here',
+          },
+        ],
+      },
+      { ...range(1, 1, 1, 2), message: 'plain', severity: 8 },
+    ],
+  });
+  assert.equal(response.ok, true);
+
+  const call = page.sandbox.__markerCalls.at(-1);
+  assert.equal(call.owner, 'lint');
+  assert.equal(call.model, page.bootModel);
+  const [tagged, plain] = call.markers;
+  assert.deepEqual(tagged.tags, [1, 2, 2]);
+  const related = tagged.relatedInformation[0];
+  assert.ok(
+    related.resource instanceof page.sandbox.monaco.Uri,
+    'resource must be a monaco.Uri (hover reads resource.path)',
+  );
+  assert.equal(related.resource.toString(), 'file:///other.ts');
+  assert.equal(related.resource.path, '/other.ts');
+  assert.equal(related.message, 'declared here');
+  assert.equal(related.startLineNumber, 2);
+  assert.equal(tagged.message, 'unused');
+  assert.equal(tagged.severity, 4);
+  assert.equal(plain.tags, undefined);
+  assert.equal(plain.relatedInformation, undefined);
+});
+
+test('the legacy setModelMarkers helper maps markers the same way', () => {
+  const page = bootEditorPage();
+  page.sandbox.flutterMonaco.setModelMarkers('legacy', [
+    { ...range(1, 1, 1, 2), message: 'm', tags: ['deprecated'] },
+  ]);
+  assert.deepEqual(page.sandbox.__markerCalls.at(-1).markers[0].tags, [2]);
+});

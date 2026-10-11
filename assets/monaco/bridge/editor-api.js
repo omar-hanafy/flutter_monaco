@@ -45,6 +45,37 @@ window.__FMB.editorApi = function (ctx) {
                   model.pushEditOperations([], edits, () => null);
                   model.pushStackElement();
                 };
+                // Dart's MarkerData wire shape -> Monaco IMarkerData. Dart
+                // sends tags by name ('unnecessary', 'deprecated') and
+                // relatedInformation[].resource as a URI string; Monaco
+                // ignores string tags and needs a monaco.Uri resource
+                // (the marker hover reads resource.path). Numeric tags
+                // pass through; unknown tag names are dropped, as Monaco
+                // would ignore them anyway.
+                const markerTagByName = (name) => {
+                  const tags = monaco.MarkerTag || { Unnecessary: 1, Deprecated: 2 };
+                  switch (String(name).toLowerCase()) {
+                    case 'unnecessary': return tags.Unnecessary;
+                    case 'deprecated': return tags.Deprecated;
+                    default: return undefined;
+                  }
+                };
+                const toMonacoMarkers = (markers) => (markers || []).map((marker) => {
+                  if (!marker || typeof marker !== 'object') return marker;
+                  const mapped = Object.assign({}, marker);
+                  if (Array.isArray(marker.tags)) {
+                    mapped.tags = marker.tags
+                      .map((tag) => (typeof tag === 'number' ? tag : markerTagByName(tag)))
+                      .filter((tag) => typeof tag === 'number');
+                  }
+                  if (Array.isArray(marker.relatedInformation)) {
+                    mapped.relatedInformation = marker.relatedInformation.map((info) =>
+                      info && typeof info.resource === 'string'
+                        ? Object.assign({}, info, { resource: monaco.Uri.parse(info.resource) })
+                        : info);
+                  }
+                  return mapped;
+                });
                 // Monaco has no public theme getter (monaco.editor.getTheme
                 // does not exist in 0.57), so the bridge tracks the theme it
                 // applied: the boot theme (boot.js creates the editor with
@@ -310,7 +341,7 @@ window.__FMB.editorApi = function (ctx) {
 
                   // Markers (diagnostics)
                   setModelMarkers: (owner, markers) => {
-                    monaco.editor.setModelMarkers(requireModel(), owner || 'flutter', markers || []);
+                    monaco.editor.setModelMarkers(requireModel(), owner || 'flutter', toMonacoMarkers(markers));
                     return true;
                   },
 
@@ -563,7 +594,7 @@ window.__FMB.editorApi = function (ctx) {
                     return true;
                   });
                   FM.register('document.setMarkers', (p) => {
-                    monaco.editor.setModelMarkers(resolveModel(p.uri), p.owner || 'flutter', p.markers || []);
+                    monaco.editor.setModelMarkers(resolveModel(p.uri), p.owner || 'flutter', toMonacoMarkers(p.markers));
                     return true;
                   });
                   FM.register('docs.open', (p) => {
