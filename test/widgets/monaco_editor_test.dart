@@ -2,12 +2,25 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
 import 'package:flutter_monaco/src/platform/platform_webview.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../fakes/fake_platform_webview_controller.dart';
+
+/// A WebView whose native focus handoff fails, like a platform channel
+/// error on desktop.
+class _NativeFocusFailingWebView extends FakePlatformWebViewController {
+  _NativeFocusFailingWebView()
+    : super(widget: const SizedBox(key: Key('webview')));
+
+  @override
+  Future<NativeFocusResult> requestNativeFocus() async {
+    throw PlatformException(code: 'focus', message: 'no first responder');
+  }
+}
 
 class _TestBundle {
   _TestBundle(this.controller, this.webview);
@@ -806,6 +819,31 @@ void main() {
         expect(calls1.length, 1); // Original not called again
         expect(calls2.length, 1); // New callback called
       });
+    });
+
+    testWidgets('an autofocus failure is reported to onError', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      try {
+        final webview = _NativeFocusFailingWebView();
+        final controller = await MonacoController.createForTesting(
+          webViewController: webview,
+        );
+        final errors = <Object>[];
+        await tester.pumpWidget(
+          _wrap(
+            MonacoEditor(
+              controller: controller,
+              autofocus: true,
+              onError: (e, _) => errors.add(e),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(errors, [isA<PlatformException>()]);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     });
 
     group('callbacks changed after readiness', () {

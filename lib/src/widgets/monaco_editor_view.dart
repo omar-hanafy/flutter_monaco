@@ -526,7 +526,9 @@ class _MonacoEditorState extends State<MonacoEditor> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!_isBootstrapCurrent(bootstrapToken)) return;
           _webFocusNode.requestFocus();
-          unawaited(_controller!.requestFocus());
+          // Nobody awaits this request; a failure (native focus error, or a
+          // page reload that could not be recovered) goes to onError.
+          _ignoreAsync(_controller!.requestFocus());
         });
       }
 
