@@ -587,9 +587,13 @@ double? _optDouble(Map<String, dynamic> json, String key) {
 int? _optInt(Map<String, dynamic> json, String key) {
   final value = json[key];
   if (value == null) return null;
-  if (value is num) return value.toInt();
+  // Web numbers are doubles: `2.0 is int` and `double.infinity is int` hold.
+  if (value is int && value.isFinite) return value;
+  if (value is double && value.isFinite && value == value.truncateToDouble()) {
+    return value.toInt();
+  }
   throw FormatException(
-    'EditorOptions.fromJson: "$key" must be a number, got $value',
+    'EditorOptions.fromJson: "$key" must be an integer, got $value',
   );
 }
 
@@ -607,9 +611,12 @@ List<int>? _optIntList(Map<String, dynamic> json, String key) {
   if (value == null) return null;
   if (value is List) {
     return value.map((e) {
-      if (e is num) return e.toInt();
+      if (e is int && e.isFinite) return e;
+      if (e is double && e.isFinite && e == e.truncateToDouble()) {
+        return e.toInt();
+      }
       throw FormatException(
-        'EditorOptions.fromJson: "$key" entries must be numbers, got $e',
+        'EditorOptions.fromJson: "$key" entries must be integers, got $e',
       );
     }).toList();
   }

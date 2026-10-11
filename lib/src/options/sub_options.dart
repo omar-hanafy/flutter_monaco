@@ -313,8 +313,14 @@ sealed class MonacoStickyScroll with _$MonacoStickyScroll {
 int? _optInt(Map<String, dynamic> json, String key, String type) {
   final value = json[key];
   if (value == null) return null;
-  if (value is num) return value.toInt();
-  throw FormatException('$type.fromJson: "$key" must be a number, got $value');
+  // Web numbers are doubles: `2.0 is int` and `double.infinity is int` hold.
+  if (value is int && value.isFinite) return value;
+  if (value is double && value.isFinite && value == value.truncateToDouble()) {
+    return value.toInt();
+  }
+  throw FormatException(
+    '$type.fromJson: "$key" must be an integer, got $value',
+  );
 }
 
 bool? _optBool(Map<String, dynamic> json, String key, String type) {
