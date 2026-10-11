@@ -528,13 +528,12 @@ class MonacoLspManager {
       // Started here without awaiting (this runs from synchronous dispose
       // paths); stored on the connection so an explicit disconnect() can
       // await the local shutdown.
-      final shutdown = Future<void>.sync(() => transport.onClose!()).catchError(
-        (Object closeError) {
-          debugPrint(
-            '[MonacoLsp] onClose for "${connection.id}" threw: $closeError',
-          );
-        },
-      );
+      final shutdown = Future<void>.sync(() => transport.onClose!())
+          .catchError((Object closeError) {
+            debugPrint(
+              '[MonacoLsp] onClose for "${connection.id}" threw: $closeError',
+            );
+          });
       connection._transportShutdown = shutdown;
       unawaited(shutdown);
     }

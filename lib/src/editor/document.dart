@@ -8,8 +8,10 @@ import 'package:flutter_monaco/src/types/text.dart';
 
 /// Internal command dispatcher a document handle rides. Wired to the
 /// controller's readiness-gated invoke.
-typedef MonacoDocumentInvoke =
-    Future<Object?> Function(String method, Map<String, Object?> params);
+typedef MonacoDocumentInvoke = Future<Object?> Function(
+  String method,
+  Map<String, Object?> params,
+);
 
 /// A handle to one Monaco text model.
 ///

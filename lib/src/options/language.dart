@@ -7,7 +7,7 @@
 /// example `MonacoLanguage('my-dsl')`.
 extension type const MonacoLanguage(
   /// The raw language id string sent to the Monaco editor.
-  String id
+  String id,
 ) {
   /// Plain Text
   static const plaintext = MonacoLanguage('plaintext');

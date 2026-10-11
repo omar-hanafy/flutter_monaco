@@ -28,9 +28,8 @@ void main() {
     });
 
     test('bundled editor.main.js yields exactly one chunk', () {
-      final source = File(
-        'assets/monaco/min/vs/editor/editor.main.js',
-      ).readAsStringSync();
+      final source = File('assets/monaco/min/vs/editor/editor.main.js')
+          .readAsStringSync();
       final chunks = extractMonacoWarmupChunks(source);
       expect(
         chunks,

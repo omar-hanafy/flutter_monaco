@@ -209,9 +209,8 @@ Future<void> main() async {
     File.fromUri(fixture.uri.resolve('test/new_behavior_test.dart'))
       ..createSync(recursive: true)
       ..writeAsStringSync('void main() {}\n');
-    File.fromUri(
-      fixture.uri.resolve('binary-output.bin'),
-    ).writeAsBytesSync(<int>[0, 1, 2, 3]);
+    File.fromUri(fixture.uri.resolve('binary-output.bin'))
+        .writeAsBytesSync(<int>[0, 1, 2, 3]);
     final addResult = await Process.run('git', [
       'add',
       'tracked.txt',
@@ -486,9 +485,8 @@ Future<void> main() async {
         fixture,
         cases.singleWhere((entry) => entry['id'] == 'lsp-realistic-execution'),
       );
-      final readme = File.fromUri(
-        fixture.uri.resolve('README.md'),
-      ).readAsStringSync();
+      final readme = File.fromUri(fixture.uri.resolve('README.md'))
+          .readAsStringSync();
 
       expect(readme, contains('wss://lsp.test.invalid/dart'));
       expect(readme, contains('wss://lsp.test.invalid` only'));
@@ -517,9 +515,8 @@ Future<void> main() async {
       }
 
       final lsp = await prepare('lsp-negative-trigger');
-      final lspSource = File.fromUri(
-        lsp.uri.resolve('lib/editor_screen.dart'),
-      ).readAsStringSync();
+      final lspSource = File.fromUri(lsp.uri.resolve('lib/editor_screen.dart'))
+          .readAsStringSync();
       expect(lspSource, contains('MonacoLanguage.json'));
       expect(lspSource, isNot(contains('LanguageServer')));
 
@@ -529,16 +526,14 @@ Future<void> main() async {
         isTrue,
       );
       expect(
-        Directory.fromUri(
-          bridge.uri.resolve('assets/monaco/bridge/'),
-        ).existsSync(),
+        Directory.fromUri(bridge.uri.resolve('assets/monaco/bridge/'))
+            .existsSync(),
         isFalse,
       );
 
       final engine = await prepare('engine-upgrade-negative-trigger');
-      final enginePubspec = File.fromUri(
-        engine.uri.resolve('pubspec.yaml'),
-      ).readAsStringSync();
+      final enginePubspec = File.fromUri(engine.uri.resolve('pubspec.yaml'))
+          .readAsStringSync();
       expect(enginePubspec, contains('flutter_monaco: ^3.4.1'));
       expect(
         Directory.fromUri(engine.uri.resolve('assets/monaco/')).existsSync(),

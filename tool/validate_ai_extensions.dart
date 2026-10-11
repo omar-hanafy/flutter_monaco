@@ -558,9 +558,8 @@ final class _AiExtensionValidator {
         final values = <String, String>{};
         for (final line in frontmatter.split('\n')) {
           if (line.trim().isEmpty) continue;
-          final match = RegExp(
-            r'^([A-Za-z][A-Za-z0-9_-]*):\s*(.+)$',
-          ).firstMatch(line);
+          final match = RegExp(r'^([A-Za-z][A-Za-z0-9_-]*):\s*(.+)$')
+              .firstMatch(line);
           if (match == null) {
             errors.add('$skillPath: invalid frontmatter line "$line"');
             continue;
@@ -617,9 +616,10 @@ final class _AiExtensionValidator {
       );
     }
 
-    final references = RegExp(
-      r'\]\((references/[^)#]+\.md)(?:#[^)]+)?\)',
-    ).allMatches(normalized).map((match) => match.group(1)!).toSet();
+    final references = RegExp(r'\]\((references/[^)#]+\.md)(?:#[^)]+)?\)')
+        .allMatches(normalized)
+        .map((match) => match.group(1)!)
+        .toSet();
     if (references.isEmpty) {
       errors.add(
         '$skillPath: must link at least one package-specific reference',

@@ -89,12 +89,10 @@ void main() {
       ..createSync(recursive: true)
       ..writeAsStringSync('# Valid plugin content\n');
     File.fromUri(directory.uri.resolve('.DS_Store')).writeAsBytesSync(<int>[0]);
-    File.fromUri(
-      directory.uri.resolve('skills/example/Thumbs.db'),
-    ).writeAsBytesSync(<int>[0]);
-    File.fromUri(
-      directory.uri.resolve('skills/example/SKILL.md.swp'),
-    ).writeAsBytesSync(<int>[0]);
+    File.fromUri(directory.uri.resolve('skills/example/Thumbs.db'))
+        .writeAsBytesSync(<int>[0]);
+    File.fromUri(directory.uri.resolve('skills/example/SKILL.md.swp'))
+        .writeAsBytesSync(<int>[0]);
 
     final errors = validatePluginTreeHygiene(
       directory,

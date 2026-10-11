@@ -514,10 +514,8 @@ Future<ProcessResult> runBehaviorProcess(
   );
   var outputDrainTimedOut = false;
   try {
-    await Future.wait([
-      stdoutDone.future,
-      stderrDone.future,
-    ]).timeout(outputDrainTimeout);
+    await Future.wait([stdoutDone.future, stderrDone.future])
+        .timeout(outputDrainTimeout);
   } on TimeoutException {
     outputDrainTimedOut = true;
     await Future.wait([
@@ -814,9 +812,8 @@ Map<String, Object?>? _stringKeyedMap(Object? value) {
 }
 
 String _packageVersion(Directory repositoryRoot) {
-  final pubspec = File.fromUri(
-    repositoryRoot.uri.resolve('pubspec.yaml'),
-  ).readAsStringSync();
+  final pubspec = File.fromUri(repositoryRoot.uri.resolve('pubspec.yaml'))
+      .readAsStringSync();
   final match = RegExp(
     r'^version:\s*([^\s#]+)',
     multiLine: true,

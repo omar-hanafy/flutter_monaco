@@ -400,9 +400,9 @@ class MonacoProtocol {
   /// escaping them keeps `runJavaScript(dispatch(...))` payloads intact.
   /// (Same treatment the 2.3.0 LSP manager applied.)
   static String _jsJson(Object? value) {
-    return jsonEncode(
-      value,
-    ).replaceAll('\u2028', r'\u2028').replaceAll('\u2029', r'\u2029');
+    return jsonEncode(value)
+        .replaceAll('\u2028', r'\u2028')
+        .replaceAll('\u2029', r'\u2029');
   }
 }
 

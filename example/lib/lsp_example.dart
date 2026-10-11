@@ -364,9 +364,8 @@ class _LspDemoPageState extends State<LspDemoPage> {
                 itemCount: _log.length,
                 itemBuilder: (context, index) => Text(
                   _log[_log.length - 1 - index],
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(fontFamily: 'monospace'),
                 ),
               ),
             ),

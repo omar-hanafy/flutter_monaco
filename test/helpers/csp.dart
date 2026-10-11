@@ -81,10 +81,10 @@ class PageCsp {
 /// Derived from the page rather than restated as literals, so a `<script>`
 /// added later pointing at a new asset root is covered automatically.
 List<String> scriptUrlsIn(String html) => [
-  ...RegExp(
-    r'<script[^>]*\ssrc="([^"]+)"',
-  ).allMatches(html).map((m) => m.group(1)!),
-  ...RegExp(
-    r"""\.src\s*=\s*'([^']+)'""",
-  ).allMatches(html).map((m) => m.group(1)!),
+  ...RegExp(r'<script[^>]*\ssrc="([^"]+)"')
+      .allMatches(html)
+      .map((m) => m.group(1)!),
+  ...RegExp(r"""\.src\s*=\s*'([^']+)'""")
+      .allMatches(html)
+      .map((m) => m.group(1)!),
 ];

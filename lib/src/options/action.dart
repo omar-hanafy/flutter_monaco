@@ -14,7 +14,7 @@
 /// example `MonacoAction('my.custom.action')`.
 extension type const MonacoAction(
   /// The raw action id string sent to the Monaco editor.
-  String id
+  String id,
 ) {
   // General commands (non editor.action)
   static const acceptAlternativeSelectedSuggestion = MonacoAction(

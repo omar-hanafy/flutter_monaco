@@ -2,8 +2,10 @@ import 'package:flutter_monaco/src/types/decorations.dart';
 
 /// Internal command dispatcher a decoration set rides. Wired to the
 /// controller's readiness-gated invoke.
-typedef MonacoDecorationInvoke =
-    Future<Object?> Function(String method, Map<String, Object?> params);
+typedef MonacoDecorationInvoke = Future<Object?> Function(
+  String method,
+  Map<String, Object?> params,
+);
 
 /// An independent group of editor decorations.
 ///

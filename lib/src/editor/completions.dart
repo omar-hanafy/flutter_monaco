@@ -5,8 +5,9 @@ import 'package:flutter_monaco/src/types/completion.dart';
 /// A callback that provides completion items for a given
 /// [CompletionRequest]. It should return a [Future] that resolves to a
 /// [CompletionList].
-typedef CompletionProvider =
-    Future<CompletionList> Function(CompletionRequest request);
+typedef CompletionProvider = Future<CompletionList> Function(
+  CompletionRequest request,
+);
 
 /// Handle for a completion provider registered through
 /// `MonacoController.registerCompletions` or `registerStaticCompletions`.

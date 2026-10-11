@@ -9,7 +9,7 @@ import 'package:flutter_monaco/src/options/option_enums.dart';
 /// example `MonacoTheme('app-dark')`.
 extension type const MonacoTheme(
   /// The raw theme id string sent to the Monaco editor.
-  String id
+  String id,
 ) {
   /// The standard light theme.
   static const vs = MonacoTheme('vs');
