@@ -173,6 +173,11 @@ function workerCount(page) {
   return page.evaluate('window.__harness.workers');
 }
 
+/** Monaco asked for a worker before the probe answered (the gate failed). */
+function refusedWhileProbing(page) {
+  return page.console.some((line) => line.includes('the worker check has not finished'));
+}
+
 before(async () => {
   generatePages();
 }, { timeout: 300000 });
@@ -243,6 +248,7 @@ describe('file:// page where workers cannot load scripts (WebView2, Chromium)', 
       const page = await bootEditor(report.pages[flavor].url, DIFF_BOOT);
       assert.deepEqual(await computedLineChanges(page), EXPECTED_LINE_CHANGES);
       assert.equal(await workerMode(page), 'main-thread');
+      assert.equal(refusedWhileProbing(page), false);
       // Only the capability probe: Monaco never started a worker that hangs.
       assert.equal(await workerCount(page), 1);
       assert.deepEqual(page.exceptions, []);
@@ -256,6 +262,7 @@ describe('file:// page where workers cannot load scripts (WebView2, Chromium)', 
       await page.evaluate(`monaco.editor.getEditors()[0].getModel().setValue('{ "b": 2, }'), true`);
       await new Promise((resolve) => setTimeout(resolve, 1500));
       assert.equal(await workerMode(page), 'main-thread');
+      assert.equal(refusedWhileProbing(page), false);
       assert.equal(await workerCount(page), 1);
       // Monaco's validation scheduler surfaces the refusal as a canceled
       // request; nothing else may escape.
@@ -285,6 +292,7 @@ describe('file:// page where workers can load scripts (Android WebView, WKWebVie
     );
     assert.equal(await jsonServiceOutcome(page), 'answered');
     assert.equal(await workerMode(page), 'workers');
+    assert.equal(refusedWhileProbing(page), false);
     // The probe, the editor worker and the JSON worker.
     assert.ok((await workerCount(page)) >= 3);
     assert.deepEqual(page.exceptions, []);
@@ -295,6 +303,7 @@ describe('file:// page where workers can load scripts (Android WebView, WKWebVie
     const page = await bootEditor(report.pages.file.url, DIFF_BOOT);
     assert.deepEqual(await computedLineChanges(page), EXPECTED_LINE_CHANGES);
     assert.equal(await workerMode(page), 'workers');
+    assert.equal(refusedWhileProbing(page), false);
     assert.ok((await workerCount(page)) >= 2);
     assert.deepEqual(page.exceptions, []);
     await page.close();

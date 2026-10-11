@@ -1,7 +1,11 @@
 // Executes the generated page's worker safety net in a Node `vm` context
 // that stands in for a browser page, and reports what Monaco would observe.
 //
-// Usage: node worker_safety_net_runner.cjs <script.js> <scenario.json>
+// Usage: node worker_safety_net_runner.cjs <script.js> <scenario.json> [gate.js]
+//
+// With gate.js (the editor.main gate), a fake AMD loader `require` is
+// installed first, the gate wraps it, and boot.js's
+// require(['vs/editor/editor.main'], ...) is issued while the probe runs.
 //
 // Scenario fields:
 //   protocol    'file:' | 'https:'     page location protocol
@@ -19,6 +23,7 @@ const vm = require('vm');
 
 const script = fs.readFileSync(process.argv[2], 'utf8');
 const scenario = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+const gateScript = process.argv[4] ? fs.readFileSync(process.argv[4], 'utf8') : null;
 
 const warnings = [];
 const imported = [];
@@ -92,6 +97,38 @@ sandbox.__FM_PAGE = { vsPath: scenario.vsPath };
 vm.createContext(sandbox);
 vm.runInContext(script, sandbox);
 
+// The AMD loader's global require, then the gate wrapping it.
+const amdCalls = [];
+let gate = null;
+if (gateScript) {
+  const amdRequire = function () {
+    amdCalls.push(Array.from(arguments));
+  };
+  amdRequire.config = (options) => amdCalls.push(['config', options]);
+  amdRequire.toUrl = (id) => `url:${id}`;
+  sandbox.require = amdRequire;
+  sandbox.Array = Array;
+  vm.runInContext(gateScript, sandbox);
+  let loaded = false;
+  sandbox.require(['vs/editor/editor.main'], () => {
+    loaded = true;
+  });
+  const deferred = amdCalls.length === 0;
+  sandbox.require.config({ ignoreDuplicateModules: [] });
+  gate = {
+    deferredWhileProbing: deferred,
+    configPassedThrough: amdCalls.length === 1 && amdCalls[0][0] === 'config',
+    propertiesKept: sandbox.require.toUrl('vs/x') === 'url:vs/x',
+    loadedNow: () => amdCalls.some((call) => Array.isArray(call[0])),
+    callbackKept: () => {
+      const call = amdCalls.find((c) => Array.isArray(c[0]));
+      if (!call) return false;
+      call[1]();
+      return loaded;
+    },
+  };
+}
+
 // What editor.main.js does: assign a fresh environment with a getWorker.
 const environment = {
   getWorker: (workerId, label) => `real worker for ${label}`,
@@ -130,6 +167,13 @@ setTimeout(() => {
       workers,
       descriptor: descriptor ? (descriptor.get ? 'accessor' : 'data') : 'none',
       sameObject: sandbox.self.MonacoEnvironment === environment,
+      gate: gate && {
+        deferredWhileProbing: gate.deferredWhileProbing,
+        configPassedThrough: gate.configPassedThrough,
+        propertiesKept: gate.propertiesKept,
+        loadedAfterProbe: gate.loadedNow(),
+        callbackKept: gate.callbackKept(),
+      },
     }),
   );
   // The probe's own timeout may still be pending (the 'silent' scenario).

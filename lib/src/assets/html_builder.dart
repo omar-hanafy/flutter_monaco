@@ -308,6 +308,11 @@ String buildMonacoIndexHtml({
   final workerSafetyNet = servedFromFiles
       ? '<script>\n$_workerSafetyNetScript</script>\n'
       : '';
+  // Runs after loader.js has defined the global AMD `require` and before
+  // boot.js uses it.
+  final editorMainGate = servedFromFiles
+      ? '    <script>\n$_editorMainGateScript    </script>\n'
+      : '';
 
   final bridgeQuery = bridgeVersion == null
       ? ''
@@ -423,7 +428,7 @@ String buildMonacoIndexHtml({
             onerror="console.error('[Monaco HTML] FATAL: loader.js FAILED TO LOAD.' + (window.__fmCspDetail ? window.__fmCspDetail() : ''))"
     ></script>
     '''}
-
+$editorMainGate
 $bridgeScriptTags
   </body>
 </html>
@@ -451,16 +456,21 @@ $bridgeScriptTags
 /// always bundled, already loaded by this page and written to run inside a
 /// worker), and wraps the `getWorker` that `editor.main.js` assigns:
 ///
-/// - Workers can load scripts (WKWebView, Android WebView): Monaco's own
-///   `getWorker` runs unchanged.
-/// - They cannot, or the probe has not answered yet: `getWorker` throws.
-///   The editor worker then runs on the main thread, so diffs, links and
-///   word suggestions still work. The JSON, CSS, HTML and TypeScript
-///   language services have no main-thread version; for them the error
-///   carries Monaco's cancellation shape (`name` and `message` `Canceled`),
-///   which Monaco treats as "no result" rather than rethrowing as an
-///   uncaught error on every edit and hover. One console warning per worker
-///   label says why.
+/// - Workers can load scripts (as on WKWebView and Android WebView):
+///   Monaco's own `getWorker` runs unchanged.
+/// - They cannot: `getWorker` throws. The editor worker then runs on the
+///   main thread, so diffs, links and word suggestions still work. The
+///   JSON, CSS, HTML and TypeScript language services have no main-thread
+///   version; for them the error carries Monaco's cancellation shape
+///   (`name` and `message` `Canceled`), which Monaco treats as "no result"
+///   rather than rethrowing as an uncaught error on every edit and hover.
+///   One console warning per worker label says why.
+///
+/// No worker can be requested before the probe answers: Monaco's refusal
+/// would stick (the TypeScript client caches the failure for the life of
+/// the page, the editor worker stays on the main thread until it idles),
+/// so [_editorMainGateScript] holds the `editor.main` load until then. A
+/// request that still arrives early is refused like an incapable host's.
 ///
 /// `window.__FM_WORKERS` records the outcome (`mode` is `probing`,
 /// `workers` or `main-thread`) for diagnostics.
@@ -475,6 +485,12 @@ const String _workerSafetyNetScript = r'''
       handlebars: true, razor: true, typescript: true, javascript: true
     };
     var status = (window.__FM_WORKERS = { mode: 'probing', detail: null });
+    var waiters = [];
+    // Runs [callback] once the probe has answered (at once if it has).
+    status.whenSettled = function (callback) {
+      if (status.mode === 'probing') waiters.push(callback);
+      else callback();
+    };
     var settle = function (mode, detail) {
       if (status.mode !== 'probing') return;
       status.mode = mode;
@@ -484,6 +500,9 @@ const String _workerSafetyNetScript = r'''
           detail + '). The editor worker runs on the main thread; the JSON, CSS, ' +
           'HTML and TypeScript language services are unavailable.');
       }
+      var pending = waiters;
+      waiters = [];
+      for (var i = 0; i < pending.length; i++) pending[i]();
     };
     try {
       var probeUrl = new URL(page.vsPath + '/loader.js', document.baseURI).href;
@@ -501,9 +520,10 @@ const String _workerSafetyNetScript = r'''
         URL.revokeObjectURL(blobUrl);
         settle(mode, detail);
       };
+      // Bounds how long the editor.main gate below can delay boot.
       timer = setTimeout(function () {
         finish('main-thread', 'the worker check timed out');
-      }, 10000);
+      }, 4000);
       probe.onmessage = function (event) {
         finish(event.data === 'ok' ? 'workers' : 'main-thread', String(event.data));
       };
@@ -554,4 +574,39 @@ const String _workerSafetyNetScript = r'''
       }
     });
   })();
+''';
+
+/// Inline page script, on the same pages as [_workerSafetyNetScript], that
+/// defers `require([...], callback)` calls on the global AMD `require` -
+/// boot.js's load of `vs/editor/editor.main` - until the worker probe has
+/// answered, so Monaco never asks for a worker while the answer is unknown.
+///
+/// The probe starts in the page head and normally answers before the
+/// bridge scripts finish loading, so this rarely waits; the probe's own
+/// timeout bounds the wait. Only the global function is wrapped: the
+/// loader keeps its own reference for the `require` that modules receive,
+/// and every other call form and property (`config`, `toUrl`, ...) passes
+/// straight through.
+const String _editorMainGateScript = r'''
+      (function () {
+        var status = window.__FM_WORKERS;
+        var amdRequire = window.require;
+        if (!status || typeof status.whenSettled !== 'function') return;
+        if (typeof amdRequire !== 'function') return;
+        var gated = function (dependencies) {
+          var receiver = this;
+          var args = arguments;
+          if (status.mode === 'probing' && Array.isArray(dependencies)) {
+            status.whenSettled(function () { amdRequire.apply(receiver, args); });
+            return;
+          }
+          return amdRequire.apply(receiver, args);
+        };
+        for (var key in amdRequire) {
+          if (Object.prototype.hasOwnProperty.call(amdRequire, key)) {
+            gated[key] = amdRequire[key];
+          }
+        }
+        window.require = gated;
+      })();
 ''';

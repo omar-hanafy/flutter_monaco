@@ -8,6 +8,12 @@ import 'package:path/path.dart' as p;
 import '../helpers/csp.dart';
 import '../helpers/page_scripts.dart';
 
+/// Identifies the worker safety net among the page's inline scripts.
+const _safetyNetMarker = "Object.defineProperty(self, 'MonacoEnvironment'";
+
+/// Identifies the editor.main gate among the page's inline scripts.
+const _gateMarker = 'window.require = gated';
+
 String _build({
   String? customCss,
   String? messageToken,
@@ -354,14 +360,30 @@ void main() {
     };
 
     pages.forEach((name, html) {
+      // Where the loader.js script element is (the safety net's probe also
+      // names loader.js, single-quoted).
+      final loaderTag = html.indexOf('/loader.js"');
+
       test('$name: installed once, before Monaco can load', () {
         final scripts = inlineScriptsIn(html);
-        final safetyNet = scripts.where((s) => s.contains('__FM_WORKERS'));
+        final safetyNet = scripts.where((s) => s.contains(_safetyNetMarker));
         expect(safetyNet, hasLength(1));
         expect(safetyNet.single, contains("location.protocol !== 'file:'"));
-        final netIndex = html.indexOf('__FM_WORKERS');
+        final netIndex = html.indexOf(_safetyNetMarker);
         expect(netIndex, greaterThan(html.indexOf('window.__FM_PAGE')));
-        expect(netIndex, lessThan(html.indexOf('/loader.js')));
+        expect(loaderTag, isPositive);
+        expect(netIndex, lessThan(loaderTag));
+      });
+
+      test('$name: editor.main waits for the probe', () {
+        // The gate wraps the global require that loader.js defines, so it
+        // must sit between loader.js and boot.js, which calls require.
+        final gates = inlineScriptsIn(html)
+            .where((s) => s.contains(_gateMarker));
+        expect(gates, hasLength(1));
+        final gateIndex = html.indexOf(_gateMarker);
+        expect(gateIndex, greaterThan(loaderTag));
+        expect(gateIndex, lessThan(html.indexOf('bridge/core.js')));
       });
     });
 
@@ -395,12 +417,15 @@ void main() {
 
     group('in a simulated page', () {
       Future<Map<String, Object?>> run(Map<String, Object?> scenario) async {
-        final script = inlineScriptsIn(pages['Android']!)
-            .singleWhere((s) => s.contains('__FM_WORKERS'));
+        final scripts = inlineScriptsIn(pages['Android']!);
+        final script = scripts.singleWhere((s) => s.contains(_safetyNetMarker));
+        final gate = scripts.singleWhere((s) => s.contains(_gateMarker));
         final dir = await Directory.systemTemp.createTemp('fm_safety_net_');
         try {
           final scriptFile = File(p.join(dir.path, 'net.js'))
             ..writeAsStringSync(script);
+          final gateFile = File(p.join(dir.path, 'gate.js'))
+            ..writeAsStringSync(gate);
           final scenarioFile = File(p.join(dir.path, 'scenario.json'))
             ..writeAsStringSync(
               jsonEncode({
@@ -414,6 +439,7 @@ void main() {
             p.join('test', 'helpers', 'worker_safety_net_runner.cjs'),
             scriptFile.path,
             scenarioFile.path,
+            gateFile.path,
           ]);
           expect(result.exitCode, 0, reason: '${result.stderr}');
           return jsonDecode(result.stdout as String) as Map<String, Object?>;
@@ -466,6 +492,36 @@ void main() {
         }
         // One page-level warning plus one per refused label, never repeated.
         expect(result['warnings'], hasLength(7));
+      }, skip: nodeUnavailableReason);
+
+      test('holds the editor.main load until the probe answers', () async {
+        // A refusal while the answer is unknown would stick: Monaco's
+        // TypeScript client caches it for the life of the page.
+        final result = await run({'worker': 'loads'});
+        expect(result['gate'], {
+          'deferredWhileProbing': true,
+          'configPassedThrough': true,
+          'propertiesKept': true,
+          'loadedAfterProbe': true,
+          'callbackKept': true,
+        });
+      }, skip: nodeUnavailableReason);
+
+      test('keeps holding while the probe is unanswered', () async {
+        final result = await run({'worker': 'silent'});
+        expect(result['mode'], 'probing');
+        expect(
+          (result['gate']! as Map<String, Object?>)['loadedAfterProbe'],
+          isFalse,
+        );
+      }, skip: nodeUnavailableReason);
+
+      test('does not hold once the probe has failed', () async {
+        final result = await run({'worker': 'throws'});
+        expect(
+          (result['gate']! as Map<String, Object?>)['deferredWhileProbing'],
+          isFalse,
+        );
       }, skip: nodeUnavailableReason);
 
       test('fails fast while the probe has not answered', () async {
