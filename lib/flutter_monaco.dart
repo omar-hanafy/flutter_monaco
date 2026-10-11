@@ -113,8 +113,11 @@ export 'src/options/option_enums.dart'
         CursorBlinking,
         CursorStyle,
         DiagnosticsSeverity,
+        MonacoAutoFindInSelection,
         MonacoBaseTheme,
+        MonacoFindSeedSearchString,
         MonacoFoldingControls,
+        MonacoFullwidthCharacterWidth,
         MonacoLineHighlight,
         MonacoLineNumbers,
         MonacoMinimapSide,
@@ -123,6 +126,7 @@ export 'src/options/option_enums.dart'
         RenderWhitespace;
 export 'src/options/sub_options.dart'
     show
+        MonacoFindOptions,
         MonacoGuidesOptions,
         MonacoMinimapOptions,
         MonacoPadding,
