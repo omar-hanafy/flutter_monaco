@@ -39,10 +39,20 @@ window.__FMB.editorApi = function (ctx) {
                 // merge into the user's still-open typing element. The
                 // surrounding stack elements close that element and this
                 // one. Model-level, so pinned inactive documents get the
-                // same undo semantics as the attached one.
+                // same undo semantics as the attached one. For the attached
+                // model, the editor's selections are the before-cursor
+                // state, as editor.executeEdits passes them: with an EMPTY
+                // cursor state Monaco trims every auto-indent-only line
+                // the edit does not touch, deleting the indentation the
+                // user just got from pressing Enter.
                 const applyUndoableEdits = (model, edits) => {
+                  const ed = E();
+                  const beforeCursorState =
+                    ed && ed.getModel && ed.getModel() === model
+                      ? (ed.getSelections() || [])
+                      : [];
                   model.pushStackElement();
-                  model.pushEditOperations([], edits, () => null);
+                  model.pushEditOperations(beforeCursorState, edits, () => null);
                   model.pushStackElement();
                 };
                 // Dart's MarkerData wire shape -> Monaco IMarkerData. Dart
@@ -252,12 +262,16 @@ window.__FMB.editorApi = function (ctx) {
                     const original = service.executeCommand;
                     const hadOwn = Object.prototype.hasOwnProperty.call(
                       service, 'executeCommand');
+                    let claimed = false;
                     let pending = null;
                     service.executeCommand = function (id) {
+                      // Claim the FIRST call for this id before running it,
+                      // so a nested same-id dispatch from inside the command
+                      // cannot stand in for the outer one.
+                      const outer = !claimed && id === actionId;
+                      if (outer) claimed = true;
                       const result = original.apply(this, arguments);
-                      if (pending === null && id === actionId) {
-                        pending = Promise.resolve(result);
-                      }
+                      if (outer) pending = Promise.resolve(result);
                       return result;
                     };
                     try {

@@ -305,6 +305,44 @@ test('document.applyEdits on an inactive pinned document is undoable', async () 
   assert.equal(model.getValue(), 'abc');
 });
 
+test('programmatic edits keep the auto-indent on the cursor line', async () => {
+  const page = bootEditorPage();
+  const model = page.bootModel;
+  // The user pressed Enter in an indented block: line 2 holds only
+  // auto-inserted indentation and carries the cursor.
+  model.setValue('    let a = 1;\n    ');
+  model._trimAutoWhitespaceLines = [2];
+  page.sandbox.__selections = [range(2, 5, 2, 5)];
+
+  await dispatch(page, 'document.applyEdits', {
+    uri: null,
+    edits: [{ range: range(1, 1, 1, 1), text: '// x\n' }],
+  });
+  assert.equal(
+    model.getValue(),
+    '// x\n    let a = 1;\n    ',
+    'an edit elsewhere must not strip the cursor line indentation',
+  );
+});
+
+test('replaceMatches keeps the auto-indent on the cursor line', async () => {
+  const page = bootEditorPage();
+  const model = page.bootModel;
+  model.setValue('    let a = 1;\n    ');
+  model._trimAutoWhitespaceLines = [2];
+  page.sandbox.__selections = [range(2, 5, 2, 5)];
+
+  await dispatch(page, 'document.replaceMatches', {
+    uri: null,
+    query: 'let',
+    replacement: 'var',
+    isRegex: false,
+    matchCase: true,
+    wholeWord: false,
+  });
+  assert.equal(model.getValue(), '    var a = 1;\n    ');
+});
+
 // ---- executeAction ----
 
 /** Collects unhandled rejections raised while [body] runs. */
@@ -385,6 +423,61 @@ test('executeAction keeps editor commands and trigger handlers working', async (
     executeCommand,
     'the command service must be left exactly as it was',
   );
+});
+
+test('executeAction restores a prototype executeCommand (real Monaco layout)', async () => {
+  const page = bootEditorPage();
+  // In Monaco 0.57 executeCommand lives on StandaloneCommandService's
+  // prototype, not on the instance.
+  const proto = {
+    executeCommand(id) {
+      return id === 'proto.command'
+        ? Promise.resolve('ran')
+        : Promise.reject(new Error(`command '${id}' not found`));
+    },
+  };
+  const service = Object.create(proto);
+  page.editor._commandService = service;
+
+  const ok = await dispatch(page, 'editor.executeAction', {
+    actionId: 'proto.command',
+    args: null,
+  });
+  assert.equal(ok.ok, true);
+  const unknown = await dispatch(page, 'editor.executeAction', {
+    actionId: 'nope',
+    args: null,
+  });
+  assert.equal(unknown.ok, false);
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(service, 'executeCommand'),
+    false,
+    'the temporary own wrapper must be removed again',
+  );
+  assert.equal(service.executeCommand, proto.executeCommand);
+});
+
+test('executeAction settles on the outer command, not a nested same-id call', async () => {
+  const page = bootEditorPage();
+  let depth = 0;
+  page.sandbox.__testCommands = {
+    'my.reentrant': () => {
+      depth += 1;
+      if (depth === 1) {
+        // A nested dispatch of the same id fails; the outer one succeeds.
+        page.editor._commandService
+          .executeCommand('my.reentrant')
+          .catch(() => {});
+        return 'outer';
+      }
+      throw new Error('nested failure');
+    },
+  };
+  const response = await dispatch(page, 'editor.executeAction', {
+    actionId: 'my.reentrant',
+    args: null,
+  });
+  assert.equal(response.ok, true, response.error && response.error.message);
 });
 
 // ---- find / replace ----

@@ -322,7 +322,39 @@ export function installMonacoStub(sandbox) {
       pushStackElement() {
         openElement = null;
       },
-      pushEditOperations(_before, edits) {
+      // Lines holding only auto-inserted indentation (Monaco records them
+      // when the user presses Enter); tests set this directly.
+      _trimAutoWhitespaceLines: null,
+      pushEditOperations(beforeCursorState, edits) {
+        // TextModel._pushEditOperations: unless some cursor of
+        // beforeCursorState lies outside every edit, each recorded
+        // auto-whitespace line that no edit touches is trimmed - so an
+        // EMPTY cursor state always trims.
+        if (this._trimAutoWhitespaceLines) {
+          const overlaps = (a, b) =>
+            !(a.startLineNumber > b.endLineNumber ||
+              b.startLineNumber > a.endLineNumber);
+          const cursors = beforeCursorState || [];
+          const allCursorsEdited = cursors.every((cursor) =>
+            (edits || []).some((edit) => overlaps(edit.range, cursor)));
+          if (allCursorsEdited) {
+            const trims = this._trimAutoWhitespaceLines
+              .filter((line) => !(edits || []).some((edit) =>
+                line >= edit.range.startLineNumber &&
+                line <= edit.range.endLineNumber))
+              .map((line) => ({
+                range: {
+                  startLineNumber: line,
+                  startColumn: 1,
+                  endLineNumber: line,
+                  endColumn: this.getLineContent(line).length + 1,
+                },
+                text: '',
+              }));
+            edits = [...(edits || []), ...trims];
+          }
+          this._trimAutoWhitespaceLines = null;
+        }
         if (!openElement) {
           openElement = { before: this._value };
           undoStack.push(openElement);
@@ -446,7 +478,7 @@ export function installMonacoStub(sandbox) {
       layout() {},
       focus() {},
       getSelection: () => null,
-      getSelections: () => [],
+      getSelections: () => sandbox.__selections ?? [],
       getPosition: () => null,
       setSelection() {},
       setPosition() {},
