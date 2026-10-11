@@ -429,23 +429,30 @@ Future<void> _installExtraction(
   String targetDir,
   String monacoVersion,
 ) async {
+  // On Windows a directory cannot be renamed while any file inside it is
+  // open, and antivirus scanners and the search indexer open freshly
+  // written files for a moment; back off for up to ~6s before giving up.
   for (var attempt = 1; ; attempt++) {
     try {
       await staging.rename(targetDir);
       return;
     } on FileSystemException {
-      if (attempt >= 3) rethrow;
+      if (attempt >= 8) rethrow;
     }
     if (await _isCompleteExtraction(targetDir, monacoVersion)) return;
-    final retired = p.join(
-      p.dirname(targetDir),
-      '${_retiredPrefix(targetDir)}${_uniqueSuffix()}',
-    );
-    try {
-      await Directory(targetDir).rename(retired);
-    } on FileSystemException {
-      // Moved or replaced concurrently; the next attempt re-checks.
+    if (await Directory(targetDir).exists()) {
+      final retired = p.join(
+        p.dirname(targetDir),
+        '${_retiredPrefix(targetDir)}${_uniqueSuffix()}',
+      );
+      try {
+        await Directory(targetDir).rename(retired);
+        await _deleteQuietly(Directory(retired));
+        continue;
+      } on FileSystemException {
+        // Locked, or moved or replaced concurrently: wait and re-check.
+      }
     }
-    await _deleteQuietly(Directory(retired));
+    await Future<void>.delayed(Duration(milliseconds: 50 << (attempt - 1)));
   }
 }
