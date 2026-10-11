@@ -229,9 +229,10 @@ window.__FMB.lsp = function (ctx) {
                     } catch (_) {}
                   }
 
-                  function disposeEntry(entry) {
-                    if (entry.disposed) return;
-                    entry.disposed = true;
+                  // Disposes whatever the entry holds right now and forgets
+                  // it, so a second call only releases what was built
+                  // since the first.
+                  function releaseResources(entry) {
                     try {
                       entry.stateWatch && entry.stateWatch.dispose &&
                         entry.stateWatch.dispose();
@@ -243,6 +244,15 @@ window.__FMB.lsp = function (ctx) {
                       entry.transport && entry.transport.dispose &&
                         entry.transport.dispose();
                     } catch (_) {}
+                    entry.stateWatch = null;
+                    entry.client = null;
+                    entry.transport = null;
+                  }
+
+                  function disposeEntry(entry) {
+                    if (entry.disposed) return;
+                    entry.disposed = true;
+                    releaseResources(entry);
                     connections.delete(entry.id);
                     if (connections.size === 0) {
                       // Monaco's LSP diagnostics all publish under the fixed
@@ -254,6 +264,20 @@ window.__FMB.lsp = function (ctx) {
                           monaco.editor.setModelMarkers(model, 'lsp', []);
                         }
                       } catch (_) {}
+                    }
+                  }
+
+                  // A disconnect (the Dart connect timeout, or an explicit
+                  // disconnect) can land while connect() is awaiting. Once
+                  // the entry is disposed, connect() must stop building and
+                  // release whatever it built after disposeEntry ran -
+                  // without touching the connections map, where the id may
+                  // already belong to a newer connect.
+                  function throwIfAbandoned(entry) {
+                    if (entry.disposed) {
+                      throw new Error(
+                        'LSP connection "' + entry.id +
+                        '" was disposed during initialization.');
                     }
                   }
 
@@ -287,6 +311,7 @@ window.__FMB.lsp = function (ctx) {
                           entry.transport = entry.bridged;
                         } else {
                           entry.transport = await buildTransport(id, transportPayload);
+                          throwIfAbandoned(entry);
                         }
                         if (!entry.transport ||
                             typeof entry.transport.send !== 'function' ||
@@ -301,15 +326,15 @@ window.__FMB.lsp = function (ctx) {
                         registerBenignRefreshHandlers(entry);
                         watchTransportClose(entry);
                         await entry.client.initialized;
-                        if (entry.disposed) {
-                          throw new Error(
-                            'LSP connection "' + id +
-                            '" was disposed during initialization.');
-                        }
+                        throwIfAbandoned(entry);
                         postStatus(id, 'open', null);
                         return true;
                       } catch (e) {
-                        disposeEntry(entry);
+                        if (entry.disposed) {
+                          releaseResources(entry);
+                        } else {
+                          disposeEntry(entry);
+                        }
                         throw e;
                       }
                     },
