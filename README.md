@@ -1320,6 +1320,7 @@ The plugin uses a versioned cache system:
 
 - Windows 10 version 1809 or later
 - Microsoft Edge WebView2 Runtime (auto-installed on most Windows 10/11 systems)
+- A working Direct3D 11 device and `Windows.Graphics.Capture` support, which `webview_flutter_windows` uses to render the page. Some virtual machines, Remote Desktop sessions, and broken GPU drivers lack them.
 - The editor page's origin is `https://flutter-monaco.example`, a secure context. Endpoints in `allowedConnectSources` should use `wss://` or `https://`, or `ws://`/`http://` on loopback (`localhost`, `127.0.0.1`, `[::1]`). Listing any other `ws://` or `http://` endpoint, or a bare `*`, makes the editor load from `file://` instead, where Monaco's workers cannot run.
 
 ### Android
@@ -1462,8 +1463,16 @@ See the guide above for details and best practices.
 
 ### Windows: WebView2 not found
 
-If you get a WebView2 error on Windows, install the WebView2 Runtime:
+If `initialize()` fails with `environment_creation_failed`, the WebView2 Runtime is missing. Install it:
 https://developer.microsoft.com/en-us/microsoft-edge/webview2/
+
+### Windows: `unsupported_platform` (The platform is not supported)
+
+This error is not about the WebView2 Runtime. One of the webview plugin's graphics prerequisites failed, and the native console output from `flutter run -d windows` names which one:
+
+- `Creating DispatcherQueueController failed.`: the UI thread already has a dispatcher queue, usually because a second Flutter engine runs on the same thread (multi-window plugins) or another plugin created one.
+- `Windows::Graphics::Capture::GraphicsCaptureSession is not supported.`: the system does not provide graphics capture.
+- Neither message: Direct3D 11 device creation failed, common in virtual machines, Remote Desktop sessions, or with a broken GPU driver.
 
 ### macOS: the editor never loads
 
